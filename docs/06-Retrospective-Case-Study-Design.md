@@ -73,22 +73,29 @@ The actuals are the founder's own business records, de-identified to aggregates.
 
 ### 2.3 Representative development tasks (what gets executed)
 
-Tasks are drawn from the v1 feature list and chosen so a rubric can grade them without running code. Each asks for a structured implementation specification: interface, data contract, acceptance tests, failure modes, compute/cost note. Illustrative set, to be confirmed against the brief:
+Tasks are drawn from the v1 feature list and chosen so a rubric can grade them without running code. Each asks for a structured implementation specification: interface, data contract, acceptance tests, failure modes, compute/cost note. Six tasks, three development and three holdout:
 
 | # | Task (spec-level, not full implementation) | Set | Why it is representative |
 |---|---|---|---|
-| T1 | Specify the price-bar ingestion module for an arbitrary equity/crypto ticker: schema, caching, rate-limit handling, acceptance tests | dev | every feature depends on it; rate-limit and caching are classic rework sources |
-| T2 | Specify a walk-forward backtest runner for one rules-based engine: parameter contract, in/out-of-sample split, result record, compute bound per run | dev | the core value proposition; compute cost drives both ledgers |
-| T3 | Specify metering for heavy operations under a freemium tier: per-user budget, concurrency guard, saturation behavior | dev | the decision the founder actually struggled with later; a good checkpoint test |
-| T4 | Specify a strategy-comparison view over N engines vs buy-and-hold | holdout | |
-| T5 | Specify regime-detection output contract and its UI banner | holdout | |
-| T6 | Specify the optimizer job: search space, result cache, idempotency | holdout | |
-| T7 | Specify a nightly batch re-ranker with a shared budget and fairness rule | holdout | |
-| T8 | Specify authentication, accounts and portfolio scoping with tier limits | holdout | |
+| T1 | Specify price-history ingestion for arbitrary equity/crypto tickers: bar schema, caching, rate-limit handling, acceptance tests | dev | every later task depends on clean price history; caching and rate limits are common integration failure points |
+| T2 | Specify one rule-engine contract that five mechanical trading rules implement: rule interface, parameter contract, signal record, deterministic evaluation, acceptance tests | dev | a shared contract tests whether a configuration can generalize across rules instead of special-casing each |
+| T3 | Specify a walk-forward runner for one rule: window schedule, in-sample/out-of-sample split, result record, compute bound per run | dev | the core evaluation loop; compute cost per run feeds both ledgers |
+| T4 | Specify a comparison of rule results against buy-and-hold on the same ticker and window: benchmark definition, metric set, data contract, acceptance tests | holdout | |
+| T5 | Specify a parameter optimizer that selects on out-of-sample performance only: search space, selection rule, result cache, compute bound | holdout | |
+| T6 | Specify how results are presented to a self-directed retail trader: plain-language summary, metric explanations, risk disclosure, acceptance tests | holdout | |
 
-Each task runs through two configurations behind Nightshift (two model IDs, or two workflow configurations of one model if only one is available, labeled accordingly). The Nemotron critic reviews the three development outputs against the brief and rubric: unsupported assumptions, missing failure modes, cost claims with no source. One permitted repair, then freeze, then five holdout tasks paired. Call budget stays within the PRD cap: 6 + 3 + 10 = 19 primary generations, leaving headroom under 23.
+Each task runs through two configurations behind Nightshift (two model IDs, or two workflow configurations of one model if only one is available, labeled accordingly). The Nemotron critic reviews the three development outputs against the brief and rubric: unsupported assumptions, missing failure modes, cost claims with no source. One permitted repair, then freeze, then three holdout tasks paired. Call budget stays within the PRD cap: 6 + 3 + 6 = 15 primary generations, leaving headroom under 23.
 
-Approach-level alternatives (Emergent-style builder vs IDE agent + own hosting vs API-only) are **not executed**. They are compared on verified pricing × the task plan, with the rework multiplier shown as an assumption. The decision pack states this limit in its first paragraph.
+Four approaches are priced from `pricing_snapshots`:
+
+| Approach | Billing basis | DevOps required |
+|---|---|---|
+| Emergent (credit-metered AI app-builder) | credits per task class; credit-to-USD conversion must be cited or stays unverified | none |
+| Replit Agent (managed app-builder with hosting) | agent usage credits plus seat price | none |
+| IDE coding agent with own hosting | model tokens plus seat price; hosting separate | basic |
+| Hosted model API with a hand-built app | model tokens; hosting and app built by the founder | full |
+
+Approach-level alternatives are **not executed**. They are compared on verified pricing × the task plan, with the rework multiplier shown as an assumption. The decision pack states this limit in its first paragraph.
 
 ## 3. Minimum records needed from Narin
 
