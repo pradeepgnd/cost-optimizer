@@ -73,7 +73,7 @@ Hard limits per run: 1 planning call, 1 batched critique, ≤1 revision, ≤23 c
 
 ## Limitations
 
-Economics are modeled estimates from entered assumptions and cited rates, not financial advice. Approach-level alternatives are compared on rates, not executed. The case study is N=1 and retrospective; metrics are agreement with history, never savings. Small samples throughout.
+Economics are modeled estimates from entered assumptions and cited rates, not financial advice. Approach-level alternatives are compared on rates, not executed. The case study is N=1 and retrospective; metrics are agreement with history, never savings. Small samples throughout. The risk cause-class taxonomy was written by the team after the case-study incidents were known; matches are reviewed by a human for relevance.
 
 ## Pre-existing components
 
