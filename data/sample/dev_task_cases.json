@@ -1,8 +1,8 @@
 [
  {
   "task_id": "T1",
-  "title": "Price-bar ingestion module",
-  "prompt": "Specify the ingestion module for arbitrary equity/crypto tickers.",
+  "title": "Price-history ingestion",
+  "prompt": "Specify the price-history ingestion module for arbitrary equity/crypto tickers: bar schema, caching, rate-limit handling and acceptance tests.",
   "required_elements": [
    "schema",
    "caching",
@@ -17,16 +17,39 @@
   "source": {
    "source_set": "dev_task_cases",
    "record_id": "T1",
-   "version": "sample-1",
+   "version": "sample-2",
    "status": "verified"
   }
  },
  {
   "task_id": "T2",
-  "title": "Walk-forward backtest runner",
-  "prompt": "Specify a walk-forward runner for one rules-based engine.",
+  "title": "Rule-engine contract for five mechanical rules",
+  "prompt": "Specify one rule-engine contract that five mechanical trading rules implement: rule interface, parameter contract, signal record, deterministic evaluation and acceptance tests.",
   "required_elements": [
+   "rule_interface",
    "parameter_contract",
+   "signal_record",
+   "determinism",
+   "acceptance_tests"
+  ],
+  "critical_failures": [
+   "hardcoded_credentials",
+   "unbounded_loop"
+  ],
+  "split": "development",
+  "source": {
+   "source_set": "dev_task_cases",
+   "record_id": "T2",
+   "version": "sample-2",
+   "status": "verified"
+  }
+ },
+ {
+  "task_id": "T3",
+  "title": "Walk-forward runner with in/out-of-sample split",
+  "prompt": "Specify a walk-forward runner for one rule: window schedule, in-sample/out-of-sample split, result record and compute bound per run.",
+  "required_elements": [
+   "window_schedule",
    "in_out_sample_split",
    "result_record",
    "compute_bound"
@@ -38,40 +61,19 @@
   "split": "development",
   "source": {
    "source_set": "dev_task_cases",
-   "record_id": "T2",
-   "version": "sample-1",
-   "status": "verified"
-  }
- },
- {
-  "task_id": "T3",
-  "title": "Metering heavy operations",
-  "prompt": "Specify per-user metering, concurrency guard and saturation behaviour under a freemium tier.",
-  "required_elements": [
-   "per_user_budget",
-   "concurrency_guard",
-   "saturation_behavior",
-   "acceptance_tests"
-  ],
-  "critical_failures": [
-   "hardcoded_credentials",
-   "unbounded_loop"
-  ],
-  "split": "development",
-  "source": {
-   "source_set": "dev_task_cases",
    "record_id": "T3",
-   "version": "sample-1",
+   "version": "sample-2",
    "status": "verified"
   }
  },
  {
   "task_id": "T4",
-  "title": "Strategy comparison view",
-  "prompt": "Specify comparison of N engines vs buy-and-hold.",
+  "title": "Comparison against buy-and-hold",
+  "prompt": "Specify a comparison of rule results against buy-and-hold on the same ticker and window: benchmark definition, metric set, data contract and acceptance tests.",
   "required_elements": [
+   "benchmark_definition",
+   "metric_set",
    "data_contract",
-   "ranking_rule",
    "acceptance_tests"
   ],
   "critical_failures": [
@@ -82,39 +84,18 @@
   "source": {
    "source_set": "dev_task_cases",
    "record_id": "T4",
-   "version": "sample-1",
+   "version": "sample-2",
    "status": "verified"
   }
  },
  {
   "task_id": "T5",
-  "title": "Regime detection contract",
-  "prompt": "Specify regime output contract and UI banner.",
-  "required_elements": [
-   "output_contract",
-   "refresh_policy",
-   "acceptance_tests"
-  ],
-  "critical_failures": [
-   "hardcoded_credentials",
-   "unbounded_loop"
-  ],
-  "split": "holdout",
-  "source": {
-   "source_set": "dev_task_cases",
-   "record_id": "T5",
-   "version": "sample-1",
-   "status": "verified"
-  }
- },
- {
-  "task_id": "T6",
-  "title": "Optimizer job",
-  "prompt": "Specify the optimizer: search space, cache, idempotency.",
+  "title": "Parameter optimizer with out-of-sample selection",
+  "prompt": "Specify a parameter optimizer that selects parameters on out-of-sample performance only: search space, out-of-sample selection rule, result cache and compute bound.",
   "required_elements": [
    "search_space",
+   "out_of_sample_selection",
    "result_cache",
-   "idempotency",
    "compute_bound"
   ],
   "critical_failures": [
@@ -124,40 +105,19 @@
   "split": "holdout",
   "source": {
    "source_set": "dev_task_cases",
-   "record_id": "T6",
-   "version": "sample-1",
+   "record_id": "T5",
+   "version": "sample-2",
    "status": "verified"
   }
  },
  {
-  "task_id": "T7",
-  "title": "Nightly re-ranker",
-  "prompt": "Specify a nightly batch with shared budget and fairness rule.",
+  "task_id": "T6",
+  "title": "Results presentation for a retail trader",
+  "prompt": "Specify how backtest results are presented to a self-directed retail trader: plain-language summary, metric explanations, risk disclosure and acceptance tests.",
   "required_elements": [
-   "shared_budget",
-   "fairness_rule",
-   "failure_modes"
-  ],
-  "critical_failures": [
-   "hardcoded_credentials",
-   "unbounded_loop"
-  ],
-  "split": "holdout",
-  "source": {
-   "source_set": "dev_task_cases",
-   "record_id": "T7",
-   "version": "sample-1",
-   "status": "verified"
-  }
- },
- {
-  "task_id": "T8",
-  "title": "Accounts and tier scoping",
-  "prompt": "Specify auth, accounts, portfolios and tier limits.",
-  "required_elements": [
-   "auth_model",
-   "scoping_rule",
-   "tier_limits",
+   "plain_language_summary",
+   "metric_explanations",
+   "risk_disclosure",
    "acceptance_tests"
   ],
   "critical_failures": [
@@ -167,8 +127,8 @@
   "split": "holdout",
   "source": {
    "source_set": "dev_task_cases",
-   "record_id": "T8",
-   "version": "sample-1",
+   "record_id": "T6",
+   "version": "sample-2",
    "status": "verified"
   }
  }

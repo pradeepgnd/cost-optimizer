@@ -12,13 +12,13 @@
   },
   "alternate_config": {
     "config_id": "cfg-b",
-    "approach_id": "ide-agent-own-hosting",
+    "approach_id": "replit-agent",
     "model_id": "sample/model-b",
     "workflow_settings": {},
     "config_version": 1
   },
   "reasons": [
-    "cfg-a passed 5/5 holdout tasks (small sample; not general accuracy)",
+    "cfg-a passed 3/3 holdout tasks (small sample; not general accuracy)",
     "build ledgers compared on cited rates; see evidence_gaps for unverified inputs"
   ],
   "build_ledgers": [
@@ -105,6 +105,98 @@
       ],
       "rate_ids": [
         "rate-builder-credit"
+      ],
+      "not_executed_disclaimer": "Approach-level estimate from verified rates and a bounded task plan. No build was executed on this platform."
+    },
+    {
+      "approach_id": "replit-agent",
+      "base_build_cost": {
+        "low": "150.00",
+        "base": "150.00",
+        "high": "150.00",
+        "currency": "USD",
+        "unit": "credits (USD conversion unverified)",
+        "warnings": [
+          "Platform credit price not verified; range is denominated in credits.",
+          "Seat fee 25.00/month not included in per-task base; add per month of build."
+        ]
+      },
+      "rework_multiplier": {
+        "low": "1.3",
+        "base": "1.8",
+        "high": "2.5",
+        "currency": "USD",
+        "unit": "x",
+        "warnings": [
+          "Rework multiplier is assumed; no project-specific evidence."
+        ]
+      },
+      "expected_build_cost": {
+        "low": "195.00",
+        "base": "270.00",
+        "high": "375.00",
+        "currency": "USD",
+        "unit": "credits (USD conversion unverified)",
+        "warnings": [
+          "Platform credit price not verified; range is denominated in credits.",
+          "Seat fee 25.00/month not included in per-task base; add per month of build.",
+          "Rework multiplier is assumed; no project-specific evidence."
+        ]
+      },
+      "founder_time_hours": null,
+      "checkpoints": [
+        {
+          "milestone": "after S2 (25% of planned work)",
+          "cumulative_spend": {
+            "low": "151.67",
+            "base": "210.00",
+            "high": "291.67",
+            "currency": "USD",
+            "unit": "credits (USD conversion unverified)",
+            "warnings": [
+              "Platform credit price not verified; range is denominated in credits.",
+              "Seat fee 25.00/month not included in per-task base; add per month of build.",
+              "Rework multiplier is assumed; no project-specific evidence."
+            ]
+          },
+          "gate_question": "Is a usable slice live, and is spend inside the base scenario? If not, stop and reassess approach."
+        },
+        {
+          "milestone": "after S2 (50% of planned work)",
+          "cumulative_spend": {
+            "low": "151.67",
+            "base": "210.00",
+            "high": "291.67",
+            "currency": "USD",
+            "unit": "credits (USD conversion unverified)",
+            "warnings": [
+              "Platform credit price not verified; range is denominated in credits.",
+              "Seat fee 25.00/month not included in per-task base; add per month of build.",
+              "Rework multiplier is assumed; no project-specific evidence."
+            ]
+          },
+          "gate_question": "Is a usable slice live, and is spend inside the base scenario? If not, stop and reassess approach."
+        },
+        {
+          "milestone": "after S2 (75% of planned work)",
+          "cumulative_spend": {
+            "low": "151.67",
+            "base": "210.00",
+            "high": "291.67",
+            "currency": "USD",
+            "unit": "credits (USD conversion unverified)",
+            "warnings": [
+              "Platform credit price not verified; range is denominated in credits.",
+              "Seat fee 25.00/month not included in per-task base; add per month of build.",
+              "Rework multiplier is assumed; no project-specific evidence."
+            ]
+          },
+          "gate_question": "Is a usable slice live, and is spend inside the base scenario? If not, stop and reassess approach."
+        }
+      ],
+      "rate_ids": [
+        "rate-replit-credit",
+        "rate-replit-seat"
       ],
       "not_executed_disclaimer": "Approach-level estimate from verified rates and a bounded task plan. No build was executed on this platform."
     },
@@ -366,10 +458,11 @@
       "config_version": 1,
       "output_ref": "example-2/T2/cfg-a/v1",
       "elements_present": {
+        "rule_interface": true,
         "parameter_contract": true,
-        "in_out_sample_split": true,
-        "result_record": true,
-        "compute_bound": true
+        "signal_record": true,
+        "determinism": true,
+        "acceptance_tests": true
       },
       "critical_failures_hit": [],
       "cost_note_sourced": true,
@@ -389,10 +482,10 @@
       "config_version": 1,
       "output_ref": "example-2/T3/cfg-a/v1",
       "elements_present": {
-        "per_user_budget": true,
-        "concurrency_guard": true,
-        "saturation_behavior": true,
-        "acceptance_tests": true
+        "window_schedule": true,
+        "in_out_sample_split": true,
+        "result_record": true,
+        "compute_bound": true
       },
       "critical_failures_hit": [],
       "cost_note_sourced": true,
@@ -435,10 +528,11 @@
       "config_version": 1,
       "output_ref": "example-2/T2/cfg-b/v1",
       "elements_present": {
+        "rule_interface": true,
         "parameter_contract": true,
-        "in_out_sample_split": true,
-        "result_record": true,
-        "compute_bound": true
+        "signal_record": true,
+        "determinism": true,
+        "acceptance_tests": true
       },
       "critical_failures_hit": [],
       "cost_note_sourced": true,
@@ -458,10 +552,10 @@
       "config_version": 1,
       "output_ref": "example-2/T3/cfg-b/v1",
       "elements_present": {
-        "per_user_budget": true,
-        "concurrency_guard": true,
-        "saturation_behavior": true,
-        "acceptance_tests": true
+        "window_schedule": true,
+        "in_out_sample_split": true,
+        "result_record": true,
+        "compute_bound": true
       },
       "critical_failures_hit": [],
       "cost_note_sourced": true,
@@ -504,10 +598,11 @@
       "config_version": 2,
       "output_ref": "example-2/T2/cfg-a/v2",
       "elements_present": {
+        "rule_interface": true,
         "parameter_contract": true,
-        "in_out_sample_split": true,
-        "result_record": true,
-        "compute_bound": true
+        "signal_record": true,
+        "determinism": true,
+        "acceptance_tests": true
       },
       "critical_failures_hit": [],
       "cost_note_sourced": true,
@@ -527,10 +622,10 @@
       "config_version": 2,
       "output_ref": "example-2/T3/cfg-a/v2",
       "elements_present": {
-        "per_user_budget": true,
-        "concurrency_guard": true,
-        "saturation_behavior": true,
-        "acceptance_tests": true
+        "window_schedule": true,
+        "in_out_sample_split": true,
+        "result_record": true,
+        "compute_bound": true
       },
       "critical_failures_hit": [],
       "cost_note_sourced": true,
@@ -552,8 +647,9 @@
       "config_version": 2,
       "output_ref": "example-2/T4/cfg-a/v2",
       "elements_present": {
+        "benchmark_definition": true,
+        "metric_set": true,
         "data_contract": true,
-        "ranking_rule": true,
         "acceptance_tests": true
       },
       "critical_failures_hit": [],
@@ -574,9 +670,10 @@
       "config_version": 2,
       "output_ref": "example-2/T5/cfg-a/v2",
       "elements_present": {
-        "output_contract": true,
-        "refresh_policy": true,
-        "acceptance_tests": true
+        "search_space": true,
+        "out_of_sample_selection": true,
+        "result_cache": true,
+        "compute_bound": true
       },
       "critical_failures_hit": [],
       "cost_note_sourced": true,
@@ -584,7 +681,7 @@
         "input_tokens": 0,
         "output_tokens": 0
       },
-      "elapsed_s": 0.0,
+      "elapsed_s": 0.0001,
       "requested_model": null,
       "resolved_model": null,
       "execution_kind": "rule_policy",
@@ -596,54 +693,9 @@
       "config_version": 2,
       "output_ref": "example-2/T6/cfg-a/v2",
       "elements_present": {
-        "search_space": true,
-        "result_cache": true,
-        "idempotency": true,
-        "compute_bound": true
-      },
-      "critical_failures_hit": [],
-      "cost_note_sourced": true,
-      "usage": {
-        "input_tokens": 0,
-        "output_tokens": 0
-      },
-      "elapsed_s": 0.0,
-      "requested_model": null,
-      "resolved_model": null,
-      "execution_kind": "rule_policy",
-      "human_review": "pending"
-    },
-    {
-      "task_id": "T7",
-      "config_id": "cfg-a",
-      "config_version": 2,
-      "output_ref": "example-2/T7/cfg-a/v2",
-      "elements_present": {
-        "shared_budget": true,
-        "fairness_rule": true,
-        "failure_modes": true
-      },
-      "critical_failures_hit": [],
-      "cost_note_sourced": true,
-      "usage": {
-        "input_tokens": 0,
-        "output_tokens": 0
-      },
-      "elapsed_s": 0.0,
-      "requested_model": null,
-      "resolved_model": null,
-      "execution_kind": "rule_policy",
-      "human_review": "pending"
-    },
-    {
-      "task_id": "T8",
-      "config_id": "cfg-a",
-      "config_version": 2,
-      "output_ref": "example-2/T8/cfg-a/v2",
-      "elements_present": {
-        "auth_model": true,
-        "scoping_rule": true,
-        "tier_limits": true,
+        "plain_language_summary": true,
+        "metric_explanations": true,
+        "risk_disclosure": true,
         "acceptance_tests": true
       },
       "critical_failures_hit": [],
@@ -664,8 +716,9 @@
       "config_version": 1,
       "output_ref": "example-2/T4/cfg-b/v1",
       "elements_present": {
+        "benchmark_definition": true,
+        "metric_set": true,
         "data_contract": true,
-        "ranking_rule": true,
         "acceptance_tests": true
       },
       "critical_failures_hit": [],
@@ -686,9 +739,10 @@
       "config_version": 1,
       "output_ref": "example-2/T5/cfg-b/v1",
       "elements_present": {
-        "output_contract": true,
-        "refresh_policy": true,
-        "acceptance_tests": true
+        "search_space": true,
+        "out_of_sample_selection": true,
+        "result_cache": true,
+        "compute_bound": true
       },
       "critical_failures_hit": [],
       "cost_note_sourced": true,
@@ -708,54 +762,9 @@
       "config_version": 1,
       "output_ref": "example-2/T6/cfg-b/v1",
       "elements_present": {
-        "search_space": true,
-        "result_cache": true,
-        "idempotency": true,
-        "compute_bound": true
-      },
-      "critical_failures_hit": [],
-      "cost_note_sourced": true,
-      "usage": {
-        "input_tokens": 0,
-        "output_tokens": 0
-      },
-      "elapsed_s": 0.0,
-      "requested_model": null,
-      "resolved_model": null,
-      "execution_kind": "rule_policy",
-      "human_review": "pending"
-    },
-    {
-      "task_id": "T7",
-      "config_id": "cfg-b",
-      "config_version": 1,
-      "output_ref": "example-2/T7/cfg-b/v1",
-      "elements_present": {
-        "shared_budget": true,
-        "fairness_rule": true,
-        "failure_modes": true
-      },
-      "critical_failures_hit": [],
-      "cost_note_sourced": true,
-      "usage": {
-        "input_tokens": 0,
-        "output_tokens": 0
-      },
-      "elapsed_s": 0.0,
-      "requested_model": null,
-      "resolved_model": null,
-      "execution_kind": "rule_policy",
-      "human_review": "pending"
-    },
-    {
-      "task_id": "T8",
-      "config_id": "cfg-b",
-      "config_version": 1,
-      "output_ref": "example-2/T8/cfg-b/v1",
-      "elements_present": {
-        "auth_model": true,
-        "scoping_rule": true,
-        "tier_limits": true,
+        "plain_language_summary": true,
+        "metric_explanations": true,
+        "risk_disclosure": true,
         "acceptance_tests": true
       },
       "critical_failures_hit": [],
@@ -764,7 +773,7 @@
         "input_tokens": 0,
         "output_tokens": 0
       },
-      "elapsed_s": 0.0,
+      "elapsed_s": 0.0001,
       "requested_model": null,
       "resolved_model": null,
       "execution_kind": "rule_policy",
@@ -812,7 +821,7 @@
   ],
   "revisions": [
     {
-      "revision_id": "4d6d9199",
+      "revision_id": "c6aef526",
       "config_id": "cfg-a",
       "from_version": 1,
       "to_version": 2,
@@ -826,7 +835,15 @@
     {
       "source_set": "pricing_snapshots",
       "record_id": "approach-builder",
-      "version": "sample-1",
+      "version": "sample-2",
+      "origin_url": null,
+      "verified_at": null,
+      "status": "unverified"
+    },
+    {
+      "source_set": "pricing_snapshots",
+      "record_id": "approach-replit",
+      "version": "sample-2",
       "origin_url": null,
       "verified_at": null,
       "status": "unverified"
@@ -834,7 +851,7 @@
     {
       "source_set": "pricing_snapshots",
       "record_id": "approach-ide",
-      "version": "sample-1",
+      "version": "sample-2",
       "origin_url": null,
       "verified_at": null,
       "status": "unverified"
@@ -842,7 +859,7 @@
     {
       "source_set": "pricing_snapshots",
       "record_id": "approach-api",
-      "version": "sample-1",
+      "version": "sample-2",
       "origin_url": null,
       "verified_at": null,
       "status": "unverified"
@@ -856,7 +873,7 @@
     "Approach-level alternatives compared on cited rates; no build executed on any platform."
   ],
   "questions": [],
-  "spend_usd": "0.95",
-  "trace_path": "logs/trace-example-2.jsonl",
+  "spend_usd": "0.75",
+  "trace_path": "logs\\trace-example-2.jsonl",
   "disclaimer": "Economics are modeled estimates from entered assumptions and cited rates. They are not financial advice. See evidence_gaps and limitations."
 }

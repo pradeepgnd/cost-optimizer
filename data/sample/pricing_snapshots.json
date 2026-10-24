@@ -1,35 +1,45 @@
 {
   "approaches": [
-    {"approach_id": "app-builder-credits", "name": "AI app-builder platform (credit-metered)", "requires_devops": "none",
+    {"approach_id": "app-builder-credits", "name": "Emergent-style AI app-builder (credit-metered)", "requires_devops": "none",
      "credits_per_task_class": {"S": "40", "M": "120", "L": "350", "XL": "800"},
      "rates": [{"category": "credits", "unit": "credit", "usd_per_unit": null, "status": "unverified",
-                "source": {"source_set": "pricing_snapshots", "record_id": "rate-builder-credit", "version": "sample-1", "status": "unverified"}}],
+                "source": {"source_set": "pricing_snapshots", "record_id": "rate-builder-credit", "version": "sample-2", "status": "unverified"}}],
      "notes": ["PLACEHOLDER: credit-to-USD not published in sample data; stays unverified"],
-     "source": {"source_set": "pricing_snapshots", "record_id": "approach-builder", "version": "sample-1", "status": "unverified"}},
+     "source": {"source_set": "pricing_snapshots", "record_id": "approach-builder", "version": "sample-2", "status": "unverified"}},
+    {"approach_id": "replit-agent", "name": "Replit Agent (managed app-builder with hosting)", "requires_devops": "none",
+     "credits_per_task_class": {"S": "30", "M": "90", "L": "260", "XL": "600"},
+     "rates": [
+       {"category": "credits", "unit": "agent usage credit", "usd_per_unit": null, "status": "unverified", "source": {"source_set": "pricing_snapshots", "record_id": "rate-replit-credit", "version": "sample-2", "status": "unverified"}},
+       {"category": "seat_month", "unit": "seat/month", "usd_per_unit": "25.00", "status": "unverified", "source": {"source_set": "pricing_snapshots", "record_id": "rate-replit-seat", "version": "sample-2", "status": "unverified"}}
+     ],
+     "notes": ["PLACEHOLDER: usage-credit-to-USD and seat price are illustrative; replace with dated, URL-cited pricing"],
+     "source": {"source_set": "pricing_snapshots", "record_id": "approach-replit", "version": "sample-2", "status": "unverified"}},
     {"approach_id": "ide-agent-own-hosting", "name": "IDE coding agent + own hosting", "requires_devops": "basic",
      "tokens_per_task_class": {"S": "150000", "M": "450000", "L": "1200000", "XL": "3000000"},
      "rates": [
-       {"category": "input_tokens", "unit": "1M tokens", "usd_per_unit": "3.00", "status": "unverified", "source": {"source_set": "pricing_snapshots", "record_id": "rate-ide-in", "version": "sample-1", "status": "unverified"}},
-       {"category": "output_tokens", "unit": "1M tokens", "usd_per_unit": "15.00", "status": "unverified", "source": {"source_set": "pricing_snapshots", "record_id": "rate-ide-out", "version": "sample-1", "status": "unverified"}},
-       {"category": "seat_month", "unit": "seat/month", "usd_per_unit": "20.00", "status": "unverified", "source": {"source_set": "pricing_snapshots", "record_id": "rate-ide-seat", "version": "sample-1", "status": "unverified"}}
+       {"category": "input_tokens", "unit": "1M tokens", "usd_per_unit": "3.00", "status": "unverified", "source": {"source_set": "pricing_snapshots", "record_id": "rate-ide-in", "version": "sample-2", "status": "unverified"}},
+       {"category": "output_tokens", "unit": "1M tokens", "usd_per_unit": "15.00", "status": "unverified", "source": {"source_set": "pricing_snapshots", "record_id": "rate-ide-out", "version": "sample-2", "status": "unverified"}},
+       {"category": "seat_month", "unit": "seat/month", "usd_per_unit": "20.00", "status": "unverified", "source": {"source_set": "pricing_snapshots", "record_id": "rate-ide-seat", "version": "sample-2", "status": "unverified"}}
      ],
-     "source": {"source_set": "pricing_snapshots", "record_id": "approach-ide", "version": "sample-1", "status": "unverified"}},
+     "notes": ["PLACEHOLDER: token and seat rates are illustrative; replace with dated, URL-cited pricing"],
+     "source": {"source_set": "pricing_snapshots", "record_id": "approach-ide", "version": "sample-2", "status": "unverified"}},
     {"approach_id": "api-only-custom", "name": "Hosted model API + hand-built app", "requires_devops": "full",
      "tokens_per_task_class": {"S": "100000", "M": "300000", "L": "900000", "XL": "2200000"},
      "rates": [
-       {"category": "input_tokens", "unit": "1M tokens", "usd_per_unit": "2.50", "status": "unverified", "source": {"source_set": "pricing_snapshots", "record_id": "rate-api-in", "version": "sample-1", "status": "unverified"}},
-       {"category": "output_tokens", "unit": "1M tokens", "usd_per_unit": "10.00", "status": "unverified", "source": {"source_set": "pricing_snapshots", "record_id": "rate-api-out", "version": "sample-1", "status": "unverified"}}
+       {"category": "input_tokens", "unit": "1M tokens", "usd_per_unit": "2.50", "status": "unverified", "source": {"source_set": "pricing_snapshots", "record_id": "rate-api-in", "version": "sample-2", "status": "unverified"}},
+       {"category": "output_tokens", "unit": "1M tokens", "usd_per_unit": "10.00", "status": "unverified", "source": {"source_set": "pricing_snapshots", "record_id": "rate-api-out", "version": "sample-2", "status": "unverified"}}
      ],
-     "source": {"source_set": "pricing_snapshots", "record_id": "approach-api", "version": "sample-1", "status": "unverified"}}
+     "notes": ["PLACEHOLDER: token rates are illustrative; replace with dated, URL-cited pricing"],
+     "source": {"source_set": "pricing_snapshots", "record_id": "approach-api", "version": "sample-2", "status": "unverified"}}
   ],
   "models": [
     {"model_id": "sample/model-a", "provider_label": "sample", "rates": [
-       {"category": "input_tokens", "unit": "1M tokens", "usd_per_unit": "0.40", "status": "unverified", "source": {"source_set": "pricing_snapshots", "record_id": "rate-ma-in", "version": "sample-1", "status": "unverified"}},
-       {"category": "output_tokens", "unit": "1M tokens", "usd_per_unit": "1.60", "status": "unverified", "source": {"source_set": "pricing_snapshots", "record_id": "rate-ma-out", "version": "sample-1", "status": "unverified"}}],
-     "source": {"source_set": "pricing_snapshots", "record_id": "model-a", "version": "sample-1", "status": "unverified"}},
+       {"category": "input_tokens", "unit": "1M tokens", "usd_per_unit": "0.40", "status": "unverified", "source": {"source_set": "pricing_snapshots", "record_id": "rate-ma-in", "version": "sample-2", "status": "unverified"}},
+       {"category": "output_tokens", "unit": "1M tokens", "usd_per_unit": "1.60", "status": "unverified", "source": {"source_set": "pricing_snapshots", "record_id": "rate-ma-out", "version": "sample-2", "status": "unverified"}}],
+     "source": {"source_set": "pricing_snapshots", "record_id": "model-a", "version": "sample-2", "status": "unverified"}},
     {"model_id": "sample/model-b", "provider_label": "sample", "rates": [
-       {"category": "input_tokens", "unit": "1M tokens", "usd_per_unit": "2.00", "status": "unverified", "source": {"source_set": "pricing_snapshots", "record_id": "rate-mb-in", "version": "sample-1", "status": "unverified"}},
-       {"category": "output_tokens", "unit": "1M tokens", "usd_per_unit": "8.00", "status": "unverified", "source": {"source_set": "pricing_snapshots", "record_id": "rate-mb-out", "version": "sample-1", "status": "unverified"}}],
-     "source": {"source_set": "pricing_snapshots", "record_id": "model-b", "version": "sample-1", "status": "unverified"}}
+       {"category": "input_tokens", "unit": "1M tokens", "usd_per_unit": "2.00", "status": "unverified", "source": {"source_set": "pricing_snapshots", "record_id": "rate-mb-in", "version": "sample-2", "status": "unverified"}},
+       {"category": "output_tokens", "unit": "1M tokens", "usd_per_unit": "8.00", "status": "unverified", "source": {"source_set": "pricing_snapshots", "record_id": "rate-mb-out", "version": "sample-2", "status": "unverified"}}],
+     "source": {"source_set": "pricing_snapshots", "record_id": "model-b", "version": "sample-2", "status": "unverified"}}
   ]
 }
