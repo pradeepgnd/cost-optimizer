@@ -133,7 +133,7 @@ All metrics are agreement-with-history on one case. None is a savings figure.
 | Approach coverage | Was the approach actually taken among the agent's candidates? | "named / not named" |
 | Build-range bracketing | Did low–high `expected_build_cost` for that approach bracket actual spend? Where did actual fall (low/base/high/outside)? | "bracketed at the high scenario" or "actual exceeded the high scenario by X%" |
 | Checkpoint timing | Cumulative actual spend at each agent-proposed checkpoint; would a gate have fired before 25%, 50%, 75% of total actual spend? | "a gate at milestone 2 would have fired at ~$Y actual, 31% of total" — counterfactual, labeled |
-| Risk surfacing | Of the rework cause classes in M5, how many appear in the agent's risk list? | "3 of 5 cause classes named; 2 missed: …" |
+| Risk cause classes | Pair each M5 rework incident with every agent risk of the same cause class (fixed list in `app/contracts.py`), showing the risk's description and `triggered_by` beside the incident. Each pair is a class-level match only, because the taxonomy was written after the incidents were known. A human marks each match relevant or not relevant (`--reviewed`); only incidents with a match judged relevant count as surfaced | Before review: "3 class-level matches across 2 of 3 incidents — relevance requires human review". After review: "surfaced (human-reviewed): 1 of 3 incidents; 2 matches judged not relevant" |
 | Alternative surfacing | Did the agent name an alternative the founder did not consider at the time (per brief field)? | "named one alternative outside the founder's set" |
 | Operating-ledger drift | Brief-assumed operating cost vs actual shipped operating cost | "assumption undershot actual hosting tier by one level" |
 
