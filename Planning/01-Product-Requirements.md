@@ -33,7 +33,7 @@ Deliverable to the founder:
 
 ## 2. Fixed constraints
 
-Registered team: Narin, Pradeep, Meena, Isoma, Shrie. Forty team-hours remain starting October 24. Narin owns integration/deployment. Total hosting/API budget is $100. Exact remaining availability within those days still needs scheduling; there is no extra full-time engineering capacity.
+Registered team: Narin, Pradeep, Meena, Isioma, Shrie. Forty team-hours remain starting October 24. Narin owns integration/deployment. Total hosting/API budget is $100. Exact remaining availability within those days still needs scheduling; there is no extra full-time engineering capacity.
 
 Zetaris and Nightshift accounts are not opened as of the October 23 evening update. First build work is sponsor onboarding and a functioning vertical slice. No credentials, deployed system, engine integration, evaluation dataset, or results are presumed to exist.
 

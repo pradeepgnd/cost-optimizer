@@ -10,4 +10,4 @@ All runtime data is read through **Zetaris** (live) or from `data/sample/` (SAMP
 | evaluation_evidence | `oah.evaluation_evidence` | written at run time | generated | Case results and critiques; live writeback via the supported registration path. |
 | retrospective_actuals | `oah_sealed.retrospective_actuals` | `retrospective_actuals_SYNTHETIC.json` | **synthetic in repo** | The founder's real aggregate exists only in the live sealed source and the deck, with the founder's consent. The repository never contains it. |
 
-Regenerate sample outputs: `scripts/regen_examples.sh`. Source URL, licence, subset and hash for each live registration are recorded here by Isoma as they are registered. No data predates the build window (22 Oct 2026, 00:00 UTC).
+Regenerate sample outputs: `scripts/regen_examples.sh`. Source URL, licence, subset and hash for each live registration are recorded here by Isioma as they are registered. No data predates the build window (22 Oct 2026, 00:00 UTC).

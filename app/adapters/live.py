@@ -54,7 +54,7 @@ class ZetarisDataLayer(DataLayer):
                              input_summary=sql[:200], output_summary=f"HTTP {r.status_code}, {len(str(data))} bytes, {round(time.time()-t0,2)}s")
         return data
 
-    # The row->model mapping below depends on how Isoma registers the sources; finalize after first real query.
+    # The row->model mapping below depends on how Isioma registers the sources; finalize after first real query.
     def read_brief(self, brief_id):
         raise NotImplementedError("map rows after first real query; see docs/zetaris_select1_response.json")
 

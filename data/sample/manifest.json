@@ -1,5 +1,5 @@
 {
-  "note": "SAMPLE/OFFLINE data. Pricing figures are ILLUSTRATIVE PLACEHOLDERS marked unverified until Isoma replaces them with dated, URL-cited snapshots. retrospective_actuals_SYNTHETIC.json is a synthetic analogue; the founder's real aggregate is NOT in this repository.",
+  "note": "SAMPLE/OFFLINE data. Pricing figures are ILLUSTRATIVE PLACEHOLDERS marked unverified until Isioma replaces them with dated, URL-cited snapshots. retrospective_actuals_SYNTHETIC.json is a synthetic analogue; the founder's real aggregate is NOT in this repository.",
   "sources": {
     "founder_briefs":        {"version": "sample-1", "origin": "reconstructed by founder; see 06-Retrospective-Case-Study-Design §3", "verified_at": null},
     "pricing_snapshots":     {"version": "sample-1", "origin": "PLACEHOLDER — replace with dated public pricing pages", "verified_at": null},

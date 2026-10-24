@@ -101,7 +101,7 @@ Approach-level alternatives (Emergent-style builder vs IDE agent + own hosting v
 | M5 | Rework log: incidents where work was redone, cause class (requirements change, platform limitation, model error, scaling), approximate credit cost | `retrospective_actuals`; "did the agent surface this risk?" scoring | risk-surfacing scored as `unscorable — no incident record` |
 | M6 | Model identity on Emergent ("Fable") and any per-token or per-credit pricing exposed by the platform | `pricing_snapshots` | labeled `UNVERIFIED — platform did not expose model/rate` ; no comparison against that model's list price is made |
 | M7 | Final architecture and hosting tier; current monthly operating costs | post-freeze operating-ledger comparison | operating comparison omitted; cost-only build ledger stands alone |
-| M8 | Public pricing pages, dated, for Emergent and the chosen alternatives (Isoma collects; Narin confirms which alternatives he actually considered) | `pricing_snapshots` | an alternative with no verifiable rate is shown as `unknown rate`, not excluded silently |
+| M8 | Public pricing pages, dated, for Emergent and the chosen alternatives (Isioma collects; Narin confirms which alternatives he actually considered) | `pricing_snapshots` | an alternative with no verifiable rate is shown as `unknown rate`, not excluded silently |
 
 Missing-evidence labels are part of the output, not footnotes. The decision pack has a section titled "Evidence gaps" listing every `reconstructed`, `unknown`, `UNVERIFIED` and `unscorable` item.
 
@@ -115,7 +115,7 @@ Missing-evidence labels are part of the output, not footnotes. The decision pack
 
 ## 5. Grading
 
-Per task, per configuration: required elements present (deterministic checklist from the rubric), unsupported claims (critic finding validated against sources), cost note sourced (rate ID cited), failure modes named. Human semantic review by Isoma confirms the checklist; the LLM critic can flag but not certify. Record denominators, before/after repair for the three development cases, and the five paired holdout results. Small-sample language throughout.
+Per task, per configuration: required elements present (deterministic checklist from the rubric), unsupported claims (critic finding validated against sources), cost note sourced (rate ID cited), failure modes named. Human semantic review by Isioma confirms the checklist; the LLM critic can flag but not certify. Record denominators, before/after repair for the three development cases, and the five paired holdout results. Small-sample language throughout.
 
 ## 6. Retrospective comparison: what the tool "would have surfaced"
 
@@ -138,7 +138,7 @@ Narin is the primary founder observation. If hours allow after Stage D, one or t
 
 ## 8. Fit to 40 hours, $100, sponsor requirements
 
-- **Hours:** Isoma's W04 changes shape, not size: pricing snapshots for four approaches and 8 task rubrics replace FAQ curation and 10 FAQ cases. Narin adds ~1 hour for M1–M7 and the brief; Meena adds ~30 minutes for leakage review. Net neutral against the 32+8 plan.
+- **Hours:** Isioma's W04 changes shape, not size: pricing snapshots for four approaches and 8 task rubrics replace FAQ curation and 10 FAQ cases. Narin adds ~1 hour for M1–M7 and the brief; Meena adds ~30 minutes for leakage review. Net neutral against the 32+8 plan.
 - **Cash:** 19 primary generations of spec-level output (~2–4k tokens each) are well inside the $25 evaluation line on hosted Nemotron and peer models; confirm with actual Nightshift rates before approving the run.
 - **Sponsor fit:** Zetaris remains the only data layer (five source sets, one sealed); H-MEM stores the founder's confirmed constraints and the accepted development findings across the restart demo; Nightshift carries every inference; Nemotron is the evidence critic with attributable model ID. Nothing in the sponsor table changes.
 - **Track fit:** investigating a complex question across multiple sources (brief, pricing, task evidence, memory) and producing an evidence-backed recommendation — the Explain-Why statement verbatim.
@@ -149,7 +149,7 @@ PRD v3.4: §1 task statement, §2 constraints (no pre-existing work; S3; Windows
 
 ## 10. Open items for Narin, tonight or first thing
 
-1. Confirm the four approaches to price: Emergent; one IDE-agent path (Cursor or Claude Code) with own hosting; one second app-builder; API-only. Name them so Isoma can start.
+1. Confirm the four approaches to price: Emergent; one IDE-agent path (Cursor or Claude Code) with own hosting; one second app-builder; API-only. Name them so Isioma can start.
 2. Locate M1 and M2. Even one dated artifact changes the brief's status from `reconstructed` to `verified`.
 3. Decide whether the aggregate actual spend may be committed to the public repository for sample mode, or whether sample mode uses a synthetic analogue only. Recommendation: synthetic analogue in the repo, real aggregate in Zetaris live and in the deck with your consent. It is your figure to disclose; the judges reward candor, but the repository is permanent.
 4. Confirm T1–T8 against your actual v1 intent, or substitute.

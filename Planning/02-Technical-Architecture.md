@@ -114,7 +114,7 @@ Define reviewed source sets: `founder_briefs` (versioned reconstructed brief wit
 
 **Sealed-source rule.** The controller's allowlist maps `retrieve_evidence` to permitted source sets by run state. `retrospective_actuals` and holdout rows of `dev_task_cases` are permitted only when state is `frozen` or later, and only to the comparison script and holdout runner, never to Planner, Analyst or Critic prompts. An attempted read before freeze is rejected, logged as `status=denied_sealed`, and counts as a controller event in the trace. The live-run trace must show zero successful reads of sealed sources before freeze; that trace line is a release-checklist item. Registration keeps sealed data in a distinct source name so the gate is by name, not by row filter.
 
-All registered files live in the team's S3 bucket (decision Oct 23). Isoma's registration scripts upload curated JSON/CSV there and register each as a source; `data/README.md` records bucket path (not credentials), object version and hash. Bucket credentials are Zetaris-side configuration, never in the app.
+All registered files live in the team's S3 bucket (decision Oct 23). Isioma's registration scripts upload curated JSON/CSV there and register each as a source; `data/README.md` records bucket path (not credentials), object version and hash. Bucket credentials are Zetaris-side configuration, never in the app.
 
 SQLite may checkpoint pending writes during an outage, but a result that has not reached the data layer is marked local/unpublished. H-MEM contains compact approved constraints and references, not a parallel unsourced price catalog. A recommendation traces claims to Zetaris records and evaluation manifests. Memory is context, not authority for current pricing.
 
