@@ -57,7 +57,7 @@ def main() -> int:
         err = RunError(run_id=str(payload.get("run_id", "unknown")) if isinstance(locals().get("payload"), dict) else "unknown",
                        code="INVALID_INPUT", message=str(e)[:500], recoverable=False)
         print(err.model_dump_json(), file=sys.stderr)
-        Path(args.output).write_text(err.model_dump_json(indent=2))
+        Path(args.output).write_text(err.model_dump_json(indent=2), encoding="utf-8")
         return 2
 
     mode = "sample" if is_sample(req) else "live"
@@ -69,24 +69,24 @@ def main() -> int:
     except DuplicateRun as e:
         err = RunError(run_id=req.run_id, code="DUPLICATE_RUN", message=str(e), recoverable=False, trace_path=str(trace.path))
         trace.event("Controller", "refused_duplicate", status="denied", output_summary=str(e))
-        Path(args.output).write_text(err.model_dump_json(indent=2))
+        Path(args.output).write_text(err.model_dump_json(indent=2), encoding="utf-8")
         trace.final(err.model_dump(mode="json"))
         return 4
     except SetupIncomplete as e:
         err = RunError(run_id=req.run_id, code="SETUP_INCOMPLETE", message=str(e), recoverable=True, trace_path=str(trace.path))
         trace.event("Controller", "error", status="error", output_summary=str(e))
-        Path(args.output).write_text(err.model_dump_json(indent=2))
+        Path(args.output).write_text(err.model_dump_json(indent=2), encoding="utf-8")
         trace.final(err.model_dump(mode="json"))
         return 3
     except Exception as e:  # operational failure: structured, no raw stack trace to the user
         err = RunError(run_id=req.run_id, code="OPERATIONAL_ERROR", message=f"{type(e).__name__}: {str(e)[:300]}",
                        recoverable=False, trace_path=str(trace.path))
         trace.event("Controller", "error", status="error", output_summary=err.message)
-        Path(args.output).write_text(err.model_dump_json(indent=2))
+        Path(args.output).write_text(err.model_dump_json(indent=2), encoding="utf-8")
         trace.final(err.model_dump(mode="json"))
         return 4
 
-    Path(args.output).write_text(pack.model_dump_json(indent=2))
+    Path(args.output).write_text(pack.model_dump_json(indent=2), encoding="utf-8")
     trace.event("Controller", "complete", status=pack.status.value, output_summary=f"spend={pack.spend_usd} gaps={len(pack.evidence_gaps)}")
     trace.final({"status": pack.status.value, "output": args.output, "trace": str(trace.path), "execution_mode": mode})
     return 0

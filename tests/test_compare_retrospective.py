@@ -30,13 +30,13 @@ def _cli(*args):
     return subprocess.run([sys.executable, str(SCRIPT), *map(str, args)], capture_output=True, text=True, cwd=ROOT)
 
 def _load(packs, brief=True):
-    pack = cr.load_pack(json.loads(packs["complete"].read_text()))
-    actuals = json.loads(ACTUALS.read_text())
-    return pack, actuals, (cr.load_brief(json.loads(BRIEF.read_text())) if brief else None)
+    pack = cr.load_pack(json.loads(packs["complete"].read_text(encoding="utf-8")))
+    actuals = json.loads(ACTUALS.read_text(encoding="utf-8"))
+    return pack, actuals, (cr.load_brief(json.loads(BRIEF.read_text(encoding="utf-8"))) if brief else None)
 
 def test_refuses_pack_that_is_not_complete_or_frozen(packs):
     with pytest.raises(cr.Refused):
-        cr.load_pack(json.loads(packs["needs_input"].read_text()))
+        cr.load_pack(json.loads(packs["needs_input"].read_text(encoding="utf-8")))
     p = _cli("--pack", packs["needs_input"], "--actuals", ACTUALS)
     assert p.returncode == 4 and "refused" in p.stderr and p.stdout == ""
 
@@ -76,7 +76,7 @@ def test_alternatives_outside_founder_list_need_the_brief(packs):
 def test_cli_report_has_no_savings_language(packs, tmp_path):
     p = _cli("--pack", packs["complete"], "--actuals", ACTUALS, "--brief", BRIEF, "--json-out", tmp_path / "c.json")
     assert p.returncode == 0, p.stderr
-    assert not cr._SAVINGS.search(p.stdout) and not cr._SAVINGS.search((tmp_path / "c.json").read_text())
+    assert not cr._SAVINGS.search(p.stdout) and not cr._SAVINGS.search((tmp_path / "c.json").read_text(encoding="utf-8"))
     assert "agreement with history" in p.stdout and "SYNTHETIC" in p.stdout
     with pytest.raises(RuntimeError):
         cr.assert_no_savings_language("the tool would have saved $500")
