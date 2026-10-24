@@ -1,0 +1,175 @@
+[
+ {
+  "task_id": "T1",
+  "title": "Price-bar ingestion module",
+  "prompt": "Specify the ingestion module for arbitrary equity/crypto tickers.",
+  "required_elements": [
+   "schema",
+   "caching",
+   "rate_limit_handling",
+   "acceptance_tests"
+  ],
+  "critical_failures": [
+   "hardcoded_credentials",
+   "unbounded_loop"
+  ],
+  "split": "development",
+  "source": {
+   "source_set": "dev_task_cases",
+   "record_id": "T1",
+   "version": "sample-1",
+   "status": "verified"
+  }
+ },
+ {
+  "task_id": "T2",
+  "title": "Walk-forward backtest runner",
+  "prompt": "Specify a walk-forward runner for one rules-based engine.",
+  "required_elements": [
+   "parameter_contract",
+   "in_out_sample_split",
+   "result_record",
+   "compute_bound"
+  ],
+  "critical_failures": [
+   "hardcoded_credentials",
+   "unbounded_loop"
+  ],
+  "split": "development",
+  "source": {
+   "source_set": "dev_task_cases",
+   "record_id": "T2",
+   "version": "sample-1",
+   "status": "verified"
+  }
+ },
+ {
+  "task_id": "T3",
+  "title": "Metering heavy operations",
+  "prompt": "Specify per-user metering, concurrency guard and saturation behaviour under a freemium tier.",
+  "required_elements": [
+   "per_user_budget",
+   "concurrency_guard",
+   "saturation_behavior",
+   "acceptance_tests"
+  ],
+  "critical_failures": [
+   "hardcoded_credentials",
+   "unbounded_loop"
+  ],
+  "split": "development",
+  "source": {
+   "source_set": "dev_task_cases",
+   "record_id": "T3",
+   "version": "sample-1",
+   "status": "verified"
+  }
+ },
+ {
+  "task_id": "T4",
+  "title": "Strategy comparison view",
+  "prompt": "Specify comparison of N engines vs buy-and-hold.",
+  "required_elements": [
+   "data_contract",
+   "ranking_rule",
+   "acceptance_tests"
+  ],
+  "critical_failures": [
+   "hardcoded_credentials",
+   "unbounded_loop"
+  ],
+  "split": "holdout",
+  "source": {
+   "source_set": "dev_task_cases",
+   "record_id": "T4",
+   "version": "sample-1",
+   "status": "verified"
+  }
+ },
+ {
+  "task_id": "T5",
+  "title": "Regime detection contract",
+  "prompt": "Specify regime output contract and UI banner.",
+  "required_elements": [
+   "output_contract",
+   "refresh_policy",
+   "acceptance_tests"
+  ],
+  "critical_failures": [
+   "hardcoded_credentials",
+   "unbounded_loop"
+  ],
+  "split": "holdout",
+  "source": {
+   "source_set": "dev_task_cases",
+   "record_id": "T5",
+   "version": "sample-1",
+   "status": "verified"
+  }
+ },
+ {
+  "task_id": "T6",
+  "title": "Optimizer job",
+  "prompt": "Specify the optimizer: search space, cache, idempotency.",
+  "required_elements": [
+   "search_space",
+   "result_cache",
+   "idempotency",
+   "compute_bound"
+  ],
+  "critical_failures": [
+   "hardcoded_credentials",
+   "unbounded_loop"
+  ],
+  "split": "holdout",
+  "source": {
+   "source_set": "dev_task_cases",
+   "record_id": "T6",
+   "version": "sample-1",
+   "status": "verified"
+  }
+ },
+ {
+  "task_id": "T7",
+  "title": "Nightly re-ranker",
+  "prompt": "Specify a nightly batch with shared budget and fairness rule.",
+  "required_elements": [
+   "shared_budget",
+   "fairness_rule",
+   "failure_modes"
+  ],
+  "critical_failures": [
+   "hardcoded_credentials",
+   "unbounded_loop"
+  ],
+  "split": "holdout",
+  "source": {
+   "source_set": "dev_task_cases",
+   "record_id": "T7",
+   "version": "sample-1",
+   "status": "verified"
+  }
+ },
+ {
+  "task_id": "T8",
+  "title": "Accounts and tier scoping",
+  "prompt": "Specify auth, accounts, portfolios and tier limits.",
+  "required_elements": [
+   "auth_model",
+   "scoping_rule",
+   "tier_limits",
+   "acceptance_tests"
+  ],
+  "critical_failures": [
+   "hardcoded_credentials",
+   "unbounded_loop"
+  ],
+  "split": "holdout",
+  "source": {
+   "source_set": "dev_task_cases",
+   "record_id": "T8",
+   "version": "sample-1",
+   "status": "verified"
+  }
+ }
+]

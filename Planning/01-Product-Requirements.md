@@ -1,6 +1,6 @@
 # PRD: LLM Cost Intelligence decision agent
 
-Version 3.3 | October 23, 2026 (late evening) | Product/integration/deployment owner: Narin
+Version 3.4 | October 23, 2026 (late evening) | Product/integration/deployment owner: Narin | v3.4 replaces the approved-FAQ sandbox with the retrospective founder case study in [06-Retrospective-Case-Study-Design](06-Retrospective-Case-Study-Design.md)
 
 Authoritative project context and source index: [Changes and reading guide](00-Changes-and-Reading-Guide.md). Version 3.3 aligns v3.2 to the Open Agent Hackathon 2026 organizer documents (Official Rules, Submission Requirements, Submission Form Preview, Technical Execution Guide). Change log: [Guideline alignment review](05-Guideline-Alignment-Review.md).
 
@@ -16,14 +16,18 @@ Authoritative project context and source index: [Changes and reading guide](00-C
 
 **Help a founder decide which AI model and workflow to prototype, what it could cost at scale, and what task evidence supports that choice.**
 
-Primary users are a nontechnical founder with an idea and a technical founder building a prototype. Input is a product description, expected usage, structured assumptions, and optional prompt examples. The first supported task is a support assistant answering from an approved FAQ. This task is the evaluation sandbox; the product being built is the architecture decision agent, not a generic customer-support chatbot.
+Primary users are a nontechnical founder with an idea and a technical founder building a prototype. Input is a product description, scoped feature list, build constraints (cash, time, skills), expected usage, structured assumptions, and optional prompt examples. The first supported decision is **which AI-assisted development approach and model configuration to commit to before build begins**, with build-phase and operating-phase costs reported as separate ledgers.
+
+The evaluation sandbox is a retrospective founder case study: the founder's own venture, AIM Volatility Lab, built on an AI app-builder platform with more than $15,000 in credits consumed. The agent receives a reconstructed pre-build brief with no knowledge of the outcome; actual spend, milestones, failures and rework are sealed and compared only after the recommendation is frozen. The product being built is the decision agent; the case study is how we test whether it would have surfaced useful alternatives, cost risks and validation checkpoints. Design, controls and limits are in [06](06-Retrospective-Case-Study-Design.md).
 
 The agent performs useful work: identifies missing constraints, retrieves source evidence, builds two feasible prototype configurations, runs a bounded comparison, critiques the results, takes one corrective action when justified, and creates a founder-ready decision pack. It must be able to conclude that evidence is insufficient or neither candidate passes.
 
 Deliverable to the founder:
 
-- Named model/workflow candidate, reasons, assumptions, and an alternate option.
-- Expected monthly cost, unit cost, and conditional contribution margin.
+- Named development approach and model/workflow candidate, reasons, assumptions, and an alternate option.
+- Build-phase cost range (low/base/high) per approach with the rework multiplier shown as an assumption, and spend-threshold checkpoints where the founder should stop and reassess.
+- Expected monthly operating cost, unit cost, and conditional contribution margin, reported as a separate ledger never summed with build cost.
+- An evidence-gaps section listing every reconstructed, unknown or unverified input.
 - A prototype recipe: workflow steps, configuration settings, FAQ/context strategy, escalation behavior, and next implementation/test steps. This is an exported specification, not automatic deployment.
 - Task results, source references, observed failures, and what changed after critique.
 
@@ -35,7 +39,9 @@ Zetaris and Nightshift accounts are not opened as of the October 23 evening upda
 
 Submission deadline in G4/G8: October 27, 23:45 UTC, or **October 27, 6:45 p.m. Chicago** (CDT; US clocks do not change until November 1). Judging opens October 28 UTC; results November 6, 16:00 UTC. Late submissions are not evaluated and nothing can be fixed after close.
 
-Build window opened **October 22, 00:00 UTC**. Anything committed, written or prepared before that moment — product code, a prior Streamlit prototype, curated FAQ/rate data, planning documents — must be declared as a pre-existing component in the submission form or it is ineligible. Sponsor-published starter code (the Meterless H-MEM starter) is open source and does not need declaring, but the README names it and pins its revision.
+Build window opened **October 22, 00:00 UTC**. **Confirmed October 23: the team is starting from scratch; no code or data predates the window.** The pre-existing-components field will state "none"; the only declaration-adjacent item is that the case-study subject (AIM Volatility Lab) is the founder's existing venture, which is the *input data* for the agent, not pre-existing *product code*, and is described as such in the README. Sponsor-published starter code (the Meterless H-MEM starter) is open source and does not need declaring, but the README names it and pins its revision.
+
+Decisions recorded October 23: registered data files live in an **Amazon S3 bucket** the Zetaris server can reach; the integration host is **one Windows machine** running Zetaris in Docker Desktop (WSL2 backend), Nightshift desktop natively, and the Python app natively — no app container unless a later need appears. The specific machine is not yet verified; `scripts/preflight_windows.ps1` must pass before it is treated as selected, and the host may be any teammate's machine that passes.
 
 Team rules that cannot be undone: one HackOS account per person (duplicates disqualify the whole team); each person on exactly one team; the roster locks when the first submission is created; cash prizes split equally unless a different split is submitted in writing; GitHub usernames on the form should match repository contributors. Collect every member's HackOS email and GitHub username tonight, and have each member make at least one real commit.
 
@@ -47,7 +53,7 @@ Recommended single primary track: **The Agent That Can Explain Why**. The agent 
 
 | Requirement | Product use | Acceptance evidence |
 |---|---|---|
-| Zetaris as data layer | Retrieve model/rate facts, approved FAQ, and evaluation evidence | Trace has actual read/query IDs, source-record IDs, and versions used in the recommendation. |
+| Zetaris as data layer | Retrieve the founder brief, approach/model pricing snapshots, development task cases and evaluation evidence; hold the sealed retrospective actuals | Trace has actual read/query IDs, source-record IDs, and versions used in the recommendation, and shows zero reads of the sealed source before freeze. |
 | At least one working Meterless Engine | H-MEM stores/retrieves founder-approved constraints and prior findings | Restart/resume recalls the constraint, cites the memory ID, and changes or preserves a decision appropriately. |
 | Nightshift as primary AI provider | Advisor and candidate generation use the Nightshift connection | Redacted runtime trace identifies gateway and requested/resolved model when available. No silent direct-provider bypass. |
 | Best use of Nemotron objective | Nemotron acts as the evidence critic through Nightshift, identifying unsupported FAQ answers and proposing a targeted correction | A live critique affects the next action; request evidence identifies the actual Nemotron model, its Nightshift route, and the resulting action. |
@@ -62,10 +68,10 @@ G1/G7 establish the mandatory sponsor baseline. A copied prompt, unused dependen
 | ID | Requirement | Acceptance condition |
 |---|---|---|
 | R01 | Guided founder brief | Idea, usage, latency/budget/quality needs, optional price/paid-user assumptions. Every generated default is marked assumed and editable. |
-| R02 | Evidence retrieval | Read relevant facts from at least two distinct domain source sets through Zetaris: model/rates and FAQ; task evidence adds a third set. Each fact retains provenance. |
+| R02 | Evidence retrieval | Read relevant facts from at least two distinct domain source sets through Zetaris: `founder_briefs` and `pricing_snapshots`; `dev_task_cases` and `evaluation_evidence` add third and fourth sets. `retrospective_actuals` is readable only after freeze. Each fact retains provenance and a status label (verified / reconstructed / unknown / unverified). |
 | R03 | Bounded planning | Agent selects a next action from allowlisted tools based on evidence gaps or constraints, rather than merely passing text along a fixed chain. |
 | R04 | Deterministic economics | Calculate two options using explicit units/rates, low/base/high scenarios, and unit economics with missing-data warnings. |
-| R05 | Executed evaluation | Run approved FAQ cases through two configurations with grounded-answer checks, expected facts, errors, usage, and elapsed time. |
+| R05 | Executed evaluation | Run approved development task cases (spec-level outputs) through two configurations behind Nightshift with required-element checks, sourced cost notes, unsupported-claim detection, errors, usage, and elapsed time. Approach-level alternatives are compared on verified pricing, not executed, and the pack says so. |
 | R06 | Critique and revision | A detected development-case failure or missing evidence produces a targeted re-query, one approved workflow revision, or founder clarification; rerun the affected development cases. All-pass input can finish without artificial failure. |
 | R07 | Shared memory | Confirmed constraints and accepted findings survive restart via H-MEM and are retrieved into a subsequent decision. A superseded assumption cannot silently remain authoritative. |
 | R08 | Explainable decision | Display action, concise reason, evidence IDs, evaluation findings, and before/after changes. Export Markdown and scenario/configuration JSON. |
@@ -91,33 +97,54 @@ Prefer one results view with adjustable usage, a short evidence/action timeline,
 3. Planner proposes two eligible configurations and a task-test plan.
 4. Founder approves the bounded evaluation scope and estimated spend.
 5. Tools execute development cases; evaluator checks grounding, factual content, cost bounds, and evidence completeness.
-6. On failure, agent selects a specific action: retrieve missing FAQ context, ask a clarification, or revise the prototype context/escalation setting. One repair is permitted under the approved envelope. Confirmed business constraints cannot be changed automatically.
+6. On failure, agent selects a specific action: retrieve missing pricing or requirement context, ask a clarification, or revise the task context/output contract. One repair is permitted under the approved envelope. Confirmed business constraints cannot be changed automatically.
 7. Freeze configurations; run final holdout comparison. Show a conditional decision or “insufficient evidence.”
 8. Store confirmed constraints/accepted findings through H-MEM; export the prototype recipe, economics, evidence, and next step.
 
 The demo should show one real branch and recovery. A prepared synthetic stress case may make that branch reproducible if labeled. Do not claim that a favorable result or a revision will always happen. Use three distinct cooperating roles inside the app: Planner assigns the bounded investigation, Analyst executes evidence/cost/task tools, and Nemotron Critic challenges the Analyst's evidence. A critique returns to Planner and Analyst for revision. Role-specific structured messages and observable tool work matter; merely renaming stages does not establish agent interaction. [S2, S3]
 
-The Nemotron feature should help a founder avoid selecting a cheap configuration that produces unsupported answers. Demonstrate its contribution with the same development outputs before critique and after the accepted correction: gap detected, source cited, action selected, recheck outcome, and added latency/cost. Include one correct-answer control to expose false alarms. Human review remains authoritative for this small study. If the critique fails or produces no benefit, report that result. This is contribution evidence, not a claim Nemotron outperforms other critics; a separate critic tournament is outside scope.
+The Nemotron feature should help a founder avoid committing to a cheap-looking approach whose specifications rest on unsupported assumptions or unsourced cost claims. Demonstrate its contribution with the same development outputs before critique and after the accepted correction: gap detected, source cited, action selected, recheck outcome, and added latency/cost. Include one correct-answer control to expose false alarms. Human review remains authoritative for this small study. If the critique fails or produces no benefit, report that result. This is contribution evidence, not a claim Nemotron outperforms other critics; a separate critic tournament is outside scope.
 
 ## 6. Evaluation without misleading quality claims
 
-Dataset target remains ten approved FAQ cases: three development cases and seven sealed holdout cases. Include known answers, paraphrases, ambiguity, and out-of-FAQ questions. Founder approves required facts, acceptable clarification/refusal, and critical failures.
+Dataset target is eight development task cases derived from the founder's v1 feature list: three development cases and five sealed holdout cases, each a spec-level task with a required-element rubric (interface, data contract, acceptance tests, failure modes, sourced cost note). Founder approves rubrics and critical failures. Full task list, sealed-actuals protocol and comparison metrics are in [06](06-Retrospective-Case-Study-Design.md) §2–§6.
 
-Default primary comparison: two actual model IDs behind Nightshift using the same FAQ workflow. Record model resolution; if two models are unavailable, two workflow configurations of one named model may be compared, clearly described as workflow evidence rather than proof of a model ranking.
+Default primary comparison: two actual model IDs behind Nightshift using the same task workflow. Record model resolution; if two models are unavailable, two workflow configurations of one named model may be compared, clearly described as workflow evidence rather than proof of a model ranking.
 
-Use three development cases for critique and at most one repair of one candidate. Then freeze both final configurations before the seven-case paired holdout test. All versions and costs remain available. If both model and workflow differ after repair, describe the final result as a configuration comparison, not attribution of the gain to the model alone.
+Use three development cases for critique and at most one repair of one candidate. Then freeze both final configurations before the five-case paired holdout test. All versions and costs remain available. If both model and workflow differ after repair, describe the final result as a configuration comparison, not attribution of the gain to the model alone.
 
-Do not feed holdout answers, grading, or failures back into the planner before freezing results. A holdout failure can block the recommendation or become a future test, not trigger repeated tuning on the same test. Suggested quality gate: all seven holdout cases pass the predefined rubric with no observed critical failure. Report the count and small sample; it does not establish general accuracy.
+Do not feed holdout tasks, grading, failures, or any record from `retrospective_actuals` back into the planner before freezing results. A holdout failure can block the recommendation or become a future test, not trigger repeated tuning on the same test. Suggested quality gate: all five holdout cases pass the predefined rubric with no observed critical failure. Report the count and small sample; it does not establish general accuracy.
+
+The retrospective comparison runs after freeze by a separate script and reports agreement with history on one case: approach named or not, build range bracketed actual spend or not, checkpoint that would have fired at what fraction of actual spend, rework cause classes surfaced or missed, alternatives named beyond the founder's set. No artifact states a saved amount as a result.
 
 Three levels of evidence remain separate:
 
 - **Agent behavior:** retrieves missing evidence, selects a permitted action, respects constraints, persists memory, and stops appropriately.
 - **Task quality:** deterministic checks plus human review of semantic grounding. Model critique can identify a gap, but cannot by itself certify correctness.
-- **Founder impact:** two or three founders can explain the recommended prototype choice, main cost driver, and remaining test after using the tool. Record their original choice, changed/unchanged decision, and feedback with consent.
+- **Founder impact:** the primary observation is the retrospective case (N=1, the founder's own venture). One or two external founders are a secondary signal if hours allow, and the first item cut if they do not. Record original choice, changed/unchanged decision, and feedback with consent.
 
-Maximum primary candidate generations: 6 development + 3 repair + 14 holdout = 23. Extra calls and operational retries require reserved budget; no unlimited evaluation loop. Targets may be reduced transparently if integration consumes capacity. Evaluation, a real feedback branch, and required sponsor use remain release gates.
+Maximum primary candidate generations: 6 development + 3 repair + 10 holdout = 19, under the standing cap of 23. Extra calls and operational retries require reserved budget; no unlimited evaluation loop. Targets may be reduced transparently if integration consumes capacity. Evaluation, a real feedback branch, and required sponsor use remain release gates.
 
 ## 7. Economics and uncertainty
+
+Two ledgers, never summed. The founder's real exposure in the case study was build-phase spend, so the build ledger leads the decision pack; the operating ledger is reported as conditional context from the brief's assumptions.
+
+### 7.1 AI-assisted development cost (build phase)
+
+```text
+planned_build_tasks    = scoped feature list → bounded task plan (count × size class)
+approach_unit_cost[a]  = verified rate for approach a from pricing_snapshots (credits, tokens or seat),
+                         with provenance; unknown stays unknown
+base_build_cost[a]     = Σ_tasks approach_unit_cost[a] × size_class_multiplier
+rework_multiplier      = ASSUMED, editable; default low 1.3 / base 1.8 / high 2.5; labeled assumed
+expected_build_cost[a] = base_build_cost[a] × rework_multiplier            (low/base/high)
+founder_time_cost      = hours × imputed rate, reported separately, never added to cash
+checkpoint_spend[a][k] = cumulative expected_build_cost at milestone k → decision-gate threshold
+```
+
+A platform billing in credits whose dollar value is not published yields a credits-denominated range with the conversion marked unverified. Approach ranges are evidence-based estimates; the agent does not execute a build on any platform and says so.
+
+### 7.2 Post-launch operating cost (monthly)
 
 ```text
 calls = active_users × workflows_per_user × calls_per_workflow
@@ -132,7 +159,7 @@ margin = contribution / revenue  [only when revenue > 0]
 
 Use Decimal arithmetic, provider-specific billing adapters, separate input/output/cache/reasoning categories, and displayed cost scope. Unknown fees do not become zero. Treat long-context thresholds, cache eligibility, and stacking rules as provider-specific facts requiring verification. Avoid speculative KV-memory calculations unless serving hardware is actually modeled; token API billing does not follow a generic KV formula.
 
-Show per-workflow cost and low/base/high volume, with 10× growth as the main demonstration. More scale presets are optional. Development effort is an editable range, not a quote. Separate imputed labor, team evaluation expense, and the founder's forecast production costs. Sponsor credits cannot establish a zero production price.
+Show per-workflow cost and low/base/high volume, with 10× growth as the main demonstration. More scale presets are optional. Separate imputed labor, the hackathon team's own evaluation expense, the founder's build-phase ledger (§7.1) and the founder's forecast operating ledger (§7.2). Sponsor credits cannot establish a zero production price.
 
 No revenue assumptions means a cost-only report and focused follow-up questions, not a viability verdict. No published rate means an explicitly unknown/modeling scenario; no paid run until the team can bound its actual spend. A small benchmark informs assumptions but does not prove production workload distribution.
 
@@ -152,7 +179,7 @@ The submission package on HackOS has exactly these parts, each of which judges c
 8. Pre-existing components declaration (anything before October 22, 00:00 UTC).
 9. Colab links only if agents run in Colab (they do not).
 
-Current gaps: sponsor accounts/access, actual approved FAQ/cases, runtime hardware/deployment topology, two candidate IDs and rates, workstream agreement, and founder appointment times. Registration and the 40-hour commitment are confirmed by Narin; do not reopen them as unanswered questions.
+Current gaps: sponsor accounts/access; the reconstructed founder brief and its pre-build artifacts (06 §3, M1–M2); the sealed actuals (M3–M7); the four priced approaches and the Nemotron/candidate model IDs with rates; preflight pass on the chosen Windows host; S3 bucket provisioned; workstream agreement; and whether external founder sessions fit the remaining hours. Registration and the 40-hour commitment are confirmed by Narin; do not reopen them as unanswered questions.
 
 ### Judging readiness
 

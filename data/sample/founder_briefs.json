@@ -1,0 +1,50 @@
+[
+  {
+    "brief_id": "brief-avl-prebuild",
+    "brief_version": "1",
+    "product_concept": "A rules-based backtesting workbench that compares several volatility-aware investing engines against buy-and-hold on any equity or crypto ticker, validates out-of-sample, and sizes risk.",
+    "target_user": "Self-directed retail investors managing their own accounts",
+    "features_v1": [
+      {"feature_id": "F1", "title": "Price-bar ingestion for arbitrary tickers", "size_class": "M", "compute_heavy": false},
+      {"feature_id": "F2", "title": "Walk-forward backtest runner, one engine", "size_class": "L", "compute_heavy": true},
+      {"feature_id": "F3", "title": "Multi-engine comparison vs buy-and-hold", "size_class": "L", "compute_heavy": true},
+      {"feature_id": "F4", "title": "Regime detection and banner", "size_class": "M", "compute_heavy": true},
+      {"feature_id": "F5", "title": "Parameter optimizer with result cache", "size_class": "XL", "compute_heavy": true},
+      {"feature_id": "F6", "title": "Accounts, portfolios, tier limits", "size_class": "L", "compute_heavy": false},
+      {"feature_id": "F7", "title": "Metering heavy operations under freemium", "size_class": "M", "compute_heavy": false},
+      {"feature_id": "F8", "title": "Nightly watchlist re-ranker", "size_class": "M", "compute_heavy": true}
+    ],
+    "constraints": {"cash_budget_usd": null, "time_budget_weeks": null, "team_size": 1, "technical_skill": "professional", "devops_capacity": "none", "status": "reconstructed"},
+    "quality_needs": ["compute-heavy backtests must not block the UI", "out-of-sample validation is non-negotiable"],
+    "alternatives_considered": [],
+    "usage": {"active_users": null, "status": "unknown"},
+    "field_status": {"product_concept": "reconstructed", "features_v1": "reconstructed", "constraints": "reconstructed", "alternatives_considered": "unknown"}
+  },
+  {
+    "brief_id": "brief-synthetic-support-bot",
+    "brief_version": "1",
+    "product_concept": "SYNTHETIC: a support assistant answering from a small approved FAQ for a subscription newsletter.",
+    "target_user": "Solo newsletter operator",
+    "features_v1": [
+      {"feature_id": "S1", "title": "FAQ ingestion", "size_class": "S", "compute_heavy": false},
+      {"feature_id": "S2", "title": "Grounded answer with escalation", "size_class": "M", "compute_heavy": false},
+      {"feature_id": "S3", "title": "Basic web widget", "size_class": "S", "compute_heavy": false}
+    ],
+    "constraints": {"cash_budget_usd": "500", "time_budget_weeks": "2", "team_size": 1, "technical_skill": "scripting", "devops_capacity": "basic", "status": "verified"},
+    "usage": {"active_users": 200, "workflows_per_user_month": "8", "calls_per_workflow": "1.5", "paying_fraction": "0.1", "subscription_price_usd": "12", "status": "verified"},
+    "field_status": {}
+  },
+  {
+    "brief_id": "brief-synthetic-no-devops",
+    "brief_version": "1",
+    "product_concept": "SYNTHETIC: a scheduling assistant for a two-person clinic front desk.",
+    "target_user": "Nontechnical office manager",
+    "features_v1": [
+      {"feature_id": "C1", "title": "Calendar sync", "size_class": "M", "compute_heavy": false},
+      {"feature_id": "C2", "title": "Reminder messaging", "size_class": "S", "compute_heavy": false}
+    ],
+    "constraints": {"cash_budget_usd": "2000", "team_size": 1, "technical_skill": "none", "devops_capacity": "none", "status": "verified"},
+    "usage": {"active_users": 2, "status": "verified"},
+    "field_status": {}
+  }
+]

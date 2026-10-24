@@ -1,0 +1,50 @@
+{
+ "schema_version": "1.0",
+ "project_id": "proj-brief-synthetic-support-bot",
+ "run_id": "example-2",
+ "brief": {
+  "brief_id": "brief-synthetic-support-bot",
+  "brief_version": "1",
+  "product_concept": "SYNTHETIC: a support assistant answering from a small approved FAQ for a subscription newsletter.",
+  "target_user": "Solo newsletter operator",
+  "features_v1": [
+   {
+    "feature_id": "S1",
+    "title": "FAQ ingestion",
+    "size_class": "S",
+    "compute_heavy": false
+   },
+   {
+    "feature_id": "S2",
+    "title": "Grounded answer with escalation",
+    "size_class": "M",
+    "compute_heavy": false
+   },
+   {
+    "feature_id": "S3",
+    "title": "Basic web widget",
+    "size_class": "S",
+    "compute_heavy": false
+   }
+  ],
+  "constraints": {
+   "cash_budget_usd": "500",
+   "time_budget_weeks": "2",
+   "team_size": 1,
+   "technical_skill": "scripting",
+   "devops_capacity": "basic",
+   "status": "verified"
+  },
+  "usage": {
+   "active_users": 200,
+   "workflows_per_user_month": "8",
+   "calls_per_workflow": "1.5",
+   "paying_fraction": "0.1",
+   "subscription_price_usd": "12",
+   "status": "verified"
+  },
+  "field_status": {}
+ },
+ "evaluation_approved": true,
+ "max_spend_usd": "3.00"
+}

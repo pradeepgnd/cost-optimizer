@@ -1,0 +1,869 @@
+{
+  "run_id": "example-1",
+  "project_id": "proj-brief-avl-prebuild",
+  "execution_mode": "sample",
+  "status": "complete",
+  "recommended_config": {
+    "config_id": "cfg-a",
+    "approach_id": "app-builder-credits",
+    "model_id": "sample/model-a",
+    "workflow_settings": {},
+    "config_version": 2
+  },
+  "alternate_config": {
+    "config_id": "cfg-b",
+    "approach_id": "app-builder-credits",
+    "model_id": "sample/model-b",
+    "workflow_settings": {},
+    "config_version": 1
+  },
+  "reasons": [
+    "cfg-a passed 5/5 holdout tasks (small sample; not general accuracy)",
+    "build ledgers compared on cited rates; see evidence_gaps for unverified inputs"
+  ],
+  "build_ledgers": [
+    {
+      "approach_id": "app-builder-credits",
+      "base_build_cost": {
+        "low": "2330.00",
+        "base": "2330.00",
+        "high": "2330.00",
+        "currency": "USD",
+        "unit": "credits (USD conversion unverified)",
+        "warnings": [
+          "Platform credit price not verified; range is denominated in credits."
+        ]
+      },
+      "rework_multiplier": {
+        "low": "1.3",
+        "base": "1.8",
+        "high": "2.5",
+        "currency": "USD",
+        "unit": "x",
+        "warnings": [
+          "Rework multiplier is assumed; no project-specific evidence."
+        ]
+      },
+      "expected_build_cost": {
+        "low": "3029.00",
+        "base": "4194.00",
+        "high": "5825.00",
+        "currency": "USD",
+        "unit": "credits (USD conversion unverified)",
+        "warnings": [
+          "Platform credit price not verified; range is denominated in credits.",
+          "Rework multiplier is assumed; no project-specific evidence."
+        ]
+      },
+      "founder_time_hours": null,
+      "checkpoints": [
+        {
+          "milestone": "after F3 (25% of planned work)",
+          "cumulative_spend": {
+            "low": "1098.01",
+            "base": "1520.33",
+            "high": "2111.56",
+            "currency": "USD",
+            "unit": "credits (USD conversion unverified)",
+            "warnings": [
+              "Platform credit price not verified; range is denominated in credits.",
+              "Rework multiplier is assumed; no project-specific evidence."
+            ]
+          },
+          "gate_question": "Is a usable slice live, and is spend inside the base scenario? If not, stop and reassess approach."
+        },
+        {
+          "milestone": "after F5 (50% of planned work)",
+          "cumulative_spend": {
+            "low": "2196.03",
+            "base": "3040.65",
+            "high": "4223.13",
+            "currency": "USD",
+            "unit": "credits (USD conversion unverified)",
+            "warnings": [
+              "Platform credit price not verified; range is denominated in credits.",
+              "Rework multiplier is assumed; no project-specific evidence."
+            ]
+          },
+          "gate_question": "Is a usable slice live, and is spend inside the base scenario? If not, stop and reassess approach."
+        },
+        {
+          "milestone": "after F6 (75% of planned work)",
+          "cumulative_spend": {
+            "low": "2650.38",
+            "base": "3669.75",
+            "high": "5096.88",
+            "currency": "USD",
+            "unit": "credits (USD conversion unverified)",
+            "warnings": [
+              "Platform credit price not verified; range is denominated in credits.",
+              "Rework multiplier is assumed; no project-specific evidence."
+            ]
+          },
+          "gate_question": "Is a usable slice live, and is spend inside the base scenario? If not, stop and reassess approach."
+        }
+      ],
+      "rate_ids": [
+        "rate-builder-credit"
+      ],
+      "not_executed_disclaimer": "Approach-level estimate from verified rates and a bounded task plan. No build was executed on this platform."
+    },
+    {
+      "approach_id": "ide-agent-own-hosting",
+      "base_build_cost": {
+        "low": "85.68",
+        "base": "85.68",
+        "high": "85.68",
+        "currency": "USD",
+        "unit": "USD",
+        "warnings": [
+          "Token split assumed 40% input / 60% output.",
+          "Seat fee 20.00/month not included in per-task base; add per month of build."
+        ]
+      },
+      "rework_multiplier": {
+        "low": "1.3",
+        "base": "1.8",
+        "high": "2.5",
+        "currency": "USD",
+        "unit": "x",
+        "warnings": [
+          "Rework multiplier is assumed; no project-specific evidence."
+        ]
+      },
+      "expected_build_cost": {
+        "low": "111.38",
+        "base": "154.22",
+        "high": "214.20",
+        "currency": "USD",
+        "unit": "USD",
+        "warnings": [
+          "Token split assumed 40% input / 60% output.",
+          "Seat fee 20.00/month not included in per-task base; add per month of build.",
+          "Rework multiplier is assumed; no project-specific evidence."
+        ]
+      },
+      "founder_time_hours": null,
+      "checkpoints": [
+        {
+          "milestone": "after F3 (25% of planned work)",
+          "cumulative_spend": {
+            "low": "40.38",
+            "base": "55.90",
+            "high": "77.65",
+            "currency": "USD",
+            "unit": "USD",
+            "warnings": [
+              "Token split assumed 40% input / 60% output.",
+              "Seat fee 20.00/month not included in per-task base; add per month of build.",
+              "Rework multiplier is assumed; no project-specific evidence."
+            ]
+          },
+          "gate_question": "Is a usable slice live, and is spend inside the base scenario? If not, stop and reassess approach."
+        },
+        {
+          "milestone": "after F5 (50% of planned work)",
+          "cumulative_spend": {
+            "low": "80.75",
+            "base": "111.81",
+            "high": "155.30",
+            "currency": "USD",
+            "unit": "USD",
+            "warnings": [
+              "Token split assumed 40% input / 60% output.",
+              "Seat fee 20.00/month not included in per-task base; add per month of build.",
+              "Rework multiplier is assumed; no project-specific evidence."
+            ]
+          },
+          "gate_question": "Is a usable slice live, and is spend inside the base scenario? If not, stop and reassess approach."
+        },
+        {
+          "milestone": "after F6 (75% of planned work)",
+          "cumulative_spend": {
+            "low": "97.46",
+            "base": "134.94",
+            "high": "187.43",
+            "currency": "USD",
+            "unit": "USD",
+            "warnings": [
+              "Token split assumed 40% input / 60% output.",
+              "Seat fee 20.00/month not included in per-task base; add per month of build.",
+              "Rework multiplier is assumed; no project-specific evidence."
+            ]
+          },
+          "gate_question": "Is a usable slice live, and is spend inside the base scenario? If not, stop and reassess approach."
+        }
+      ],
+      "rate_ids": [
+        "rate-ide-in",
+        "rate-ide-out",
+        "rate-ide-seat"
+      ],
+      "not_executed_disclaimer": "Approach-level estimate from verified rates and a bounded task plan. No build was executed on this platform."
+    },
+    {
+      "approach_id": "api-only-custom",
+      "base_build_cost": {
+        "low": "42.70",
+        "base": "42.70",
+        "high": "42.70",
+        "currency": "USD",
+        "unit": "USD",
+        "warnings": [
+          "Token split assumed 40% input / 60% output."
+        ]
+      },
+      "rework_multiplier": {
+        "low": "1.3",
+        "base": "1.8",
+        "high": "2.5",
+        "currency": "USD",
+        "unit": "x",
+        "warnings": [
+          "Rework multiplier is assumed; no project-specific evidence."
+        ]
+      },
+      "expected_build_cost": {
+        "low": "55.51",
+        "base": "76.86",
+        "high": "106.75",
+        "currency": "USD",
+        "unit": "USD",
+        "warnings": [
+          "Token split assumed 40% input / 60% output.",
+          "Rework multiplier is assumed; no project-specific evidence."
+        ]
+      },
+      "founder_time_hours": null,
+      "checkpoints": [
+        {
+          "milestone": "after F3 (25% of planned work)",
+          "cumulative_spend": {
+            "low": "20.12",
+            "base": "27.86",
+            "high": "38.70",
+            "currency": "USD",
+            "unit": "USD",
+            "warnings": [
+              "Token split assumed 40% input / 60% output.",
+              "Rework multiplier is assumed; no project-specific evidence."
+            ]
+          },
+          "gate_question": "Is a usable slice live, and is spend inside the base scenario? If not, stop and reassess approach."
+        },
+        {
+          "milestone": "after F5 (50% of planned work)",
+          "cumulative_spend": {
+            "low": "40.24",
+            "base": "55.72",
+            "high": "77.39",
+            "currency": "USD",
+            "unit": "USD",
+            "warnings": [
+              "Token split assumed 40% input / 60% output.",
+              "Rework multiplier is assumed; no project-specific evidence."
+            ]
+          },
+          "gate_question": "Is a usable slice live, and is spend inside the base scenario? If not, stop and reassess approach."
+        },
+        {
+          "milestone": "after F6 (75% of planned work)",
+          "cumulative_spend": {
+            "low": "48.57",
+            "base": "67.25",
+            "high": "93.41",
+            "currency": "USD",
+            "unit": "USD",
+            "warnings": [
+              "Token split assumed 40% input / 60% output.",
+              "Rework multiplier is assumed; no project-specific evidence."
+            ]
+          },
+          "gate_question": "Is a usable slice live, and is spend inside the base scenario? If not, stop and reassess approach."
+        }
+      ],
+      "rate_ids": [
+        "rate-api-in",
+        "rate-api-out"
+      ],
+      "not_executed_disclaimer": "Approach-level estimate from verified rates and a bounded task plan. No build was executed on this platform."
+    }
+  ],
+  "operating_ledger": {
+    "monthly_cash_cost": {
+      "low": null,
+      "base": null,
+      "high": null,
+      "currency": "USD",
+      "unit": "USD",
+      "warnings": [
+        "Usage assumptions missing; cost-only report not possible."
+      ]
+    },
+    "per_workflow_cost": {
+      "low": null,
+      "base": null,
+      "high": null,
+      "currency": "USD",
+      "unit": "USD",
+      "warnings": []
+    },
+    "revenue": null,
+    "contribution": null,
+    "margin": null,
+    "rate_ids": [
+      "rate-ma-in",
+      "rate-ma-out"
+    ],
+    "cost_only": true
+  },
+  "development_results": [
+    {
+      "task_id": "T1",
+      "config_id": "cfg-a",
+      "config_version": 1,
+      "output_ref": "example-1/T1/cfg-a/v1",
+      "elements_present": {
+        "schema": true,
+        "caching": true,
+        "rate_limit_handling": false,
+        "acceptance_tests": true
+      },
+      "critical_failures_hit": [],
+      "cost_note_sourced": false,
+      "usage": {
+        "input_tokens": 0,
+        "output_tokens": 0
+      },
+      "elapsed_s": 0.0002,
+      "requested_model": null,
+      "resolved_model": null,
+      "execution_kind": "rule_policy",
+      "human_review": "pending"
+    },
+    {
+      "task_id": "T2",
+      "config_id": "cfg-a",
+      "config_version": 1,
+      "output_ref": "example-1/T2/cfg-a/v1",
+      "elements_present": {
+        "parameter_contract": true,
+        "in_out_sample_split": true,
+        "result_record": true,
+        "compute_bound": true
+      },
+      "critical_failures_hit": [],
+      "cost_note_sourced": true,
+      "usage": {
+        "input_tokens": 0,
+        "output_tokens": 0
+      },
+      "elapsed_s": 0.0001,
+      "requested_model": null,
+      "resolved_model": null,
+      "execution_kind": "rule_policy",
+      "human_review": "pending"
+    },
+    {
+      "task_id": "T3",
+      "config_id": "cfg-a",
+      "config_version": 1,
+      "output_ref": "example-1/T3/cfg-a/v1",
+      "elements_present": {
+        "per_user_budget": true,
+        "concurrency_guard": true,
+        "saturation_behavior": true,
+        "acceptance_tests": true
+      },
+      "critical_failures_hit": [],
+      "cost_note_sourced": true,
+      "usage": {
+        "input_tokens": 0,
+        "output_tokens": 0
+      },
+      "elapsed_s": 0.0001,
+      "requested_model": null,
+      "resolved_model": null,
+      "execution_kind": "rule_policy",
+      "human_review": "pending"
+    },
+    {
+      "task_id": "T1",
+      "config_id": "cfg-b",
+      "config_version": 1,
+      "output_ref": "example-1/T1/cfg-b/v1",
+      "elements_present": {
+        "schema": true,
+        "caching": true,
+        "rate_limit_handling": true,
+        "acceptance_tests": true
+      },
+      "critical_failures_hit": [],
+      "cost_note_sourced": true,
+      "usage": {
+        "input_tokens": 0,
+        "output_tokens": 0
+      },
+      "elapsed_s": 0.0,
+      "requested_model": null,
+      "resolved_model": null,
+      "execution_kind": "rule_policy",
+      "human_review": "pending"
+    },
+    {
+      "task_id": "T2",
+      "config_id": "cfg-b",
+      "config_version": 1,
+      "output_ref": "example-1/T2/cfg-b/v1",
+      "elements_present": {
+        "parameter_contract": true,
+        "in_out_sample_split": true,
+        "result_record": true,
+        "compute_bound": true
+      },
+      "critical_failures_hit": [],
+      "cost_note_sourced": true,
+      "usage": {
+        "input_tokens": 0,
+        "output_tokens": 0
+      },
+      "elapsed_s": 0.0,
+      "requested_model": null,
+      "resolved_model": null,
+      "execution_kind": "rule_policy",
+      "human_review": "pending"
+    },
+    {
+      "task_id": "T3",
+      "config_id": "cfg-b",
+      "config_version": 1,
+      "output_ref": "example-1/T3/cfg-b/v1",
+      "elements_present": {
+        "per_user_budget": true,
+        "concurrency_guard": true,
+        "saturation_behavior": true,
+        "acceptance_tests": true
+      },
+      "critical_failures_hit": [],
+      "cost_note_sourced": true,
+      "usage": {
+        "input_tokens": 0,
+        "output_tokens": 0
+      },
+      "elapsed_s": 0.0,
+      "requested_model": null,
+      "resolved_model": null,
+      "execution_kind": "rule_policy",
+      "human_review": "pending"
+    },
+    {
+      "task_id": "T1",
+      "config_id": "cfg-a",
+      "config_version": 2,
+      "output_ref": "example-1/T1/cfg-a/v2",
+      "elements_present": {
+        "schema": true,
+        "caching": true,
+        "rate_limit_handling": true,
+        "acceptance_tests": true
+      },
+      "critical_failures_hit": [],
+      "cost_note_sourced": true,
+      "usage": {
+        "input_tokens": 0,
+        "output_tokens": 0
+      },
+      "elapsed_s": 0.0,
+      "requested_model": null,
+      "resolved_model": null,
+      "execution_kind": "rule_policy",
+      "human_review": "pending"
+    },
+    {
+      "task_id": "T2",
+      "config_id": "cfg-a",
+      "config_version": 2,
+      "output_ref": "example-1/T2/cfg-a/v2",
+      "elements_present": {
+        "parameter_contract": true,
+        "in_out_sample_split": true,
+        "result_record": true,
+        "compute_bound": true
+      },
+      "critical_failures_hit": [],
+      "cost_note_sourced": true,
+      "usage": {
+        "input_tokens": 0,
+        "output_tokens": 0
+      },
+      "elapsed_s": 0.0,
+      "requested_model": null,
+      "resolved_model": null,
+      "execution_kind": "rule_policy",
+      "human_review": "pending"
+    },
+    {
+      "task_id": "T3",
+      "config_id": "cfg-a",
+      "config_version": 2,
+      "output_ref": "example-1/T3/cfg-a/v2",
+      "elements_present": {
+        "per_user_budget": true,
+        "concurrency_guard": true,
+        "saturation_behavior": true,
+        "acceptance_tests": true
+      },
+      "critical_failures_hit": [],
+      "cost_note_sourced": true,
+      "usage": {
+        "input_tokens": 0,
+        "output_tokens": 0
+      },
+      "elapsed_s": 0.0,
+      "requested_model": null,
+      "resolved_model": null,
+      "execution_kind": "rule_policy",
+      "human_review": "pending"
+    }
+  ],
+  "holdout_results": [
+    {
+      "task_id": "T4",
+      "config_id": "cfg-a",
+      "config_version": 2,
+      "output_ref": "example-1/T4/cfg-a/v2",
+      "elements_present": {
+        "data_contract": true,
+        "ranking_rule": true,
+        "acceptance_tests": true
+      },
+      "critical_failures_hit": [],
+      "cost_note_sourced": true,
+      "usage": {
+        "input_tokens": 0,
+        "output_tokens": 0
+      },
+      "elapsed_s": 0.0,
+      "requested_model": null,
+      "resolved_model": null,
+      "execution_kind": "rule_policy",
+      "human_review": "pending"
+    },
+    {
+      "task_id": "T5",
+      "config_id": "cfg-a",
+      "config_version": 2,
+      "output_ref": "example-1/T5/cfg-a/v2",
+      "elements_present": {
+        "output_contract": true,
+        "refresh_policy": true,
+        "acceptance_tests": true
+      },
+      "critical_failures_hit": [],
+      "cost_note_sourced": true,
+      "usage": {
+        "input_tokens": 0,
+        "output_tokens": 0
+      },
+      "elapsed_s": 0.0,
+      "requested_model": null,
+      "resolved_model": null,
+      "execution_kind": "rule_policy",
+      "human_review": "pending"
+    },
+    {
+      "task_id": "T6",
+      "config_id": "cfg-a",
+      "config_version": 2,
+      "output_ref": "example-1/T6/cfg-a/v2",
+      "elements_present": {
+        "search_space": true,
+        "result_cache": true,
+        "idempotency": true,
+        "compute_bound": true
+      },
+      "critical_failures_hit": [],
+      "cost_note_sourced": true,
+      "usage": {
+        "input_tokens": 0,
+        "output_tokens": 0
+      },
+      "elapsed_s": 0.0,
+      "requested_model": null,
+      "resolved_model": null,
+      "execution_kind": "rule_policy",
+      "human_review": "pending"
+    },
+    {
+      "task_id": "T7",
+      "config_id": "cfg-a",
+      "config_version": 2,
+      "output_ref": "example-1/T7/cfg-a/v2",
+      "elements_present": {
+        "shared_budget": true,
+        "fairness_rule": true,
+        "failure_modes": true
+      },
+      "critical_failures_hit": [],
+      "cost_note_sourced": true,
+      "usage": {
+        "input_tokens": 0,
+        "output_tokens": 0
+      },
+      "elapsed_s": 0.0,
+      "requested_model": null,
+      "resolved_model": null,
+      "execution_kind": "rule_policy",
+      "human_review": "pending"
+    },
+    {
+      "task_id": "T8",
+      "config_id": "cfg-a",
+      "config_version": 2,
+      "output_ref": "example-1/T8/cfg-a/v2",
+      "elements_present": {
+        "auth_model": true,
+        "scoping_rule": true,
+        "tier_limits": true,
+        "acceptance_tests": true
+      },
+      "critical_failures_hit": [],
+      "cost_note_sourced": true,
+      "usage": {
+        "input_tokens": 0,
+        "output_tokens": 0
+      },
+      "elapsed_s": 0.0,
+      "requested_model": null,
+      "resolved_model": null,
+      "execution_kind": "rule_policy",
+      "human_review": "pending"
+    },
+    {
+      "task_id": "T4",
+      "config_id": "cfg-b",
+      "config_version": 1,
+      "output_ref": "example-1/T4/cfg-b/v1",
+      "elements_present": {
+        "data_contract": true,
+        "ranking_rule": true,
+        "acceptance_tests": true
+      },
+      "critical_failures_hit": [],
+      "cost_note_sourced": true,
+      "usage": {
+        "input_tokens": 0,
+        "output_tokens": 0
+      },
+      "elapsed_s": 0.0,
+      "requested_model": null,
+      "resolved_model": null,
+      "execution_kind": "rule_policy",
+      "human_review": "pending"
+    },
+    {
+      "task_id": "T5",
+      "config_id": "cfg-b",
+      "config_version": 1,
+      "output_ref": "example-1/T5/cfg-b/v1",
+      "elements_present": {
+        "output_contract": true,
+        "refresh_policy": true,
+        "acceptance_tests": true
+      },
+      "critical_failures_hit": [],
+      "cost_note_sourced": true,
+      "usage": {
+        "input_tokens": 0,
+        "output_tokens": 0
+      },
+      "elapsed_s": 0.0,
+      "requested_model": null,
+      "resolved_model": null,
+      "execution_kind": "rule_policy",
+      "human_review": "pending"
+    },
+    {
+      "task_id": "T6",
+      "config_id": "cfg-b",
+      "config_version": 1,
+      "output_ref": "example-1/T6/cfg-b/v1",
+      "elements_present": {
+        "search_space": true,
+        "result_cache": true,
+        "idempotency": true,
+        "compute_bound": true
+      },
+      "critical_failures_hit": [],
+      "cost_note_sourced": true,
+      "usage": {
+        "input_tokens": 0,
+        "output_tokens": 0
+      },
+      "elapsed_s": 0.0,
+      "requested_model": null,
+      "resolved_model": null,
+      "execution_kind": "rule_policy",
+      "human_review": "pending"
+    },
+    {
+      "task_id": "T7",
+      "config_id": "cfg-b",
+      "config_version": 1,
+      "output_ref": "example-1/T7/cfg-b/v1",
+      "elements_present": {
+        "shared_budget": true,
+        "fairness_rule": true,
+        "failure_modes": true
+      },
+      "critical_failures_hit": [],
+      "cost_note_sourced": true,
+      "usage": {
+        "input_tokens": 0,
+        "output_tokens": 0
+      },
+      "elapsed_s": 0.0,
+      "requested_model": null,
+      "resolved_model": null,
+      "execution_kind": "rule_policy",
+      "human_review": "pending"
+    },
+    {
+      "task_id": "T8",
+      "config_id": "cfg-b",
+      "config_version": 1,
+      "output_ref": "example-1/T8/cfg-b/v1",
+      "elements_present": {
+        "auth_model": true,
+        "scoping_rule": true,
+        "tier_limits": true,
+        "acceptance_tests": true
+      },
+      "critical_failures_hit": [],
+      "cost_note_sourced": true,
+      "usage": {
+        "input_tokens": 0,
+        "output_tokens": 0
+      },
+      "elapsed_s": 0.0,
+      "requested_model": null,
+      "resolved_model": null,
+      "execution_kind": "rule_policy",
+      "human_review": "pending"
+    }
+  ],
+  "critiques": [
+    {
+      "case_ids": [
+        "example-1/T1/cfg-a/v1",
+        "example-1/T2/cfg-a/v1",
+        "example-1/T3/cfg-a/v1",
+        "example-1/T1/cfg-b/v1",
+        "example-1/T2/cfg-b/v1",
+        "example-1/T3/cfg-b/v1"
+      ],
+      "findings": [
+        {
+          "claim": "T1/cfg-a missing elements or unsourced cost",
+          "supporting_or_missing_source_ids": [
+            "pricing_snapshots"
+          ],
+          "severity": "high",
+          "task_id": "T1"
+        }
+      ],
+      "proposed_action": {
+        "action": "retrieve_evidence",
+        "inputs": {
+          "context_selection": "include missing record"
+        },
+        "evidence_ids": [
+          "pricing_snapshots"
+        ],
+        "concise_reason": "critic found unsupported spec elements",
+        "expected_observation": "required elements present and cost note sourced after revision",
+        "proposed_by": "rule_policy"
+      },
+      "expected_check": "rerun affected development cases once",
+      "requested_model": null,
+      "resolved_model": null,
+      "execution_kind": "rule_policy",
+      "controller_decision": "accepted"
+    }
+  ],
+  "revisions": [
+    {
+      "revision_id": "4c38c6dc",
+      "config_id": "cfg-a",
+      "from_version": 1,
+      "to_version": 2,
+      "change": {
+        "context_selection": "include rate_limit_handling record"
+      },
+      "justified_by_critique": true
+    }
+  ],
+  "evidence_refs": [
+    {
+      "source_set": "pricing_snapshots",
+      "record_id": "approach-builder",
+      "version": "sample-1",
+      "origin_url": null,
+      "verified_at": null,
+      "status": "unverified"
+    },
+    {
+      "source_set": "pricing_snapshots",
+      "record_id": "approach-ide",
+      "version": "sample-1",
+      "origin_url": null,
+      "verified_at": null,
+      "status": "unverified"
+    },
+    {
+      "source_set": "pricing_snapshots",
+      "record_id": "approach-api",
+      "version": "sample-1",
+      "origin_url": null,
+      "verified_at": null,
+      "status": "unverified"
+    }
+  ],
+  "memory_ids": [],
+  "evidence_gaps": [
+    {
+      "field": "product_concept",
+      "status": "reconstructed",
+      "note": "see founder brief provenance"
+    },
+    {
+      "field": "features_v1",
+      "status": "reconstructed",
+      "note": "see founder brief provenance"
+    },
+    {
+      "field": "constraints",
+      "status": "reconstructed",
+      "note": "see founder brief provenance"
+    },
+    {
+      "field": "alternatives_considered",
+      "status": "unknown",
+      "note": "see founder brief provenance"
+    },
+    {
+      "field": "usage",
+      "status": "unknown",
+      "note": "operating ledger is cost-only"
+    }
+  ],
+  "limitations": [
+    "SAMPLE/OFFLINE: rule-based policies, no live inference, no live Nemotron critique, no sponsor proof.",
+    "H-MEM unavailable: H-MEM bridge not pinned/verified for offline use; sample readiness fails rather than substituting a dictionary. See app/engines/hmem/README.md.",
+    "Approach-level alternatives compared on cited rates; no build executed on any platform."
+  ],
+  "questions": [],
+  "spend_usd": "0.95",
+  "trace_path": "logs/trace-example-1.jsonl",
+  "disclaimer": "Economics are modeled estimates from entered assumptions and cited rates. They are not financial advice. See evidence_gaps and limitations."
+}

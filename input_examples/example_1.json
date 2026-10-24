@@ -1,0 +1,86 @@
+{
+ "schema_version": "1.0",
+ "project_id": "proj-brief-avl-prebuild",
+ "run_id": "example-1",
+ "brief": {
+  "brief_id": "brief-avl-prebuild",
+  "brief_version": "1",
+  "product_concept": "A rules-based backtesting workbench that compares several volatility-aware investing engines against buy-and-hold on any equity or crypto ticker, validates out-of-sample, and sizes risk.",
+  "target_user": "Self-directed retail investors managing their own accounts",
+  "features_v1": [
+   {
+    "feature_id": "F1",
+    "title": "Price-bar ingestion for arbitrary tickers",
+    "size_class": "M",
+    "compute_heavy": false
+   },
+   {
+    "feature_id": "F2",
+    "title": "Walk-forward backtest runner, one engine",
+    "size_class": "L",
+    "compute_heavy": true
+   },
+   {
+    "feature_id": "F3",
+    "title": "Multi-engine comparison vs buy-and-hold",
+    "size_class": "L",
+    "compute_heavy": true
+   },
+   {
+    "feature_id": "F4",
+    "title": "Regime detection and banner",
+    "size_class": "M",
+    "compute_heavy": true
+   },
+   {
+    "feature_id": "F5",
+    "title": "Parameter optimizer with result cache",
+    "size_class": "XL",
+    "compute_heavy": true
+   },
+   {
+    "feature_id": "F6",
+    "title": "Accounts, portfolios, tier limits",
+    "size_class": "L",
+    "compute_heavy": false
+   },
+   {
+    "feature_id": "F7",
+    "title": "Metering heavy operations under freemium",
+    "size_class": "M",
+    "compute_heavy": false
+   },
+   {
+    "feature_id": "F8",
+    "title": "Nightly watchlist re-ranker",
+    "size_class": "M",
+    "compute_heavy": true
+   }
+  ],
+  "constraints": {
+   "cash_budget_usd": null,
+   "time_budget_weeks": null,
+   "team_size": 1,
+   "technical_skill": "professional",
+   "devops_capacity": "none",
+   "status": "reconstructed"
+  },
+  "quality_needs": [
+   "compute-heavy backtests must not block the UI",
+   "out-of-sample validation is non-negotiable"
+  ],
+  "alternatives_considered": [],
+  "usage": {
+   "active_users": null,
+   "status": "unknown"
+  },
+  "field_status": {
+   "product_concept": "reconstructed",
+   "features_v1": "reconstructed",
+   "constraints": "reconstructed",
+   "alternatives_considered": "unknown"
+  }
+ },
+ "evaluation_approved": true,
+ "max_spend_usd": "5.00"
+}

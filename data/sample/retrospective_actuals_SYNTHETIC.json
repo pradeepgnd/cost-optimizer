@@ -1,0 +1,57 @@
+{
+ "NOTE": "SYNTHETIC ANALOGUE. Not the founder's real figures. Shape mirrors the sealed live source.",
+ "project_id": "proj-synthetic",
+ "total_spend": {
+  "amount": "9000",
+  "unit": "credits-as-USD",
+  "status": "synthetic"
+ },
+ "monthly_profile": [
+  {
+   "month": 1,
+   "spend": "1200"
+  },
+  {
+   "month": 2,
+   "spend": "2600"
+  },
+  {
+   "month": 3,
+   "spend": "3100"
+  },
+  {
+   "month": 4,
+   "spend": "2100"
+  }
+ ],
+ "milestones": [
+  {
+   "name": "first prototype",
+   "month": 1
+  },
+  {
+   "name": "first full backtest",
+   "month": 2
+  },
+  {
+   "name": "metering added",
+   "month": 4
+  }
+ ],
+ "rework_incidents": [
+  {
+   "cause_class": "platform_limitation",
+   "approx_cost": "900"
+  },
+  {
+   "cause_class": "requirements_change",
+   "approx_cost": "1400"
+  },
+  {
+   "cause_class": "scaling",
+   "approx_cost": "700"
+  }
+ ],
+ "approach_taken": "app-builder-credits",
+ "final_hosting_tier": "vertical-1vcpu-4gb"
+}

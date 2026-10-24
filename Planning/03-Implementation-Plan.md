@@ -1,6 +1,6 @@
 # Implementation plan: October 24–27 build
 
-Version 3.3 | Prepared late evening October 23, 2026 | Remaining effort: 40 team-hours | Cash ceiling: $100 | Aligned to Open Agent Hackathon organizer documents; see [05-Guideline-Alignment-Review](05-Guideline-Alignment-Review.md)
+Version 3.4 | Prepared late evening October 23, 2026 | Remaining effort: 40 team-hours | Cash ceiling: $100 | Aligned to Open Agent Hackathon organizer documents; see [05](05-Guideline-Alignment-Review.md) | v3.4 adopts the retrospective case study in [06](06-Retrospective-Case-Study-Design.md) and the Windows single-host decision
 
 Implements [the PRD](01-Product-Requirements.md) and [architecture](02-Technical-Architecture.md). Latest roster is **Narin, Pradeep, Meena, Isoma, Shrie**, all registered. No Zetaris or Nightshift account exists yet. The project has planning documents but no verified working application. Assignments other than Narin's integration/deployment ownership are proposals for tonight's meeting.
 
@@ -16,8 +16,11 @@ Tonight's administrative must-dos, each irreversible or cheap now and expensive 
 2. Agree the prize split in writing (default is equal; any other split must be submitted in writing).
 3. Create the public GitHub repository under an agreed owner; every member makes at least one real commit so form usernames match contributors.
 4. Decide Cursor usage: optional, but at least one member should do real work in Cursor so the sponsor explanation's Cursor row is truthful and non-empty.
-5. Inventory pre-existing components: anything written before October 22, 00:00 UTC (planning docs, any prior Streamlit or cost-model code, any FAQ/rate data curated earlier). It will be declared in the form; it is not a problem unless undeclared.
-6. Verify the integration laptop meets Zetaris needs: 16 GB+ RAM, 8 GB/4 CPU allocated to Docker, 15 GB free disk, WSL2 on Windows.
+5. ~~Inventory pre-existing components~~ **Settled Oct 23: none. Team started from scratch on Oct 23; the form field reads "none."**
+6. Verify the integration host: run `scripts/preflight_windows.ps1` on each candidate Windows machine; the first to return READY (or READY WITH WARNINGS with no Docker RAM/CPU fail) is selected. Decision Oct 23: Zetaris in Docker Desktop/WSL2, Nightshift native, Python app native, no app container.
+7. **Settled Oct 23: registered data lives in an Amazon S3 bucket.** Decide tonight whose AWS account hosts it and who holds the Zetaris-side credentials (never the app).
+8. Narin reconstructs the founder brief from pre-build artifacts only, dated, before touching actuals (06 §3 M1–M2, §4 controls). Meena is named leakage reviewer.
+9. Narin confirms the four priced approaches and the T1–T8 task list in 06 §2.3 and §10.
 
 The 40 remaining hours cover all remaining project effort, including orientation catch-up, setup, integration, tests, founder sessions, recording, and submission. Do not assume every member can work all four days or that the calendar window equals engineering capacity.
 
@@ -28,7 +31,7 @@ The 40 remaining hours cover all remaining project effort, including orientation
 | Narin | Account/runtime/setup and deployment 3h; scope/rules 1h; founder session 1h; demo/submission 1h | 6 | 2 | 8 |
 | Pradeep | Real H-MEM bridge 2h; bounded controller/sponsor adapters 3h; cost core 1h; technical checks 1h | 7 | 1 | 8 |
 | Shrie | Minimal founder/results UI 1h; shared CLI/export 1h; trace/model attribution 1h; offline policy/adapters 2h | 5 | 3 | 8 |
-| Isoma | Sourced catalog/FAQ data 2h; ten approved cases/rubric 3h; grading 2h | 7 | 1 | 8 |
+| Isoma | Dated pricing snapshots for four approaches + candidate models 2h; eight dev-task cases/rubrics 3h; grading 2h | 7 | 1 | 8 |
 | Meena | Evaluator/Nemotron critique checks 3h; live/sample/failure QA 2h; founder session 1h; award/submission evidence 1h | 7 | 1 | 8 |
 | Total | Aggressive targets, subject to capability/access evidence | 32 | 8 | 40 |
 
@@ -58,7 +61,7 @@ Treat access setup as an experiment. After approximately four **combined person-
 | W01 | Orientation/track/setup, Narin | None | Required technologies, accounts, model access, supported runtime topology and secret handling confirmed |
 | W02 | Live sponsor adapters, Narin + Pradeep | W01 | Real Zetaris source query and Nightshift→NVIDIA request attributable in redacted trace |
 | W03 | Real H-MEM feature, Pradeep | W01 | Pinned reference reused; approved project fact survives restart, retrieves with provenance, and is isolated from other projects |
-| W04 | FAQ/evidence, Isoma | W01, W02 | Approved source FAQ, two candidate/rate records, three development and seven holdout cases with a frozen rubric |
+| W04 | Case-study data, Isoma (+ Narin for brief and actuals, Meena for leakage review) | W01, W02 | Reconstructed brief with status labels; dated pricing snapshots for four approaches and two candidate models; three development and five holdout task cases with frozen rubrics; sealed actuals registered under a distinct source name; leakage review signed off |
 | W05 | Tools/costs, Pradeep | W02, initial W04 | Deterministic calculator, candidate eligibility and source retrieval contracts work with fixtures |
 | W06 | Critique/loop/evaluator, Meena + Pradeep | W02–W05 | Observed development result triggers a justified branch and at most one repair; holdout cannot feed repair |
 | W07 | UI/report/trace, Shrie | Contracts from W04–W06 | Brief, confirmed assumptions, two options, action timeline, progress, export all consume same result IDs |
@@ -72,7 +75,7 @@ These packages share the 32 planned hours above; they are not extra allocations.
 
 - **W01/W02, Oct 24:** Narin owns access, with Pradeep pairing on runtime verification. Start Zetaris first; obtain platform bundle and registry access, check Docker resources/WSL2, complete preflight/bootstrap/verification, then SELECT 1 and real data queries. Install Nightshift desktop, configure NVIDIA in Providers, choose a Nemotron lane, obtain runtime credentials from Console and test actual app calls with the required headers. Health checks/account signup alone do not pass. Record exact working versions, routes and models. S4 pages 6–11 and 16–20 are the setup references.
 - **W03:** Keep passing H-MEM feature and relevant reference/conformance checks, engine revision, code locations and restart/recall evidence. Provider integration does not satisfy the separate engine requirement.
-- **W04:** Isoma packages small permitted FAQ/rate/task sources with source URLs, licenses, counts and registration scripts. Ensure Zetaris itself can reach them. Create 3–5 sample founder briefs without expanding the ten-case task benchmark. Keep held-out evaluation assets unavailable to the repair context.
+- **W04:** Isoma packages pricing snapshots (dated, URL-cited; unknown rates stay unknown) and the eight task cases with rubrics, uploads to the S3 bucket and registers each source. Narin supplies the brief and the sealed actuals (06 §3); the actuals go in a separately named source. Meena runs the forbidden-terms leakage review on the brief before registration. Create two or three additional synthetic founder briefs for input examples and sample mode, clearly labeled synthetic. Holdout rows and the sealed source are unavailable to the repair context by controller rule, not convention.
 - **W06, Oct 25:** Implement Planner–Analyst–Nemotron Critic messages and one validated revision. Use one batched critic call within the existing three role-call budget, with a templated final report. Pradeep reviews contracts; Meena checks schema, invalid citations, false alarms and failed/timeout critique handling.
 - **W07/W08:** Shrie adds a JSON CLI around the shared core and explicit offline policies/adapters with persistent labels. Pradeep reviews controller reuse; Narin verifies the live host path. By Oct 25, sample mode must execute fresh input-dependent decisions and traces with no credentials, replayed model responses or final-output lookup. Reuse tools/validation to keep offline logic small.
 - **W09, Oct 25 first rehearsal; Oct 26 full validation:** Meena runs a fresh clone on a second teammate's machine, first without credentials/services and then with documented live setup. Verify all three example inputs plus a new in-domain input, real branching and meaningful output changes. Isoma reviews the live critic's development gaps and correct-answer control. Preserve before/after results, latency/cost and any negative outcome. Run actual sponsor tests separately.
@@ -82,12 +85,12 @@ These additions replace generic NVIDIA usage, generic failure QA and UI polish; 
 
 ## 5. Minimal feedback-loop experiment
 
-Use an approved FAQ with a meaningful constraint, such as an explicit escalation policy. Start with a development case whose question needs an entry the initial context selection misses. This is a disclosed stress fixture, not an invented real-user failure.
+Use the founder brief with a confirmed constraint recalled from H-MEM, such as a cash ceiling or "solo founder, no DevOps." Start with development task T1 (ingestion module) whose spec needs a rate-limit or caching record the initial context selection misses. This is a disclosed stress fixture, not an invented founder failure.
 
-1. Planner retrieves sources and proposes configurations using founder constraints recalled by H-MEM.
-2. Candidate generation through Nightshift lacks sufficient support or fails the expected-fact check.
-3. Evaluator emits a concrete gap with FAQ/case IDs; human review confirms semantic claims as needed.
-4. Planner chooses a targeted Zetaris re-query or a permitted context-selection revision, rather than blindly asking the same prompt again.
+1. Planner retrieves brief and pricing sources and proposes two approach/model configurations using constraints recalled by H-MEM.
+2. Candidate generation through Nightshift produces a T1 spec with an unsourced cost note or a missing failure mode, failing the required-element check.
+3. Nemotron Critic emits a concrete gap with task and source IDs; human review confirms as needed.
+4. Planner chooses a targeted Zetaris re-query (the missing pricing or requirement record) or a permitted output-contract revision, rather than blindly asking the same prompt again.
 5. Re-evaluate the affected three development cases once, recalculate changed token/cost assumptions, and record before/after results.
 6. If still insufficient, abstain/ask the founder. If acceptable, freeze both candidates and run holdout. Persist accepted constraints/findings via H-MEM for a later run.
 
@@ -109,7 +112,9 @@ Required behavior fixtures:
 - UI rerun/double submit does not dispatch twice. Timeout or unknown call outcome stops/reconciles rather than replaying automatically.
 - Cost fixtures distinguish paying/active users, missing rates/revenue, retries, zero usage/revenue, and rate units. Report/UI match after scale or workflow changes.
 
-Review all ten task cases with approved expected facts. Record attempt/failure denominators, development versus holdout outcomes, grounding errors, costs, and small-sample limits. Do not rely on an LLM judge as the sole quality authority. Two or three founders supply before/after decisions and feedback with permission; a negative result remains valid evidence.
+Add: a read of `retrospective_actuals` or a holdout row before freeze is denied and logged; the comparison script runs only on a frozen pack; no artifact contains a "saved $N" sentence (grep the README, deck notes and pack templates).
+
+Review all eight task cases with approved rubrics. Record attempt/failure denominators, development versus holdout outcomes, grounding errors, costs, and small-sample limits. Do not rely on an LLM judge as the sole quality authority. Two or three founders supply before/after decisions and feedback with permission; a negative result remains valid evidence.
 
 ## 7. Demonstration and submission evidence
 
@@ -144,7 +149,7 @@ Additional stop gates: ambiguous Nemotron identity or direct-provider-only execu
 
 Use [the release evidence checklist](04-Release-Evidence-Checklist.md) to record pass/fail and artifact locations; all gates start unverified. The Technical Execution Guide and Submission Form Preview are preparation guidance and explicitly defer to the Official Rules on the event page, which are still marked draft in our copy; Narin re-reads the live rules page and the HackOS form before submission. Confirm one participant account, one team and one submission per person; do not reopen registration or create duplicate accounts.
 
-**Oct 24:** Narin/Pradeep complete setup and source registration. The new Zetaris diagram (S6) reinforces registry access, correct extracted working directory, hardware allocation and password change. Keep the detailed S4 order: preflight, configure, start, then verify. Use supplied credentials only for initial access and replace defaults privately. Run a bounded starter query from the matching installed recipe, then our FAQ/rate query. The diagram's all-Pokemon table and S4's Pikachu view are different examples; neither table name is a universal requirement or application dataset.
+**Oct 24, first thing:** run `scripts/preflight_windows.ps1` on the candidate host(s) before any install; fix `.wslconfig` if Docker shows under 8 GB / 4 CPUs; re-run with `-ZetarisUrl`/`-NightshiftUrl` once each runtime is up and save the `SELECT 1` body for the adapter. Then Narin/Pradeep complete setup and source registration. The new Zetaris diagram (S6) reinforces registry access, correct extracted working directory, hardware allocation and password change. Keep the detailed S4 order: preflight, configure, start, then verify. Use supplied credentials only for initial access and replace defaults privately. Run a bounded starter query from the matching installed recipe, then our FAQ/rate query. The diagram's all-Pokemon table and S4's Pikachu view are different examples; neither table name is a universal requirement or application dataset.
 
 **Oct 25:** First clean-checkout rehearsal, while fixes remain possible. Narin supplies only README instructions; Meena or a teammate who did not implement setup runs them on another machine without author coaching. Test a documented entry point, automated data/source setup, and empty-environment sample mode. Keep Python and Node setup in the same documented flow; dependencies cannot install after launch. Commit at least three matching generated input/output examples with mode, config version and provenance. Validate a fourth unseen input, a missing-field case and a changed constraint. Runtime must not read output_examples.
 

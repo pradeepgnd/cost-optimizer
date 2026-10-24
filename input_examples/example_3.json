@@ -1,0 +1,39 @@
+{
+ "schema_version": "1.0",
+ "project_id": "proj-brief-synthetic-no-devops",
+ "run_id": "example-3",
+ "brief": {
+  "brief_id": "brief-synthetic-no-devops",
+  "brief_version": "1",
+  "product_concept": "SYNTHETIC: a scheduling assistant for a two-person clinic front desk.",
+  "target_user": "Nontechnical office manager",
+  "features_v1": [
+   {
+    "feature_id": "C1",
+    "title": "Calendar sync",
+    "size_class": "M",
+    "compute_heavy": false
+   },
+   {
+    "feature_id": "C2",
+    "title": "Reminder messaging",
+    "size_class": "S",
+    "compute_heavy": false
+   }
+  ],
+  "constraints": {
+   "cash_budget_usd": "2000",
+   "team_size": 1,
+   "technical_skill": "none",
+   "devops_capacity": "none",
+   "status": "verified"
+  },
+  "usage": {
+   "active_users": 2,
+   "status": "verified"
+  },
+  "field_status": {}
+ },
+ "evaluation_approved": false,
+ "max_spend_usd": "0"
+}
