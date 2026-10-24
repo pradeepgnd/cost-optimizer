@@ -5,7 +5,11 @@
   "status": "needs_input",
   "recommended_config": null,
   "alternate_config": null,
-  "reasons": [],
+  "reasons": [
+    "Ranking: 2 of 4 approaches fit devops_capacity=none; ordered by verified pricing within the cash budget, then other verified pricing, then pricing-snapshot order.",
+    "cfg-a app-builder-credits: pricing unverified; cfg-b replit-agent: pricing unverified.",
+    "No eligible approach has verified pricing, so the order between them reflects the snapshot order, not cost."
+  ],
   "build_ledgers": [
     {
       "approach_id": "app-builder-credits",
@@ -434,6 +438,41 @@
   ],
   "memory_ids": [],
   "evidence_gaps": [],
+  "risks": [
+    {
+      "description": "Emergent-style AI app-builder (credit-metered): 1 of 1 rates unknown or unverified; its build range is not decision-grade.",
+      "cause_class": "pricing_unverified",
+      "severity": "high",
+      "triggered_by": [
+        "rate-builder-credit"
+      ]
+    },
+    {
+      "description": "Replit Agent (managed app-builder with hosting): 2 of 2 rates unknown or unverified; its build range is not decision-grade.",
+      "cause_class": "pricing_unverified",
+      "severity": "high",
+      "triggered_by": [
+        "rate-replit-credit",
+        "rate-replit-seat"
+      ]
+    },
+    {
+      "description": "Rework multiplier 1.3–2.5x is assumed, not measured; expected build cost moves with it.",
+      "cause_class": "rework",
+      "severity": "medium",
+      "triggered_by": [
+        "build_ledgers.rework_multiplier"
+      ]
+    },
+    {
+      "description": "Constraint time_budget_weeks is unknown; results that depend on it may change once stated.",
+      "cause_class": "requirements_gap",
+      "severity": "medium",
+      "triggered_by": [
+        "constraints.time_budget_weeks"
+      ]
+    }
+  ],
   "limitations": [
     "SAMPLE/OFFLINE: rule-based policies, no live inference, no live Nemotron critique, no sponsor proof.",
     "H-MEM unavailable: H-MEM bridge not pinned/verified for offline use; sample readiness fails rather than substituting a dictionary. See app/engines/hmem/README.md.",
@@ -441,7 +480,8 @@
     "Approach-level alternatives compared on cited rates; no build executed on any platform."
   ],
   "questions": [
-    "Approve the bounded development evaluation and confirm max_spend_usd."
+    "Approve the bounded development evaluation and confirm max_spend_usd.",
+    "No eligible approach has verified pricing (app-builder-credits, replit-agent). Verified, dated rates for these approaches would change the ranking."
   ],
   "spend_usd": "0",
   "trace_path": "logs\\trace-example-3.jsonl",

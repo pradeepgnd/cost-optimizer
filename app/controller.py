@@ -20,9 +20,9 @@ from typing import Optional
 from app.adapters.base import DataLayer, Inference, Memory, SetupIncomplete
 from app.contracts import (
     ActionProposal, ActionType, CandidateConfig, CaseResult, Critique, CritiqueFinding, DecisionPack,
-    DevTaskCase, EvidenceGap, EvidenceStatus, Observation, Revision, RunRequest, RunState, SourceRef,
+    DevTaskCase, EvidenceGap, EvidenceStatus, Observation, Revision, Risk, RiskCause, RunRequest, RunState, SourceRef,
 )
-from app.economics import build_ledger, operating_ledger
+from app.economics import SIZE_MULTIPLIER, build_ledger, operating_ledger
 from app.trace import Trace
 
 MAX_ROLE_CALLS = {"Planner": 1, "Critic": 1, "Revision": 1}
@@ -112,6 +112,8 @@ class Controller:
         self.evidence: list[SourceRef] = []
         self.gaps: list[EvidenceGap] = []
         self.memory_ids: list[str] = []
+        self.ranking_reasons: list[str] = []
+        self.questions: list[str] = []      # non-blocking: what would change the result
 
     # ------------------------------------------------------------ guards
 
@@ -182,19 +184,22 @@ class Controller:
             for a in approaches:
                 self.evidence.append(a.source)
 
-            # 3. Planner: propose two configs (one call budget). Rule policy in sample mode.
-            budget.reserve_role("Planner")
-            self.trace.event("Planner", "propose_configs", target_agent="Analyst",
-                             input_summary=f"brief {brief.brief_id}, {len(approaches)} approaches, {len(models)} models",
-                             output_summary="two candidate configurations proposed",
-                             execution_kind="rule_policy" if self.mode == "sample" else "live_inference")
-            configs = self._propose_configs(brief, approaches, models)
-
-            # 4. Build ledgers for every approach; operating ledger for the brief's usage
+            # 3. Build ledgers for every approach (the ranking needs base build cost); operating ledger for the brief's usage
             pack.build_ledgers = [build_ledger(a, brief.features_v1) for a in approaches]
             self.trace.event("Analyst", "calculate_cost", output_summary=f"{len(pack.build_ledgers)} build ledgers (Decimal)")
             if models:
                 pack.operating_ledger = operating_ledger(models[0], brief.usage, Decimal("1500"), Decimal("600"))
+            pack.risks = self._risks(brief, approaches, pack.build_ledgers)
+            self.trace.event("Analyst", "assess_risks", output_summary=f"{len(pack.risks)} risks from general signals",
+                             evidence_ids=sorted({t for r in pack.risks for t in r.triggered_by}))
+
+            # 4. Planner: rank approaches and propose two configs (one call budget). Rule policy in sample mode.
+            budget.reserve_role("Planner")
+            configs = self._propose_configs(brief, approaches, models, pack.build_ledgers)
+            self.trace.event("Planner", "propose_configs", target_agent="Analyst",
+                             input_summary=f"brief {brief.brief_id}, {len(approaches)} approaches, {len(models)} models",
+                             output_summary=f"{configs[0].approach_id} / {configs[1].approach_id}; " + " ".join(self.ranking_reasons),
+                             execution_kind="rule_policy" if self.mode == "sample" else "live_inference")
 
             # 5. Approval gate before any paid work
             if not req.evaluation_approved:
@@ -258,6 +263,8 @@ class Controller:
             pack.questions = s.questions
             self.trace.event("Controller", "stop", status=s.state.value, output_summary=s.reason)
 
+        pack.reasons = self.ranking_reasons + pack.reasons
+        pack.questions = list(dict.fromkeys(pack.questions + self.questions))
         pack.evidence_refs = self.evidence
         pack.evidence_gaps = self.gaps
         pack.memory_ids = self.memory_ids
@@ -270,14 +277,56 @@ class Controller:
 
     # ---------------------------------------------------------- helpers
 
-    def _propose_configs(self, brief, approaches, models) -> list[CandidateConfig]:
-        eligible = [a for a in approaches if self._devops_ok(a.requires_devops, brief.constraints.devops_capacity)]
+    @staticmethod
+    def _pricing_verified(a) -> bool:
+        return bool(a.rates) and all(r.status == EvidenceStatus.verified and r.usd_per_unit is not None for r in a.rates)
+
+    def _propose_configs(self, brief, approaches, models, ledgers) -> list[CandidateConfig]:
+        """General ranking rule: DevOps fit filters; then verified pricing whose base build cost fits the cash
+        budget, then other verified pricing, then pricing-snapshot order. Unverified pricing never outranks verified."""
+        c = brief.constraints
+        devops_status = self._constraint_status(c, "devops_capacity")
+        if devops_status in (EvidenceStatus.assumed, EvidenceStatus.unknown):
+            by_cap = {cap: [a.approach_id for a in approaches if self._devops_ok(a.requires_devops, cap)]
+                      for cap in ("none", "basic", "full")}
+            if len({tuple(v) for v in by_cap.values()}) > 1:
+                raise StopRun(RunState.needs_input, f"devops_capacity is {devops_status.value}, and it decides which approaches are eligible",
+                              ["What DevOps work can the founder take on? " +
+                               "; ".join(f"{cap}: {len(ids)} eligible ({', '.join(ids) or 'none'})" for cap, ids in by_cap.items()) + "."])
+        eligible = [a for a in approaches if self._devops_ok(a.requires_devops, c.devops_capacity)]
         if not eligible:
             raise StopRun(RunState.needs_input, "no approach fits the founder's DevOps capacity",
                           ["Can the founder take on basic DevOps, or should only managed platforms be considered?"])
-        eligible.sort(key=lambda a: (a.credits_per_task_class is None and a.tokens_per_task_class is None))  # priced first
+
+        base_usd = {l.approach_id: l.base_build_cost.base for l in ledgers
+                    if l.base_build_cost.unit == "USD" and l.base_build_cost.base is not None}
+
+        def tier(a) -> tuple[int, str]:
+            if not self._pricing_verified(a):
+                return 3, "pricing unverified"
+            if c.cash_budget_usd is None or a.approach_id not in base_usd:
+                return 1, "verified pricing, budget fit unknown"
+            if base_usd[a.approach_id] <= c.cash_budget_usd:
+                return 0, f"verified pricing, base build {base_usd[a.approach_id]} USD fits budget {c.cash_budget_usd}"
+            return 2, f"verified pricing, base build {base_usd[a.approach_id]} USD exceeds budget {c.cash_budget_usd}"
+
+        ranked = [a for _, a in sorted(enumerate(eligible), key=lambda ia: (tier(ia[1])[0], ia[0]))]
+        a0, a1 = ranked[0], (ranked[1] if len(ranked) > 1 else ranked[0])
+        self.ranking_reasons = [
+            f"Ranking: {len(eligible)} of {len(approaches)} approaches fit devops_capacity={c.devops_capacity}; ordered by "
+            "verified pricing within the cash budget, then other verified pricing, then pricing-snapshot order.",
+            f"cfg-a {a0.approach_id}: {tier(a0)[1]}; cfg-b {a1.approach_id}: {tier(a1)[1]}.",
+        ]
+        if not any(self._pricing_verified(a) for a in eligible):
+            self.ranking_reasons.append("No eligible approach has verified pricing, so the order between them reflects the "
+                                        "snapshot order, not cost.")
+            self.questions.append("No eligible approach has verified pricing (" + ", ".join(a.approach_id for a in eligible) +
+                                  "). Verified, dated rates for these approaches would change the ranking.")
+        elif self._constraint_status(c, "cash_budget_usd") in (EvidenceStatus.assumed, EvidenceStatus.unknown):
+            self.questions.append("The cash budget is not stated. Stating it decides which verified approaches fit and "
+                                  "could change the ranking.")
+
         mids = [m.model_id for m in models] or self.candidate_models
-        a0, a1 = eligible[0], (eligible[1] if len(eligible) > 1 else eligible[0])
         return [CandidateConfig(config_id="cfg-a", approach_id=a0.approach_id, model_id=mids[0]),
                 CandidateConfig(config_id="cfg-b", approach_id=a1.approach_id, model_id=mids[1] if len(mids) > 1 else mids[0],
                                 workflow_settings={"variant": "b"} if len(mids) == 1 else {})]
@@ -286,6 +335,51 @@ class Controller:
     def _devops_ok(required: str, capacity: str) -> bool:
         order = {"none": 0, "basic": 1, "full": 2}
         return order[required] <= order[capacity]
+
+    @staticmethod
+    def _constraint_status(constraints, name: str) -> EvidenceStatus:
+        """A missing value is unknown; a value the brief never stated (schema default) is assumed."""
+        if getattr(constraints, name) is None:
+            return EvidenceStatus.unknown
+        if name not in constraints.model_fields_set:
+            return EvidenceStatus.assumed
+        return constraints.status
+
+    def _risks(self, brief, approaches, ledgers) -> list[Risk]:
+        """General signals only: rate status, compute-heavy scope, assumed rework, unstated constraints."""
+        risks: list[Risk] = []
+        for a in approaches:
+            if not self._devops_ok(a.requires_devops, brief.constraints.devops_capacity):
+                continue
+            weak = [r for r in a.rates if r.usd_per_unit is None or r.status != EvidenceStatus.verified]
+            if weak:
+                unknown = any(r.usd_per_unit is None for r in weak)
+                risks.append(Risk(description=f"{a.name}: {len(weak)} of {len(a.rates)} rates "
+                                              f"{'unknown or unverified' if unknown else 'unverified'}; its build range is not decision-grade.",
+                                  cause_class=RiskCause.pricing_unverified, severity="high" if unknown else "medium",
+                                  triggered_by=[r.source.record_id for r in weak]))
+        heavy = [f for f in brief.features_v1 if f.compute_heavy]
+        if heavy:
+            units = sum((SIZE_MULTIPLIER[f.size_class] for f in brief.features_v1), Decimal("0"))
+            share = sum((SIZE_MULTIPLIER[f.size_class] for f in heavy), Decimal("0")) / units
+            risks.append(Risk(description=f"{len(heavy)} compute-heavy features make up {int(share * 100)}% of planned work; "
+                                          "compute cost is not in the build ledger and grows with usage.",
+                              cause_class=RiskCause.compute_cost, severity="high" if share >= Decimal("0.5") else "medium",
+                              triggered_by=[f"features_v1:{f.feature_id}" for f in heavy]))
+        assumed = next((l.rework_multiplier for l in ledgers if any("assumed" in w for w in l.rework_multiplier.warnings)), None)
+        if assumed is not None:
+            risks.append(Risk(description=f"Rework multiplier {assumed.low}–{assumed.high}x is assumed, not measured; "
+                                          "expected build cost moves with it.",
+                              cause_class=RiskCause.rework, severity="medium", triggered_by=["build_ledgers.rework_multiplier"]))
+        # devops_capacity decides eligibility and cash_budget_usd decides ranking, so an unstated value matters more there.
+        for name in ("devops_capacity", "cash_budget_usd", "time_budget_weeks", "technical_skill", "team_size"):
+            st = self._constraint_status(brief.constraints, name)
+            if st in (EvidenceStatus.assumed, EvidenceStatus.unknown):
+                risks.append(Risk(description=f"Constraint {name} is {st.value}; results that depend on it may change once stated.",
+                                  cause_class=RiskCause.requirements_gap,
+                                  severity="high" if name in ("devops_capacity", "cash_budget_usd") else "medium",
+                                  triggered_by=[f"constraints.{name}"]))
+        return risks
 
     def _run_case(self, task: DevTaskCase, cfg: CandidateConfig, context_missing: set[str]) -> CaseResult:
         prompt = task.prompt + "\n" + "\n".join(f"required_element:{e}" for e in task.required_elements)

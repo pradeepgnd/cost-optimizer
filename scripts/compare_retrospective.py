@@ -130,6 +130,7 @@ def checkpoint_timing(pack: DecisionPack, actuals: dict) -> dict:
 def risk_surfacing(pack: DecisionPack, actuals: dict) -> dict:
     """Exact phrase match of each rework cause class (underscores or spaces) in the pack's gaps and risk text."""
     sections = {
+        "risks": [f"{r.cause_class.value} {r.description}" for r in pack.risks],
         "evidence_gaps": [f"{g.field} {g.note}" for g in pack.evidence_gaps],
         "critique_findings": [f.claim for c in pack.critiques for f in c.findings],
         "limitations": list(pack.limitations),

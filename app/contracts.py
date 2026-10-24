@@ -275,6 +275,23 @@ class EvidenceGap(BaseModel):
     note: str
 
 
+class RiskCause(str, Enum):
+    pricing_unverified = "pricing_unverified"
+    compute_cost = "compute_cost"
+    rework = "rework"
+    requirements_gap = "requirements_gap"
+    scope_change = "scope_change"
+    platform_limitation = "platform_limitation"
+
+
+class Risk(BaseModel):
+    """Raised from general signals in the inputs (rates, brief, assumptions), never from a known case outcome."""
+    description: str
+    cause_class: RiskCause
+    severity: Literal["low", "medium", "high"]
+    triggered_by: list[str]          # evidence record IDs or brief field paths
+
+
 class DecisionPack(BaseModel):
     run_id: str
     project_id: str
@@ -292,8 +309,9 @@ class DecisionPack(BaseModel):
     evidence_refs: list[SourceRef] = Field(default_factory=list)
     memory_ids: list[str] = Field(default_factory=list)
     evidence_gaps: list[EvidenceGap] = Field(default_factory=list)
+    risks: list[Risk] = Field(default_factory=list)
     limitations: list[str] = Field(default_factory=list)
-    questions: list[str] = Field(default_factory=list)   # when status == needs_input
+    questions: list[str] = Field(default_factory=list)   # blocking when status == needs_input; otherwise what would change the result
     spend_usd: Decimal = Decimal("0")
     trace_path: Optional[str] = None
     disclaimer: str = (
