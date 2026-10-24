@@ -44,11 +44,11 @@
    "approx_cost": "900"
   },
   {
-   "cause_class": "requirements_change",
+   "cause_class": "requirements_gap",
    "approx_cost": "1400"
   },
   {
-   "cause_class": "scaling",
+   "cause_class": "compute_cost",
    "approx_cost": "700"
   }
  ],

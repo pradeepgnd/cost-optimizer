@@ -3,10 +3,14 @@
 Reads a frozen DecisionPack and the sealed actuals and reports agreement with history on one case.
 Nothing here is a savings figure: both numbers are shown and no difference is presented as a result.
 
-  python scripts/compare_retrospective.py --pack result.json --actuals actuals.json [--brief input.json] [--json-out cmp.json]
+  python scripts/compare_retrospective.py --pack result.json --actuals actuals.json [--brief input.json]
+      [--reviewed review.json] [--json-out cmp.json]
 
 --brief accepts a RunRequest (input_examples/*.json) or a FounderBrief; it supplies the founder's own list of
 alternatives. Without it, alternatives are listed but not classified as inside or outside the founder's set.
+
+--reviewed records a human's relevant / not_relevant judgment per cause-class match_id (printed in the report).
+Without it, cause-class pairs are reported as class-level matches only and nothing counts as surfaced.
 
 Exit codes: 0 report printed; 2 invalid input; 4 refused (pack status is not complete or frozen, or the
 report would contain savings language).
@@ -28,6 +32,7 @@ from pydantic import ValidationError  # noqa: E402
 from app.contracts import DecisionPack, EvidenceStatus, FounderBrief, RunState  # noqa: E402
 
 ALLOWED_STATUS = {RunState.complete, RunState.frozen}
+MATCH_LABEL = "class-level match — relevance requires human review"
 QUARTERS = (25, 50, 75)
 _SAVINGS = re.compile(r"\bsav(e|ed|es|ing|ings)\b", re.IGNORECASE)
 
@@ -127,22 +132,49 @@ def checkpoint_timing(pack: DecisionPack, actuals: dict) -> dict:
     return {"result": "ok", "gates": gates, "first_fired": fired[0]["gate"] if fired else None, "fired_before": before}
 
 
-def risk_surfacing(pack: DecisionPack, actuals: dict) -> dict:
-    """Exact phrase match of each rework cause class (underscores or spaces) in the pack's gaps and risk text."""
-    sections = {
-        "risks": [f"{r.cause_class.value} {r.description}" for r in pack.risks],
-        "evidence_gaps": [f"{g.field} {g.note}" for g in pack.evidence_gaps],
-        "critique_findings": [f.claim for c in pack.critiques for f in c.findings],
-        "limitations": list(pack.limitations),
-        "reasons": list(pack.reasons),
-    }
-    classes = list(dict.fromkeys(r["cause_class"] for r in actuals.get("rework_incidents", [])))
-    where = {}
-    for cc in classes:
-        phrases = {cc.lower(), cc.lower().replace("_", " ")}
-        where[cc] = [s for s, items in sections.items() if any(p in t.lower() for t in items for p in phrases)]
-    return {"cause_classes": classes, "named": [c for c in classes if where[c]],
-            "missed": [c for c in classes if not where[c]], "where": where}
+def load_review(data: dict, pack: DecisionPack) -> dict[str, dict]:
+    """--reviewed file: {"run_id": ..., "judgments": [{"match_id", "judgment": "relevant"|"not_relevant", "reviewer", "note"}]}."""
+    if data.get("run_id") not in (None, pack.run_id):
+        raise ValueError(f"review is for run {data['run_id']}, pack is {pack.run_id}")
+    out: dict[str, dict] = {}
+    for j in data["judgments"]:
+        if j["judgment"] not in ("relevant", "not_relevant"):
+            raise ValueError(f"judgment for {j['match_id']} must be 'relevant' or 'not_relevant'")
+        out[j["match_id"]] = j
+    return out
+
+
+def risk_cause_classes(pack: DecisionPack, actuals: dict, review: Optional[dict[str, dict]] = None) -> dict:
+    """Pair each rework incident with every pack risk of the same cause class.
+
+    A pair is a class-level match only: the taxonomy was written after the incidents were known, so a match says
+    nothing about relevance until a human marks it. Only incidents with a match judged relevant count as surfaced.
+    """
+    incidents = actuals.get("rework_incidents", [])
+    matches = []
+    for i, inc in enumerate(incidents):
+        for j, risk in enumerate(pack.risks):
+            if risk.cause_class.value == inc["cause_class"]:
+                mid = f"{inc['cause_class']}:{i}:{j}"
+                rec = (review or {}).get(mid, {})
+                matches.append({"match_id": mid, "incident_index": i, "incident": inc, "risk_description": risk.description,
+                                "risk_severity": risk.severity, "risk_triggered_by": list(risk.triggered_by),
+                                "judgment": rec.get("judgment"), "reviewer": rec.get("reviewer"), "note": rec.get("note")})
+    if review:
+        unknown = sorted(set(review) - {m["match_id"] for m in matches})
+        if unknown:
+            raise ValueError(f"review references match ids not in this comparison: {', '.join(unknown)}")
+    matched = {m["incident_index"] for m in matches}
+    out = {"label": MATCH_LABEL, "incidents": len(incidents), "class_level_matches": len(matches),
+           "incidents_with_class_level_match": len(matched), "matches": matches,
+           "unmatched_incidents": [inc["cause_class"] for i, inc in enumerate(incidents) if i not in matched],
+           "reviewed": review is not None}
+    if review is not None:
+        surfaced = sorted({m["incident_index"] for m in matches if m["judgment"] == "relevant"})
+        out.update(surfaced=len(surfaced), surfaced_incidents=[incidents[i]["cause_class"] for i in surfaced],
+                   judged_not_relevant=sum(m["judgment"] == "not_relevant" for m in matches),
+                   unreviewed=sum(m["judgment"] is None for m in matches))
+    return out
 
 
 def alternative_surfacing(pack: DecisionPack, actuals: dict, brief: Optional[FounderBrief]) -> dict:
@@ -156,14 +188,15 @@ def alternative_surfacing(pack: DecisionPack, actuals: dict, brief: Optional[Fou
             "founder_list_status": status.value, "outside_founder_list": [a for a in alts if _norm(a) not in known]}
 
 
-def compare(pack: DecisionPack, actuals: dict, brief: Optional[FounderBrief] = None) -> dict:
+def compare(pack: DecisionPack, actuals: dict, brief: Optional[FounderBrief] = None,
+            review: Optional[dict[str, dict]] = None) -> dict:
     return {
         "run_id": pack.run_id, "execution_mode": pack.execution_mode, "pack_status": pack.status.value,
         "actuals_status": actuals.get("total_spend", {}).get("status"),
         "approach_coverage": approach_coverage(pack, actuals),
         "build_range": build_range(pack, actuals),
         "checkpoint_timing": checkpoint_timing(pack, actuals),
-        "risk_surfacing": risk_surfacing(pack, actuals),
+        "risk_cause_classes": risk_cause_classes(pack, actuals, review),
         "alternative_surfacing": alternative_surfacing(pack, actuals, brief),
     }
 
@@ -223,13 +256,29 @@ def render(r: dict) -> str:
         lines.append("   Gate fired before " + "; ".join(f"{q}% of total actual spend: {'yes' if v else 'no'}"
                                                        for q, v in ct["fired_before"].items()) + ".")
 
-    rs = r["risk_surfacing"]
-    if rs["cause_classes"]:
-        lines.append(f"4. Risk surfacing: {len(rs['named'])} of {len(rs['cause_classes'])} cause classes named"
-                     + (f" ({', '.join(f'{c} in {'/'.join(rs['where'][c])}' for c in rs['named'])})" if rs["named"] else "")
-                     + (f"; {len(rs['missed'])} missed: {', '.join(rs['missed'])}." if rs["missed"] else "."))
+    rc = r["risk_cause_classes"]
+    if not rc["incidents"]:
+        lines.append("4. Risk cause classes: actuals record no rework incidents.")
     else:
-        lines.append("4. Risk surfacing: actuals record no rework cause classes.")
+        lines.append(f"4. Risk cause classes: {rc['class_level_matches']} class-level matches across "
+                     f"{rc['incidents_with_class_level_match']} of {rc['incidents']} rework incidents.")
+        for m in rc["matches"]:
+            review = {"relevant": "relevant", "not_relevant": "not relevant", None: "not reviewed"}[m["judgment"]]
+            if m["reviewer"]:
+                review += f" (reviewer: {m['reviewer']})"
+            lines += [f"   [{m['match_id']}] {rc['label']}",
+                      "      actual incident: " + ", ".join(f"{k} {v}" for k, v in m["incident"].items()),
+                      f"      pack risk [{m['risk_severity']}]: {m['risk_description']}",
+                      f"      triggered by: {', '.join(m['risk_triggered_by'])}",
+                      f"      human review: {review}"]
+        if rc["unmatched_incidents"]:
+            lines.append(f"   No class-level match: {', '.join(rc['unmatched_incidents'])}.")
+        if not rc["reviewed"]:
+            lines.append("   Surfaced: not assessed. Pass --reviewed with a relevant / not_relevant judgment per match_id.")
+        else:
+            lines.append(f"   Surfaced (matches a human judged relevant): {rc['surfaced']} of {rc['incidents']} incidents"
+                         + (f" ({', '.join(rc['surfaced_incidents'])})" if rc["surfaced_incidents"] else "")
+                         + f"; {rc['judged_not_relevant']} matches judged not relevant; {rc['unreviewed']} unreviewed.")
 
     al = r["alternative_surfacing"]
     if al["outside_founder_list"] is None:
@@ -251,17 +300,21 @@ def main() -> int:
     ap.add_argument("--pack", required=True)
     ap.add_argument("--actuals", required=True)
     ap.add_argument("--brief")
+    ap.add_argument("--reviewed")
     ap.add_argument("--json-out")
     args = ap.parse_args()
+    # Piped or redirected output is UTF-8 on every platform; an interactive console keeps its own handling.
+    sys.stdout.reconfigure(errors="replace", **({} if sys.stdout.isatty() else {"encoding": "utf-8"}))
     try:
         pack = load_pack(json.loads(Path(args.pack).read_text(encoding="utf-8")))
         actuals = json.loads(Path(args.actuals).read_text(encoding="utf-8"))
         brief = load_brief(json.loads(Path(args.brief).read_text(encoding="utf-8"))) if args.brief else None
-        result = compare(pack, actuals, brief)
+        review = load_review(json.loads(Path(args.reviewed).read_text(encoding="utf-8")), pack) if args.reviewed else None
+        result = compare(pack, actuals, brief, review)
     except Refused as e:
         print(f"refused: {e}", file=sys.stderr)
         return 4
-    except (OSError, json.JSONDecodeError, ValidationError, KeyError, TypeError) as e:
+    except (OSError, json.JSONDecodeError, ValidationError, KeyError, TypeError, ValueError) as e:
         print(f"invalid input: {type(e).__name__}: {str(e)[:300]}", file=sys.stderr)
         return 2
     try:

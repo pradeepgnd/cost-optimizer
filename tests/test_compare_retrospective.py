@@ -4,8 +4,6 @@ from pathlib import Path
 
 import pytest
 
-from app.contracts import DecisionPack, EvidenceGap, EvidenceStatus
-
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / "scripts" / "compare_retrospective.py"
 ACTUALS = ROOT / "data" / "sample" / "retrospective_actuals_SYNTHETIC.json"
@@ -27,7 +25,7 @@ def packs(tmp_path_factory):
     return {"complete": _sample_pack("example_1", tmp), "needs_input": _sample_pack("example_3", tmp)}
 
 def _cli(*args):
-    return subprocess.run([sys.executable, str(SCRIPT), *map(str, args)], capture_output=True, text=True, cwd=ROOT)
+    return subprocess.run([sys.executable, str(SCRIPT), *map(str, args)], capture_output=True, text=True, encoding="utf-8", cwd=ROOT)
 
 def _load(packs, brief=True):
     pack = cr.load_pack(json.loads(packs["complete"].read_text(encoding="utf-8")))
@@ -58,14 +56,46 @@ def test_checkpoint_fraction_is_threshold_over_actual_total(packs):
         cum = sum(Decimal(str(m["spend"])) for m in actuals["monthly_profile"] if m["month"] <= g["month"])
         assert cum >= g["threshold_base"]
 
-def test_risk_surfacing_exact_phrase_only(packs):
+def _expected_matches(pack, actuals):
+    return [f"{inc['cause_class']}:{i}:{j}" for i, inc in enumerate(actuals["rework_incidents"])
+            for j, r in enumerate(pack.risks) if r.cause_class.value == inc["cause_class"]]
+
+def test_cause_class_pairs_are_class_level_matches_not_surfaced(packs):
     pack, actuals, _ = _load(packs)
-    assert cr.risk_surfacing(pack, actuals)["named"] == []
-    flagged = pack.model_copy(update={"evidence_gaps": pack.evidence_gaps + [
-        EvidenceGap(field="hosting", status=EvidenceStatus.unknown, note="scaling of backtest compute not assessed")]})
-    rs = cr.risk_surfacing(flagged, actuals)
-    assert rs["named"] == ["scaling"] and rs["where"]["scaling"] == ["evidence_gaps"]
-    assert set(rs["missed"]) == {"platform_limitation", "requirements_change"}
+    rc = cr.risk_cause_classes(pack, actuals)
+    assert [m["match_id"] for m in rc["matches"]] == _expected_matches(pack, actuals)
+    assert rc["class_level_matches"] == len(rc["matches"]) > 0
+    assert "surfaced" not in rc and rc["reviewed"] is False
+    m = rc["matches"][0]
+    risk = pack.risks[int(m["match_id"].split(":")[2])]
+    assert m["risk_description"] == risk.description and m["risk_triggered_by"] == risk.triggered_by
+    assert m["incident"] == actuals["rework_incidents"][m["incident_index"]]
+    report = cr.render(cr.compare(pack, actuals))
+    assert report.count("class-level match — relevance requires human review") == len(rc["matches"])
+    assert "Surfaced: not assessed" in report
+
+def test_only_matches_judged_relevant_count_as_surfaced(packs, tmp_path):
+    pack, actuals, _ = _load(packs)
+    ids = _expected_matches(pack, actuals)
+    compute = next(i for i in ids if i.startswith("compute_cost"))
+    review = {"run_id": pack.run_id, "judgments": [{"match_id": i, "judgment": "relevant" if i == compute else "not_relevant",
+                                                     "reviewer": "test"} for i in ids]}
+    rc = cr.risk_cause_classes(pack, actuals, cr.load_review(review, pack))
+    assert rc["surfaced"] == 1 and rc["surfaced_incidents"] == ["compute_cost"]
+    assert rc["judged_not_relevant"] == len(ids) - 1 and rc["unreviewed"] == 0
+    f = tmp_path / "review.json"; f.write_text(json.dumps(review), encoding="utf-8")
+    p = _cli("--pack", packs["complete"], "--actuals", ACTUALS, "--reviewed", f)
+    assert p.returncode == 0, p.stderr
+    assert "Surfaced (matches a human judged relevant): 1 of 3 incidents (compute_cost)" in p.stdout
+    assert p.stdout.count("class-level match — relevance requires human review") == len(ids)
+
+def test_review_for_unknown_match_or_other_run_is_invalid_input(packs, tmp_path):
+    for bad in ({"run_id": "other-run", "judgments": []},
+                {"judgments": [{"match_id": "scope_change:9:9", "judgment": "relevant"}]},
+                {"judgments": [{"match_id": "x", "judgment": "maybe"}]}):
+        f = tmp_path / "bad.json"; f.write_text(json.dumps(bad), encoding="utf-8")
+        p = _cli("--pack", packs["complete"], "--actuals", ACTUALS, "--reviewed", f)
+        assert p.returncode == 2 and "invalid input" in p.stderr
 
 def test_alternatives_outside_founder_list_need_the_brief(packs):
     pack, actuals, brief = _load(packs)
