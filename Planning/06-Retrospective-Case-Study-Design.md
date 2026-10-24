@@ -64,8 +64,8 @@ Reconstructed from pre-build artifacts only (§4 controls). Fields:
 | Source set | Contents | Access |
 |---|---|---|
 | `founder_briefs` | the reconstructed brief, versioned, with per-field status labels | planner, live |
-| `pricing_snapshots` | dated, URL-cited rates for Emergent and two or three alternatives (an IDE-agent path such as Cursor or Claude Code with own hosting; a second app-builder; a hosted-model-API-only path), plus token rates for the candidate models behind Nightshift | planner, live |
-| `dev_task_cases` | 8 development task cases derived from the v1 feature list (3 development, 5 holdout), each with required-element rubric | development cases to planner; holdout sealed until freeze |
+| `pricing_snapshots` | dated, URL-cited rates for the four approaches in §2.3 (Emergent; Replit Agent; IDE coding agent with own hosting; hosted model API with a hand-built app), plus token rates for the candidate models behind Nightshift | planner, live |
+| `dev_task_cases` | 6 task cases T1–T6 (3 development, 3 holdout; see §2.3), each with required-element rubric | development cases to planner; holdout sealed until freeze |
 | `evaluation_evidence` | executed case results, critiques, revisions | planner, live |
 | `retrospective_actuals` | **sealed**: credits purchased and consumed by month, total spend, milestone dates, rework incidents (count, cause class, approximate credit cost), final architecture, hosting tier, operating costs | **no read permitted until state = frozen**; controller allowlist enforces; trace proves |
 
@@ -145,8 +145,8 @@ Narin is the primary founder observation. If hours allow after Stage D, one or t
 
 ## 8. Fit to 40 hours, $100, sponsor requirements
 
-- **Hours:** Isioma's W04 changes shape, not size: pricing snapshots for four approaches and 8 task rubrics replace FAQ curation and 10 FAQ cases. Narin adds ~1 hour for M1–M7 and the brief; Meena adds ~30 minutes for leakage review. Net neutral against the 32+8 plan.
-- **Cash:** 19 primary generations of spec-level output (~2–4k tokens each) are well inside the $25 evaluation line on hosted Nemotron and peer models; confirm with actual Nightshift rates before approving the run.
+- **Hours:** Isioma's W04 changes shape, not size: pricing snapshots for four approaches and 6 task rubrics replace FAQ curation and 10 FAQ cases. Narin adds ~1 hour for M1–M7 and the brief; Meena adds ~30 minutes for leakage review. Net neutral against the 32+8 plan.
+- **Cash:** 15 primary generations of spec-level output (~2–4k tokens each) are well inside the $25 evaluation line on hosted Nemotron and peer models; confirm with actual Nightshift rates before approving the run.
 - **Sponsor fit:** Zetaris remains the only data layer (five source sets, one sealed); H-MEM stores the founder's confirmed constraints and the accepted development findings across the restart demo; Nightshift carries every inference; Nemotron is the evidence critic with attributable model ID. Nothing in the sponsor table changes.
 - **Track fit:** investigating a complex question across multiple sources (brief, pricing, task evidence, memory) and producing an evidence-backed recommendation — the Explain-Why statement verbatim.
 
@@ -156,7 +156,7 @@ PRD v3.4: §1 task statement, §2 constraints (no pre-existing work; S3; Windows
 
 ## 10. Open items for Narin, tonight or first thing
 
-1. Confirm the four approaches to price: Emergent; one IDE-agent path (Cursor or Claude Code) with own hosting; one second app-builder; API-only. Name them so Isioma can start.
+1. Confirm the four approaches priced in §2.3: Emergent; Replit Agent; IDE coding agent with own hosting; hosted model API with a hand-built app. Isioma collects dated, URL-cited pricing for each.
 2. Locate M1 and M2. Even one dated artifact changes the brief's status from `reconstructed` to `verified`.
 3. Decide whether the aggregate actual spend may be committed to the public repository for sample mode, or whether sample mode uses a synthetic analogue only. Recommendation: synthetic analogue in the repo, real aggregate in Zetaris live and in the deck with your consent. It is your figure to disclose; the judges reward candor, but the repository is permanent.
-4. Confirm T1–T8 against your actual v1 intent, or substitute.
+4. Confirm T1–T6 against your actual v1 intent, or substitute.
