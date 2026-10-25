@@ -30,6 +30,8 @@ python run.py --input input_examples/example_1.json --output result.json
 
 Preflight for the Windows host: `scripts/preflight_windows.ps1` (checks RAM, CPUs, disk, WSL2, Docker allocation, ports; with `-ZetarisUrl`/`-NightshiftUrl` also proves `SELECT 1` and `GET /v1/models`).
 
+Live smoke test (diagnostic only, reads `.env`): `python scripts/smoke_live.py` checks Zetaris, Nightshift (including one tiny completion per candidate route) and the H-MEM bridge separately. It prints a PASS/FAIL/SKIP table with secrets redacted and saves it to `logs/smoke-<timestamp>.md`.
+
 ## Interface
 
 `run.py` is JSON in / JSON out. Input: `RunRequest` (see `app/contracts.py`): brief (idea, target user, 2–5 `ai_features`, `growth_stages`, optional build constraints), `evaluation_approved`, `max_spend_usd`, optional `human_reviews`. Examples: `input_examples/` (two founder ideas, one synthetic; every number labeled assumed). Output: `DecisionPack` with `status ∈ {complete, partial, needs_input, failed}` or a structured `RunError`. Exit codes: 0 valid result · 2 invalid input · 3 setup incomplete · 4 operational/duplicate. Trace: `logs/trace-<run_id>.jsonl` (organizer format, `model` per request, no invented confidence) plus readable `[INFO]` lines on stderr and one `final_result` JSON line on stdout.
@@ -97,11 +99,11 @@ No model grades the comparison. The Critic only flags issues and proposes one ac
 
 ## Build status
 
-The offline core is complete, with 89 passing tests: contracts, Decimal economics, the controller loop, rubric checks, trace, CLI and sample adapters. The live Zetaris, Nightshift and H-MEM adapters are in progress as of 25 October.
+The offline core is complete, with 100 passing tests: contracts, Decimal economics, the controller loop, rubric checks, trace, CLI and sample adapters. The live Zetaris, Nightshift and H-MEM adapters are in progress as of 25 October.
 
 | Component | State |
 |---|---|
-| Contracts, economics, controller, rubric checks, trace, CLI, sample adapters | complete; 89 tests pass (9 skipped: the shelved comparison and the H-MEM bridge test) |
+| Contracts, economics, controller, rubric checks, trace, CLI, sample adapters | complete; 100 tests pass (9 skipped: the shelved comparison and the H-MEM bridge test) |
 | Zetaris live adapter | in progress: HTTP shape from the setup guide; row mapping for prices and evidence writeback pending the first real query |
 | Nightshift live adapter | in progress: written; candidate routes not yet pinned; tested only against a scripted fake |
 | H-MEM bridge | in progress: Python interface written; Node bridge and pinned engine revision pending |
