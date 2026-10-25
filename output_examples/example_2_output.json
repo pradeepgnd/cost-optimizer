@@ -4,6 +4,104 @@
   "execution_mode": "sample",
   "status": "complete",
   "reasons": [],
+  "candidate_shortlist": [
+    {
+      "model_id": "sample/frontier-placeholder",
+      "tier": "frontier",
+      "nightshift_route": null,
+      "intelligence": {
+        "score": "70",
+        "score_source": "PLACEHOLDER intelligence index",
+        "score_date": "2026-10-25",
+        "status": "unverified"
+      },
+      "market": {
+        "catalog": "OpenRouter",
+        "snapshot_date": "2026-10-25",
+        "list_price_input_usd_per_m": "5.00",
+        "list_price_output_usd_per_m": "25.00",
+        "usage_rank": 3,
+        "status": "unverified",
+        "label": "market reference (OpenRouter, 2026-10-25)"
+      },
+      "price_per_intelligence_point_usd": "0.142857",
+      "price_per_intelligence_point_label": "USD per 1M tokens per intelligence point: market reference (OpenRouter, 2026-10-25) list price blended 3:1 input:output ÷ PLACEHOLDER intelligence index score (2026-10-25); reference only, not used in costs",
+      "selected": true,
+      "reason": "top-ranked eligible route in its tier (intelligence score, then market usage rank, then snapshot order)"
+    },
+    {
+      "model_id": "sample/frontier-alt-placeholder",
+      "tier": "frontier",
+      "nightshift_route": null,
+      "intelligence": {
+        "score": "62",
+        "score_source": "PLACEHOLDER intelligence index",
+        "score_date": "2026-10-25",
+        "status": "unverified"
+      },
+      "market": {
+        "catalog": "OpenRouter",
+        "snapshot_date": "2026-10-25",
+        "list_price_input_usd_per_m": "3.00",
+        "list_price_output_usd_per_m": "15.00",
+        "usage_rank": 2,
+        "status": "unverified",
+        "label": "market reference (OpenRouter, 2026-10-25)"
+      },
+      "price_per_intelligence_point_usd": "0.096774",
+      "price_per_intelligence_point_label": "USD per 1M tokens per intelligence point: market reference (OpenRouter, 2026-10-25) list price blended 3:1 input:output ÷ PLACEHOLDER intelligence index score (2026-10-25); reference only, not used in costs",
+      "selected": false,
+      "reason": "ranked below sample/frontier-placeholder"
+    },
+    {
+      "model_id": "sample/mid-tier-placeholder",
+      "tier": "mid_tier",
+      "nightshift_route": null,
+      "intelligence": {
+        "score": "55",
+        "score_source": "PLACEHOLDER intelligence index",
+        "score_date": "2026-10-25",
+        "status": "unverified"
+      },
+      "market": {
+        "catalog": "OpenRouter",
+        "snapshot_date": "2026-10-25",
+        "list_price_input_usd_per_m": "1.00",
+        "list_price_output_usd_per_m": "5.00",
+        "usage_rank": 1,
+        "status": "unverified",
+        "label": "market reference (OpenRouter, 2026-10-25)"
+      },
+      "price_per_intelligence_point_usd": "0.036364",
+      "price_per_intelligence_point_label": "USD per 1M tokens per intelligence point: market reference (OpenRouter, 2026-10-25) list price blended 3:1 input:output ÷ PLACEHOLDER intelligence index score (2026-10-25); reference only, not used in costs",
+      "selected": true,
+      "reason": "top-ranked eligible route in its tier (intelligence score, then market usage rank, then snapshot order)"
+    },
+    {
+      "model_id": "sample/open-source-placeholder",
+      "tier": "open_source",
+      "nightshift_route": null,
+      "intelligence": {
+        "score": "48",
+        "score_source": "PLACEHOLDER intelligence index",
+        "score_date": "2026-10-25",
+        "status": "unverified"
+      },
+      "market": {
+        "catalog": "OpenRouter",
+        "snapshot_date": "2026-10-25",
+        "list_price_input_usd_per_m": "0.20",
+        "list_price_output_usd_per_m": "0.60",
+        "usage_rank": 5,
+        "status": "unverified",
+        "label": "market reference (OpenRouter, 2026-10-25)"
+      },
+      "price_per_intelligence_point_usd": "0.006250",
+      "price_per_intelligence_point_label": "USD per 1M tokens per intelligence point: market reference (OpenRouter, 2026-10-25) list price blended 3:1 input:output ÷ PLACEHOLDER intelligence index score (2026-10-25); reference only, not used in costs",
+      "selected": true,
+      "reason": "the required open-source (Nemotron) route; always a candidate, regardless of score"
+    }
+  ],
   "model_stack": [
     {
       "feature_id": "B1_parse_request_to_quote",
@@ -4197,6 +4295,14 @@
     },
     {
       "source_set": "pricing_snapshots",
+      "record_id": "model-frontier-alt",
+      "version": "sample-5",
+      "origin_url": null,
+      "verified_at": null,
+      "status": "unverified"
+    },
+    {
+      "source_set": "pricing_snapshots",
       "record_id": "model-mid-tier",
       "version": "sample-3",
       "origin_url": null,
@@ -4421,6 +4527,7 @@
   "limitations": [
     "SAMPLE/OFFLINE: no live inference; tokens estimated with the 4/3 rule; rubric checks not run; switch points pending; no sponsor proof.",
     "H-MEM unavailable: H-MEM bridge not pinned/verified for offline use; sample readiness fails rather than substituting a dictionary. See app/engines/hmem/README.md.",
+    "Candidate routes are checked against Nightshift only in live mode.",
     "Domain risk review requires live mode.",
     "Build panel: approaches compared on cited rates; no build executed on any platform."
   ],

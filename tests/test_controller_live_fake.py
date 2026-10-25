@@ -15,9 +15,15 @@ CANDIDATES = [FR, MID, OS]
 
 
 class Data(SampleDataLayer):
-    def __init__(self):
+    """Sample snapshot models, optionally with extra models or per-model field overrides."""
+
+    def __init__(self, extra=None, override=None):
         super().__init__()
-        self.written = []
+        self.written, self.extra, self.override = [], extra or [], override or {}
+
+    def read_models(self):
+        models = super().read_models() + list(self.extra)
+        return [m.model_copy(update=self.override.get(m.model_id, {})) for m in models]
 
     def write_evidence(self, record):
         self.written.append(record)
@@ -76,12 +82,12 @@ def _req(features=None, approved=True, run_id="live-1"):
 def run(tmp_path, monkeypatch):
     monkeypatch.setenv("LOG_DIR", str(tmp_path / "logs"))
 
-    def go(inf=None, critic_model="other/critic-route", req=None):
+    def go(inf=None, critic_model="other/critic-route", req=None, data=None, open_model=""):
         inf = inf or FakeNightshift()
         req = req or _req()
         trace = Trace(req.run_id, "live", echo=False)
-        ctl = Controller(Data(), inf, SampleMemory(), trace, "live", Checkpoints(str(tmp_path / "runs.db")),
-                         critic_model=critic_model, planner_model="meterless/auto")
+        ctl = Controller(data or Data(), inf, SampleMemory(), trace, "live", Checkpoints(str(tmp_path / "runs.db")),
+                         critic_model=critic_model, planner_model="meterless/auto", open_model=open_model)
         pack = ctl.run(req)
         events = [json.loads(l) for l in trace.path.read_text(encoding="utf-8").splitlines()]
         return pack, inf, events, ctl
@@ -180,6 +186,77 @@ def test_audio_features_are_never_sent_to_nightshift(run):
     assert all(not r.executed for r in speak) and len([c for c in inf.calls if c["role"] == "Analyst"]) == 3 * 2 + 1
     assert {e.status for e in pack.model_stack if e.feature_id == "speak"} == {"no_candidate_passes"}
 
+
+# ---------------------------------------------------------------- candidate shortlist
+
+ALT, OPEN2 = "sample/frontier-alt-placeholder", "other/open-model"
+
+def _open2(score="99"):
+    base = SampleDataLayer().read_models()[-1]
+    return base.model_copy(update={"model_id": OPEN2, "required": False,
+                                   "intelligence": base.intelligence.model_copy(update={"score": Decimal(score)})})
+
+def _selected(pack):
+    return {e.tier: e.model_id for e in pack.candidate_shortlist if e.selected}
+
+def test_higher_scored_open_model_does_not_displace_nemotron(run):
+    inf = FakeNightshift(routes=CANDIDATES + [OPEN2, "other/critic-route"])
+    pack, _, _, _ = run(inf, data=Data(extra=[_open2()]))
+    assert _selected(pack)["open_source"] == OS
+    other = next(e for e in pack.candidate_shortlist if e.model_id == OPEN2)
+    assert not other.selected and other.nightshift_route and "fixed to the required Nemotron route" in other.reason
+    assert {r.model_id for r in pack.feature_runs} == set(CANDIDATES)
+
+def test_pinned_open_model_setting_is_the_nemotron_candidate(run):
+    inf = FakeNightshift(routes=CANDIDATES + [OPEN2, "other/critic-route"], answers={FR: "ok", MID: "ok", OPEN2: "ok"})
+    pack, _, _, _ = run(inf, data=Data(extra=[_open2("1")]), open_model=OPEN2)
+    assert _selected(pack)["open_source"] == OPEN2
+
+def test_nemotron_route_missing_from_nightshift_stops_before_any_paid_call(run):
+    pack, inf, _, _ = run(FakeNightshift(routes=[FR, MID, "other/critic-route"]))
+    assert pack.status == RunState.needs_input and inf.calls == []
+    assert any("Nemotron route" in l and "not offered by Nightshift" in l for l in pack.limitations)
+
+def test_a_model_that_is_not_a_nightshift_route_is_never_selected(run):
+    top = {ALT: {"intelligence": SampleDataLayer().read_models()[1].intelligence.model_copy(update={"score": Decimal("99")})}}
+    pack, _, _, _ = run(data=Data(override=top))
+    alt = next(e for e in pack.candidate_shortlist if e.model_id == ALT)
+    assert _selected(pack)["frontier"] == FR and not alt.selected and alt.nightshift_route is False
+    assert "not a Nightshift route" in alt.reason
+
+def test_ranking_is_score_then_usage_rank_then_snapshot_order():
+    a, b = SampleDataLayer().read_models()[:2]
+    same = a.intelligence
+    a2 = a.model_copy(update={"intelligence": same, "market": a.market.model_copy(update={"usage_rank": 9})})
+    b2 = b.model_copy(update={"intelligence": same, "market": b.market.model_copy(update={"usage_rank": 2})})
+    key = Controller._rank_key
+    assert min([(0, a2), (1, b2)], key=lambda im: key(im[1], im[0]))[1] is b2        # tie on score -> usage rank
+    nb = b2.model_copy(update={"market": b2.market.model_copy(update={"usage_rank": None})})
+    na = a2.model_copy(update={"market": a2.market.model_copy(update={"usage_rank": None})})
+    assert min([(0, na), (1, nb)], key=lambda im: key(im[1], im[0]))[1] is na        # then snapshot order
+    unscored = a.model_copy(update={"intelligence": None})
+    assert min([(0, unscored), (1, b)], key=lambda im: key(im[1], im[0]))[1] is b    # scored before unscored
+
+def test_reference_data_never_changes_costs_quality_or_the_stack(run):
+    wild = {mid: {"intelligence": m.intelligence.model_copy(update={"score": Decimal("1")}),
+                  "market": m.market.model_copy(update={"list_price_input_usd_per_m": Decimal("999"),
+                                                        "list_price_output_usd_per_m": Decimal("999"), "usage_rank": 500})}
+            for m in SampleDataLayer().read_models() for mid in [m.model_id] if mid != ALT}
+    a, _, _, _ = run(req=_req(run_id="ref-a"))
+    b, _, _, _ = run(req=_req(run_id="ref-b"), data=Data(override=wild))
+    assert _selected(a) == _selected(b)
+    assert [t.model_dump() for t in a.stage_tables] == [t.model_dump() for t in b.stage_tables]
+    assert [e.model_dump() for e in a.model_stack] == [e.model_dump() for e in b.model_stack]
+    assert [r.rubric.model_dump() for r in a.feature_runs] == [r.rubric.model_dump() for r in b.feature_runs]
+
+def test_price_per_intelligence_point_is_labeled_and_shortlist_only(run):
+    pack, _, _, _ = run()
+    fr = next(e for e in pack.candidate_shortlist if e.model_id == FR)
+    assert fr.price_per_intelligence_point_usd == Decimal("0.142857")        # (3×5 + 25)/4 = 10 ÷ 70
+    lab = fr.price_per_intelligence_point_label
+    assert "market reference (OpenRouter, 2026-10-25)" in lab and "PLACEHOLDER intelligence index" in lab and "2026-10-25" in lab
+    assert fr.market.label == "market reference (OpenRouter, 2026-10-25)"
+    assert "price_per_intelligence_point" not in json.dumps([t.model_dump(mode="json") for t in pack.stage_tables])
 
 def test_generation_cap_is_30():
     assert MAX_CANDIDATE_GENERATIONS == 30

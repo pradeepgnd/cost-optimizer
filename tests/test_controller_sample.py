@@ -36,6 +36,16 @@ def test_sample_run_estimates_everything_and_fabricates_nothing(tmp_path):
     assert all(e["model"] is None for e in trace), "offline decisions must never carry a model name"
     assert all("confidence" not in e for e in trace)
 
+def test_sample_shortlist_ranks_frontier_and_keeps_nemotron(tmp_path):
+    _, pack, _ = _run("input_examples/example_3.json", tmp_path)
+    sel = {e["tier"]: e["model_id"] for e in pack["candidate_shortlist"] if e["selected"]}
+    assert sel == {"frontier": "sample/frontier-placeholder", "mid_tier": "sample/mid-tier-placeholder",
+                   "open_source": "sample/open-source-placeholder"}
+    alt = next(e for e in pack["candidate_shortlist"] if e["model_id"] == "sample/frontier-alt-placeholder")
+    assert not alt["selected"] and "ranked below" in alt["reason"] and alt["nightshift_route"] is None
+    assert "Candidate routes are checked against Nightshift only in live mode." in pack["limitations"]
+    assert {r["model_id"] for r in pack["feature_runs"]} == set(sel.values())
+
 def test_sample_domain_risks_require_live_mode_and_none_are_invented(tmp_path):
     _, pack, _ = _run("input_examples/example_1.json", tmp_path)
     assert "Domain risk review requires live mode." in pack["limitations"]

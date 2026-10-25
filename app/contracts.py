@@ -9,7 +9,7 @@ from decimal import Decimal
 from enum import Enum
 from typing import Literal, Optional
 
-from pydantic import BaseModel, Field, PrivateAttr, model_validator
+from pydantic import BaseModel, Field, PrivateAttr, computed_field, model_validator
 
 
 # ---------------------------------------------------------------- provenance
@@ -130,14 +130,54 @@ class AudioConversion(BaseModel):
     source: Optional[SourceRef] = None
 
 
+class IntelligenceScore(BaseModel):
+    """A published capability index for a model. It only ranks the shortlist; it never replaces measurement."""
+    score: Decimal
+    score_source: str
+    score_date: str
+    status: EvidenceStatus = EvidenceStatus.unverified
+
+
+class MarketReference(BaseModel):
+    """A catalog snapshot (e.g. OpenRouter). Ranks the shortlist only; costs always use the price snapshots."""
+    catalog: Literal["OpenRouter"] = "OpenRouter"
+    snapshot_date: str
+    list_price_input_usd_per_m: Optional[Decimal] = None
+    list_price_output_usd_per_m: Optional[Decimal] = None
+    usage_rank: Optional[int] = None          # 1 == most used in the catalog snapshot
+    status: EvidenceStatus = EvidenceStatus.unverified
+
+    @computed_field
+    @property
+    def label(self) -> str:
+        return f"market reference ({self.catalog}, {self.snapshot_date})"
+
+
 class ModelProfile(BaseModel):
     model_id: str                    # as exposed by Nightshift GET /v1/models
     provider_label: str              # e.g. "nvidia" — informational
     tier: Optional[Literal["frontier", "mid_tier", "open_source"]] = None
+    required: bool = False           # open_source: the Nemotron route, always a candidate regardless of score
     rates: list[Rate]
     terms: ModelPricingTerms = Field(default_factory=ModelPricingTerms)
     audio: Optional[AudioConversion] = None   # None == audio not priced for this model; stays unknown
+    intelligence: Optional[IntelligenceScore] = None
+    market: Optional[MarketReference] = None
     source: SourceRef
+
+
+class ShortlistEntry(BaseModel):
+    """One snapshot model and why it was or was not selected as its tier's candidate. Reference data shown here
+    (score, market reference, price per intelligence point) never feeds stage tables, switch points or the model stack."""
+    model_id: str
+    tier: Optional[str] = None
+    nightshift_route: Optional[bool] = None   # None == not checked (sample mode)
+    intelligence: Optional[IntelligenceScore] = None
+    market: Optional[MarketReference] = None
+    price_per_intelligence_point_usd: Optional[Decimal] = None
+    price_per_intelligence_point_label: Optional[str] = None
+    selected: bool = False
+    reason: str
 
 
 # ------------------------------------------------- AI features and stages (07 §2, §5.1)
@@ -572,6 +612,7 @@ class DecisionPack(BaseModel):
     execution_mode: Literal["live", "sample"]
     status: RunState
     reasons: list[str] = Field(default_factory=list)
+    candidate_shortlist: list[ShortlistEntry] = Field(default_factory=list)
     model_stack: list[ModelStackEntry] = Field(default_factory=list)
     stage_tables: list[StageCostTable] = Field(default_factory=list)
     feature_runs: list[FeatureRun] = Field(default_factory=list)

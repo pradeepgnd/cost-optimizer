@@ -18,14 +18,14 @@ import json
 import sqlite3
 import uuid
 from dataclasses import dataclass, field
-from decimal import Decimal
+from decimal import Decimal, ROUND_HALF_UP
 from typing import Optional
 
 from app.adapters.base import DataLayer, Inference, Memory, SetupIncomplete
 from app.contracts import (
     ActionProposal, ActionType, BuildPanel, Critique, CritiqueFinding, DecisionPack, EvidenceGap, EvidenceStatus,
     FeatureProfile, FeatureRun, FeatureSample, ModelProfile, ModelStackEntry, Observation, OutputCapRerun,
-    RateCategory, Revision, Risk, RiskCause, RunRequest, RunState, SourceRef, TokenUsage,
+    RateCategory, Revision, Risk, RiskCause, RunRequest, RunState, ShortlistEntry, SourceRef, TokenUsage,
 )
 from app.economics import (SIZE_MULTIPLIER, build_ledger, cost_per_call, estimate_feature_tokens,
                            recommend_model_stack, stage_cost_table)
@@ -151,12 +151,13 @@ def _mean_usage(usages: list[TokenUsage]) -> TokenUsage:
 class Controller:
     def __init__(self, data: DataLayer, inference: Inference, memory: Memory, trace: Trace,
                  execution_mode: str, checkpoints: Optional[Checkpoints] = None,
-                 critic_model: str = "", planner_model: str = ""):
+                 critic_model: str = "", planner_model: str = "", open_model: str = ""):
         self.data, self.inf, self.mem, self.trace = data, inference, memory, trace
         self.mode = execution_mode
         self.ckpt = checkpoints or Checkpoints()
         self.critic_model = critic_model
         self.planner_model = planner_model
+        self.open_model = open_model          # the pinned Nemotron route (METERLESS_OPEN_MODEL)
         self.state = RunState.approved
         self.evidence: list[SourceRef] = []
         self.gaps: list[EvidenceGap] = []
@@ -252,10 +253,11 @@ class Controller:
             approaches = self.data.read_approaches()
             models = self.data.read_models()
             self.evidence += [a.source for a in approaches] + [m.source for m in models]
-            candidates = self._candidates(models)
+            route_list = self.inf.list_models() if self.mode == "live" else []   # GET /v1/models is free
+            candidates, pack.candidate_shortlist = self._candidates(models, set(route_list) if self.mode == "live" else None)
 
             # 3. Critic route, before any paid call
-            self._check_critic_route(candidates)
+            self._check_critic_route(candidates, route_list)
 
             # 4. Build panel (secondary): missing build inputs add questions and never stop the run
             pack.build_ledgers = [build_ledger(a, brief.features_v1) for a in approaches]
@@ -356,17 +358,80 @@ class Controller:
 
     # ---------------------------------------------------------- candidates and Critic route
 
-    def _candidates(self, models: list[ModelProfile]) -> list[ModelProfile]:
-        out = []
-        for tier in CANDIDATE_TIERS:
-            m = next((m for m in models if m.tier == tier), None)
-            if m is None:
-                self.limitations.append(f"No {tier} candidate in the pricing snapshots.")
-            else:
-                out.append(m)
-        return out
+    @staticmethod
+    def _rank_key(m: ModelProfile, order: int):
+        """Shortlist ranking only: intelligence score (highest first), then market usage rank, then snapshot order."""
+        score = m.intelligence.score if m.intelligence else None
+        rank = m.market.usage_rank if m.market and m.market.usage_rank is not None else None
+        return (score is None, -(score or 0), rank is None, rank or 0, order)
 
-    def _check_critic_route(self, candidates: list[ModelProfile]):
+    @staticmethod
+    def _price_per_point(m: ModelProfile) -> tuple[Optional[Decimal], Optional[str]]:
+        """Blended list price (3:1 input:output, USD per 1M tokens) ÷ intelligence score. Shortlist display only."""
+        mk, iq = m.market, m.intelligence
+        if mk is None or iq is None or iq.score <= 0 or None in (mk.list_price_input_usd_per_m, mk.list_price_output_usd_per_m):
+            return None, None
+        blended = (3 * mk.list_price_input_usd_per_m + mk.list_price_output_usd_per_m) / 4
+        value = (blended / iq.score).quantize(Decimal("0.000001"), rounding=ROUND_HALF_UP)
+        return value, (f"USD per 1M tokens per intelligence point: {mk.label} list price blended 3:1 input:output ÷ "
+                       f"{iq.score_source} score ({iq.score_date}); reference only, not used in costs")
+
+    def _candidates(self, models: list[ModelProfile], routes: Optional[set[str]]) -> tuple[list[ModelProfile], list[ShortlistEntry]]:
+        """One candidate per tier, from Nightshift routes only (live). The open-source tier is always the Nemotron
+        route (METERLESS_OPEN_MODEL, else the snapshot row marked required), regardless of score. Other tiers take
+        the top-ranked eligible model. Reference data ranks the shortlist and never replaces measurement."""
+        def is_route(m):
+            return None if routes is None else m.model_id in routes
+        chosen: dict[str, tuple[ModelProfile, str]] = {}
+        for tier in CANDIDATE_TIERS:
+            in_tier = [(i, m) for i, m in enumerate(models) if m.tier == tier]
+            if tier == "open_source":
+                pinned = next((m for _, m in in_tier if self.open_model and m.model_id == self.open_model), None)
+                if self.open_model and pinned is None:
+                    raise StopRun(RunState.needs_input, f"METERLESS_OPEN_MODEL {self.open_model} has no price snapshot row",
+                                  ["Add a price snapshot for the pinned Nemotron route, or correct METERLESS_OPEN_MODEL."])
+                required = pinned or next((m for _, m in in_tier if m.required), None)
+                if required is not None:
+                    if is_route(required) is False:
+                        raise StopRun(RunState.needs_input, f"Nemotron route {required.model_id} is not offered by Nightshift",
+                                      ["Enable the Nemotron route in Nightshift, or pin the route it offers in METERLESS_OPEN_MODEL."])
+                    chosen[tier] = (required, "the required open-source (Nemotron) route; always a candidate, regardless of score")
+                    continue
+                self.limitations.append("No Nemotron route is pinned (METERLESS_OPEN_MODEL or a required snapshot row); "
+                                        "the open-source candidate is chosen by ranking.")
+            eligible = [(i, m) for i, m in in_tier if is_route(m) is not False]
+            if not eligible:
+                self.limitations.append(f"No {tier} candidate that is a Nightshift route in the pricing snapshots.")
+                continue
+            top = min(eligible, key=lambda im: self._rank_key(im[1], im[0]))[1]
+            chosen[tier] = (top, "top-ranked eligible route in its tier (intelligence score, then market usage rank, "
+                                 "then snapshot order)")
+        selected = {m.model_id for m, _ in chosen.values()}
+        shortlist = []
+        for m in models:
+            ppp, ppp_label = self._price_per_point(m)
+            if m.model_id in selected:
+                reason = chosen[m.tier][1]
+            elif is_route(m) is False:
+                reason = "not a Nightshift route; never a candidate"
+            elif m.tier == "open_source" and m.tier in chosen and "required" in chosen[m.tier][1]:
+                reason = "the open-source tier is fixed to the required Nemotron route"
+            elif m.tier in CANDIDATE_TIERS:
+                reason = f"ranked below {chosen[m.tier][0].model_id}" if m.tier in chosen else "not eligible"
+            else:
+                reason = "no candidate tier"
+            shortlist.append(ShortlistEntry(model_id=m.model_id, tier=m.tier, nightshift_route=is_route(m),
+                                            intelligence=m.intelligence, market=m.market,
+                                            price_per_intelligence_point_usd=ppp, price_per_intelligence_point_label=ppp_label,
+                                            selected=m.model_id in selected, reason=reason))
+        if routes is None:
+            self.limitations.append("Candidate routes are checked against Nightshift only in live mode.")
+        self.trace.event("Controller", "select_candidates", execution_kind="rule_policy",
+                         output_summary="; ".join(f"{t}: {m.model_id}" for t, (m, _) in chosen.items())
+                                        + f" ({len(models)} snapshot models shortlisted)")
+        return [chosen[t][0] for t in CANDIDATE_TIERS if t in chosen], shortlist
+
+    def _check_critic_route(self, candidates: list[ModelProfile], route_list: list[str]):
         """The Critic must not use a candidate's route when Nightshift offers another; otherwise the trace says so.
         Checked before any paid call. GET /v1/models is free."""
         if self.mode == "sample":
@@ -374,7 +439,7 @@ class Controller:
                              output_summary="sample mode: no Critic call")
             return
         cand = {m.model_id for m in candidates}
-        routes = self.inf.list_models()
+        routes = route_list
         others = [r for r in routes if r not in cand and r != AUTO_ROUTE]
         if self.critic_model and self.critic_model not in cand and self.critic_model != AUTO_ROUTE:
             if routes and self.critic_model not in routes:
