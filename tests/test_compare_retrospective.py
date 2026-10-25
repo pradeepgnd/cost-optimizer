@@ -4,6 +4,9 @@ from pathlib import Path
 
 import pytest
 
+# The comparison runs on the AVL pre-build brief, which v4 removed with examples 1–3 (07 §10).
+pytestmark = pytest.mark.skip(reason="shelved in v4")
+
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / "scripts" / "compare_retrospective.py"
 ACTUALS = ROOT / "data" / "sample" / "retrospective_actuals_SYNTHETIC.json"

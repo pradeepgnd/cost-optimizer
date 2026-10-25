@@ -28,9 +28,11 @@ class NightshiftInference(Inference):
         r.raise_for_status()
         return [m["id"] for m in r.json().get("data", [])]
 
-    def complete(self, *, role, model, system, user, json_schema=None, timeout_s=60) -> InferenceResult:
+    def complete(self, *, role, model, system, user, json_schema=None, timeout_s=60, max_tokens=None) -> InferenceResult:
         body = {"model": model, "messages": [{"role": "system", "content": system}, {"role": "user", "content": user}],
                 "temperature": 0.2}
+        if max_tokens is not None:
+            body["max_tokens"] = max_tokens
         if json_schema:
             body["response_format"] = {"type": "json_schema", "json_schema": json_schema}
         t0 = time.time()

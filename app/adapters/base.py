@@ -39,7 +39,8 @@ class Inference(ABC):
 
     @abstractmethod
     def complete(self, *, role: str, model: str, system: str, user: str,
-                 json_schema: Optional[dict] = None, timeout_s: int = 60) -> InferenceResult: ...
+                 json_schema: Optional[dict] = None, timeout_s: int = 60,
+                 max_tokens: Optional[int] = None) -> InferenceResult: ...
 
     @abstractmethod
     def list_models(self) -> list[str]: ...

@@ -12,7 +12,7 @@ from typing import Optional
 
 from app.contracts import (
     ApproachProfile, BuildLedger, Checkpoint, CostLine, EvidenceStatus, FeatureItem, FeatureProfile, LeverLine,
-    ModelProfile, OperatingLedger, OutputCapRerun, RateCategory, Risk, RiskCause, RubricResult, Scenario, Stage,
+    ModelProfile, ModelStackEntry, OperatingLedger, OutputCapRerun, RateCategory, Risk, RiskCause, RubricResult, Scenario, Stage,
     StageCostRow, StageCostTable, SwitchPoint, TokenUsage, UsageAssumptions, default_stages,
 )
 
@@ -416,19 +416,68 @@ def revenue_share_risks(feature: FeatureProfile, rows: list[StageCostRow]) -> li
 
 
 def _quality(feature: FeatureProfile, result: Optional[RubricResult]) -> tuple[Optional[str], bool, str]:
-    """(score, passes, reason). Only live-inference results on the feature's full rubric count as evidence."""
-    ids = {c.check_id for c in feature.rubric_checks}
+    """(score, passes, reason). Only live-inference results count, and every critical check needs a result
+    (machine or human review) and must pass. Non-critical checks may fail or stay pending."""
+    critical = [c.check_id for c in feature.rubric_checks if c.critical]
     if result is None:
         return None, False, "quality not measured"
-    score = f"{sum(result.checks.values())}/{len(result.checks)}"
+    score = f"{sum(result.checks.values())}/{len(feature.rubric_checks) or len(result.checks)}"
     if result.execution_kind != "live_inference":
         return score, False, "rubric result is rule_policy, not measured quality"
-    if not ids or set(result.checks) != ids:
-        return score, False, "rubric result does not cover the feature's checks"
-    failed = [c.check_id for c in feature.rubric_checks if c.critical and not result.checks[c.check_id]]
+    if not critical:
+        return score, False, "the feature has no critical rubric checks"
+    missing = [c for c in critical if c not in result.checks]
+    if missing:
+        return score, False, f"critical checks pending human review or not run: {', '.join(missing)}"
+    failed = [c for c in critical if not result.checks[c]]
     if failed:
         return score, False, f"failed critical checks: {', '.join(failed)}"
     return score, True, "passed every critical check"
+
+
+def recommend_model_stack(feature: FeatureProfile, table: StageCostTable, models: list[ModelProfile],
+                          rubric_results: Optional[list[RubricResult]] = None,
+                          threshold_usd: Optional[Decimal] = None) -> list[ModelStackEntry]:
+    """Per stage: the cheapest candidate that passed every critical check. A higher-quality qualified candidate is
+    kept only when it costs less than the threshold more. A candidate whose AI cost per use exceeds revenue per use
+    is never recommended while a qualified alternative within revenue exists. No frontier-by-name baseline."""
+    threshold_usd = table.threshold_usd if threshold_usd is None else threshold_usd
+    results = {(r.feature_id, r.model_id): r for r in (rubric_results or [])}
+    quality = {m.model_id: _quality(feature, results.get((feature.feature_id, m.model_id))) for m in models}
+    passed = {mid: sum(results[(feature.feature_id, mid)].checks.values()) if (feature.feature_id, mid) in results else 0
+              for mid in quality}
+    out: list[ModelStackEntry] = []
+    for s in sorted(table.stages, key=lambda s: s.active_users):
+        rows = {r.model_id: r for r in table.rows if r.stage == s.name}
+        cost = {mid: _exact(r, "with_levers") for mid, r in rows.items()}
+        ok = [m.model_id for m in models if quality[m.model_id][1] and cost.get(m.model_id) is not None]
+        if not ok:
+            why = "; ".join(f"{m.model_id}: {quality[m.model_id][2] if not quality[m.model_id][1] else 'cost unknown'}"
+                            for m in models)
+            out.append(ModelStackEntry(feature_id=feature.feature_id, stage=s.name, status="no_candidate_passes",
+                                       reason=f"No candidate passed every critical check with a known cost ({why})."))
+            continue
+        within = [mid for mid in ok if _exact(rows[mid], "share") is None or _exact(rows[mid], "share") <= 1]
+        pool = within or ok
+        by_cost = sorted(pool, key=lambda mid: cost[mid])
+        cheapest = by_cost[0]
+        better = [mid for mid in pool if passed[mid] > passed[cheapest] and cost[mid] - cost[cheapest] < threshold_usd]
+        pick = max(better, key=lambda mid: (passed[mid], -cost[mid])) if better else cheapest
+        alternate = next((mid for mid in by_cost if mid != pick), None)
+        reason = (f"{pick} passed every critical check ({quality[pick][0]}) at ~${_q(cost[pick])}/month"
+                  + (f"; kept over cheaper {cheapest} (${_q(cost[cheapest])}) because it passed more checks and the "
+                     f"difference is below the ${threshold_usd} threshold" if pick != cheapest
+                     else "; cheapest qualified candidate"))
+        excluded = [mid for mid in ok if mid not in pool]
+        if excluded:
+            reason += f"; excluded {', '.join(excluded)}: AI cost per use exceeds revenue per use"
+        if not within:
+            reason += "; every qualified candidate's AI cost per use exceeds revenue per use"
+        if rows[pick].lower_bound:
+            reason += "; cost is a lower bound"
+        out.append(ModelStackEntry(feature_id=feature.feature_id, stage=s.name, status="recommended", model_id=pick,
+                                   alternate_model_id=alternate, monthly_usd=_q(cost[pick]), reason=reason + "."))
+    return out
 
 
 def detect_switch_points(feature: FeatureProfile, stages: list[Stage], rows: list[StageCostRow], models: list[ModelProfile],

@@ -142,10 +142,56 @@ class ModelProfile(BaseModel):
 
 # ------------------------------------------------- AI features and stages (07 §2, §5.1)
 
+CheckKind = Literal["max_words", "required_json_fields", "forbidden_terms", "regex", "human_review"]
+
+
 class RubricCheck(BaseModel):
+    """A deterministic check on a model output; these and human review decide pass/fail, never a model.
+
+    params by kind (json_field optional for all but required_json_fields: check one field of a JSON output):
+      max_words            {"limit": int}
+      required_json_fields {"fields": [str, ...]}
+      forbidden_terms      {"terms": [str, ...]}           case-insensitive substring match
+      regex                {"pattern": str, "must_match": bool = true, "ignore_case": bool = false}
+      human_review         {}  no machine result; pending until a reviewer records one
+    """
     check_id: str
     description: str
+    kind: CheckKind = "human_review"
+    params: dict = Field(default_factory=dict)
     critical: bool = True            # a cheaper model must pass every critical check to qualify a switch point
+
+    @model_validator(mode="after")
+    def _params_match_kind(self):
+        p = self.params
+        ok = {
+            "max_words": lambda: isinstance(p.get("limit"), int) and p["limit"] > 0,
+            "required_json_fields": lambda: isinstance(p.get("fields"), list) and p["fields"]
+                                            and all(isinstance(f, str) for f in p["fields"]),
+            "forbidden_terms": lambda: isinstance(p.get("terms"), list) and p["terms"]
+                                       and all(isinstance(t, str) and t for t in p["terms"]),
+            "regex": lambda: isinstance(p.get("pattern"), str) and bool(p["pattern"]),
+            "human_review": lambda: True,
+        }[self.kind]()
+        if not ok:
+            raise ValueError(f"rubric check {self.check_id}: params {p} do not fit kind {self.kind}")
+        if self.kind == "regex":
+            import re
+            try:
+                re.compile(p["pattern"])
+            except re.error as e:
+                raise ValueError(f"rubric check {self.check_id}: invalid regex: {e}") from None
+        return self
+
+
+class HumanReview(BaseModel):
+    """A reviewer's result for one check on one feature × model; it overrides the machine result."""
+    feature_id: str
+    model_id: str
+    check_id: str
+    passed: bool
+    reviewer: str
+    note: str = ""
 
 
 class FeatureProfile(BaseModel):
@@ -179,12 +225,13 @@ def default_stages() -> list[Stage]:
 
 class TokenUsage(BaseModel):
     """Per-call tokens. measured == from API usage fields only; estimated == 4/3 rule on words.
-    output_tokens is the completion count and already INCLUDES reasoning_tokens (OpenAI-compatible usage)."""
-    input_tokens: int
-    output_tokens: int
-    reasoning_tokens: Optional[int] = None   # breakdown of output_tokens; None == unknown, never coerced to zero
-    audio_input_tokens: Optional[int] = None    # measured only; None -> estimated from seconds if the feature has audio
-    audio_output_tokens: Optional[int] = None
+    output_tokens is the completion count and already INCLUDES reasoning_tokens (OpenAI-compatible usage).
+    Decimal so a mean over samples is kept exactly."""
+    input_tokens: Decimal
+    output_tokens: Decimal
+    reasoning_tokens: Optional[Decimal] = None   # breakdown of output_tokens; None == unknown, never coerced to zero
+    audio_input_tokens: Optional[Decimal] = None    # measured only; None -> estimated from seconds if the feature has audio
+    audio_output_tokens: Optional[Decimal] = None
     basis: Literal["measured", "estimated"]
     method: str
 
@@ -196,10 +243,43 @@ class TokenUsage(BaseModel):
 
 
 class RubricResult(BaseModel):
+    """checks holds the effective result per check that has one (human override, else machine result);
+    a check without either is listed in pending and is absent from checks."""
     feature_id: str
     model_id: str
     checks: dict[str, bool]
     execution_kind: Literal["live_inference", "rule_policy"]
+    machine: dict[str, bool] = Field(default_factory=dict)
+    overrides: dict[str, bool] = Field(default_factory=dict)
+    pending: list[str] = Field(default_factory=list)
+
+
+class FeatureSample(BaseModel):
+    """One executed call of a feature's example input on one candidate."""
+    output_ref: str
+    output_text: str
+    usage: Optional[TokenUsage] = None       # None when the response carried no usable usage fields
+    raw_usage: dict = Field(default_factory=dict)
+    latency_s: Optional[float] = None
+    requested_model: Optional[str] = None
+    resolved_model: Optional[str] = None
+    route_id: Optional[str] = None
+    max_tokens: Optional[int] = None
+
+
+class FeatureRun(BaseModel):
+    """Everything known about one feature × candidate: the estimate, measured samples, and the rubric result."""
+    feature_id: str
+    model_id: str
+    tier: Optional[str] = None
+    executed: bool
+    not_executed_reason: Optional[str] = None
+    estimated: Optional[TokenUsage] = None
+    samples: list[FeatureSample] = Field(default_factory=list)
+    measured_mean: Optional[TokenUsage] = None
+    output_gap_ratio: Optional[Decimal] = None   # measured / estimated output tokens; None unless both exist
+    rubric: Optional[RubricResult] = None
+    is_repair: bool = False
 
 
 class OutputCapRerun(BaseModel):
@@ -230,6 +310,8 @@ class ActionType(str, Enum):
     evaluate_development = "evaluate_development"
     revise_prototype = "revise_prototype"
     ask_founder = "ask_founder"
+    apply_output_cap = "apply_output_cap"                   # executable repair: one measured re-run with max_tokens
+    move_to_cacheable_prefix = "move_to_cacheable_prefix"   # recorded as a recommendation, not executed
     finalize = "finalize"
 
 
@@ -259,26 +341,17 @@ class CandidateConfig(BaseModel):
     config_version: int = 1
 
 
-class CaseResult(BaseModel):
-    task_id: str
-    config_id: str
-    config_version: int
-    output_ref: str
-    elements_present: dict[str, bool]
-    critical_failures_hit: list[str]
-    cost_note_sourced: bool
-    usage: dict = Field(default_factory=dict)
-    elapsed_s: Optional[float] = None
-    requested_model: Optional[str] = None
-    resolved_model: Optional[str] = None
-    execution_kind: Literal["live_inference", "rule_policy"]
-    human_review: Optional[Literal["confirmed", "rejected", "pending"]] = "pending"
+CritiqueKind = Literal["unsupported_claim", "token_gap", "output_too_long"]
 
 
 class CritiqueFinding(BaseModel):
+    """A flag raised by the Critic. It never passes or fails an output; rubric checks and human review do."""
     claim: str
     supporting_or_missing_source_ids: list[str]
     severity: Literal["low", "medium", "high"]
+    kind: Optional[CritiqueKind] = None
+    feature_id: Optional[str] = None
+    model_id: Optional[str] = None
     task_id: Optional[str] = None
 
 
@@ -408,6 +481,25 @@ class StageCostTable(BaseModel):
     warnings: list[str] = Field(default_factory=list)
 
 
+class ModelStackEntry(BaseModel):
+    """Recommended candidate for one feature at one stage, from rubric results and cost only."""
+    feature_id: str
+    stage: str
+    status: Literal["recommended", "no_candidate_passes", "requires_live_run"]
+    model_id: Optional[str] = None
+    alternate_model_id: Optional[str] = None
+    monthly_usd: Optional[Decimal] = None
+    reason: str
+
+
+class BuildPanel(BaseModel):
+    """Secondary panel (07 §5.2): build approaches. Missing build inputs add questions; they never stop the run."""
+    ranked_approach_ids: list[str] = Field(default_factory=list)   # empty when eligibility depends on a missing input
+    eligible_by_devops_capacity: dict[str, list[str]] = Field(default_factory=dict)
+    reasons: list[str] = Field(default_factory=list)
+    questions: list[str] = Field(default_factory=list)
+
+
 # ----------------------------------------------------------- run envelope
 
 class RunState(str, Enum):
@@ -431,6 +523,7 @@ class RunRequest(BaseModel):
     evaluation_approved: bool = False
     max_spend_usd: Decimal = Decimal("0")
     sample_mode: Optional[bool] = None
+    human_reviews: list[HumanReview] = Field(default_factory=list)
 
 
 class EvidenceGap(BaseModel):
@@ -447,14 +540,17 @@ class RiskCause(str, Enum):
     scope_change = "scope_change"
     platform_limitation = "platform_limitation"
     unit_economics = "unit_economics"
+    domain = "domain"                # privacy, regulatory, safety: from the live Planner only
 
 
 class Risk(BaseModel):
-    """Raised from general signals in the inputs (rates, brief, assumptions), never from a known case outcome."""
+    """rule: raised from general signals in the inputs (rates, brief, assumptions), never from a known case outcome.
+    model_generated: from the live Planner, labeled as such and not advice. Domain risks are never hard-coded."""
     description: str
     cause_class: RiskCause
     severity: Literal["low", "medium", "high"]
     triggered_by: list[str]          # evidence record IDs or brief field paths
+    origin: Literal["rule", "model_generated"] = "rule"
 
 
 class DecisionPack(BaseModel):
@@ -462,13 +558,16 @@ class DecisionPack(BaseModel):
     project_id: str
     execution_mode: Literal["live", "sample"]
     status: RunState
+    reasons: list[str] = Field(default_factory=list)
+    model_stack: list[ModelStackEntry] = Field(default_factory=list)
+    stage_tables: list[StageCostTable] = Field(default_factory=list)
+    feature_runs: list[FeatureRun] = Field(default_factory=list)
+    build_panel: BuildPanel = Field(default_factory=BuildPanel)
+    build_ledgers: list[BuildLedger] = Field(default_factory=list)
+    # v3.4 fields kept only so the shelved compare_retrospective.py still loads old packs; the v4 controller leaves them empty.
     recommended_config: Optional[CandidateConfig] = None
     alternate_config: Optional[CandidateConfig] = None
-    reasons: list[str] = Field(default_factory=list)
-    build_ledgers: list[BuildLedger] = Field(default_factory=list)
     operating_ledger: Optional[OperatingLedger] = None
-    development_results: list[CaseResult] = Field(default_factory=list)
-    holdout_results: list[CaseResult] = Field(default_factory=list)
     critiques: list[Critique] = Field(default_factory=list)
     revisions: list[Revision] = Field(default_factory=list)
     evidence_refs: list[SourceRef] = Field(default_factory=list)

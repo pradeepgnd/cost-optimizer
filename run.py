@@ -38,10 +38,10 @@ def build_controller(req: RunRequest, trace: Trace) -> Controller:
     from app.adapters.live_nightshift import NightshiftInference
     from app.adapters.live_zetaris import ZetarisDataLayer
     from app.engines.hmem.bridge import HmemBridge
-    critic = os.getenv("METERLESS_CRITIC_MODEL", "")
-    cands = [m for m in os.getenv("METERLESS_CANDIDATE_MODELS", "").split(",") if m]
+    # Candidates are the frontier, mid-tier and open-source models in the pricing snapshots (model_id == route).
     return Controller(ZetarisDataLayer(trace), NightshiftInference(trace), HmemBridge(trace), trace, "live",
-                      Checkpoints(os.getenv("RUNS_DB", "runs.db")), critic_model=critic, candidate_models=cands or None)
+                      Checkpoints(os.getenv("RUNS_DB", "runs.db")),
+                      critic_model=os.getenv("METERLESS_CRITIC_MODEL", ""), planner_model=os.getenv("METERLESS_MODEL", ""))
 
 
 def main() -> int:

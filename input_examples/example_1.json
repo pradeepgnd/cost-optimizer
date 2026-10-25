@@ -1,83 +1,102 @@
 {
  "schema_version": "1.0",
- "project_id": "proj-brief-avl-prebuild",
+ "project_id": "proj-idea-a-speech-building",
  "run_id": "example-1",
  "brief": {
-  "brief_id": "brief-avl-prebuild",
+  "brief_id": "brief-idea-a-speech-building",
   "brief_version": "1",
-  "product_concept": "A rules-based backtesting workbench that compares several volatility-aware investing engines against buy-and-hold on any equity or crypto ticker, validates out-of-sample, and sizes risk.",
-  "target_user": "Self-directed retail investors managing their own accounts",
-  "features_v1": [
-   {
-    "feature_id": "F1",
-    "title": "Price-bar ingestion for arbitrary tickers",
-    "size_class": "M",
-    "compute_heavy": false
-   },
-   {
-    "feature_id": "F2",
-    "title": "Walk-forward backtest runner, one engine",
-    "size_class": "L",
-    "compute_heavy": true
-   },
-   {
-    "feature_id": "F3",
-    "title": "Multi-engine comparison vs buy-and-hold",
-    "size_class": "L",
-    "compute_heavy": true
-   },
-   {
-    "feature_id": "F4",
-    "title": "Regime detection and banner",
-    "size_class": "M",
-    "compute_heavy": true
-   },
-   {
-    "feature_id": "F5",
-    "title": "Parameter optimizer with result cache",
-    "size_class": "XL",
-    "compute_heavy": true
-   },
-   {
-    "feature_id": "F6",
-    "title": "Accounts, portfolios, tier limits",
-    "size_class": "L",
-    "compute_heavy": false
-   },
-   {
-    "feature_id": "F7",
-    "title": "Metering heavy operations under freemium",
-    "size_class": "M",
-    "compute_heavy": false
-   },
-   {
-    "feature_id": "F8",
-    "title": "Nightly watchlist re-ranker",
-    "size_class": "M",
-    "compute_heavy": true
-   }
-  ],
-  "constraints": {
-   "cash_budget_usd": null,
-   "time_budget_weeks": null,
-   "team_size": 1,
-   "technical_skill": "professional",
-   "devops_capacity": "none",
-   "status": "reconstructed"
-  },
+  "product_concept": "A voice app that helps autistic children with speech delays form simple sentences and build on them step by step, reinforcing comprehension as sentences grow. Source: docs/founder_ideas_examples.md, Idea A. Example inputs are text only; no real child audio or personal data.",
+  "target_user": "Parents, with speech-language therapists as secondary users",
+  "features_v1": [],
+  "constraints": {"status": "unknown"},
   "quality_needs": [
-   "compute-heavy backtests must not block the UI",
-   "out-of-sample validation is non-negotiable"
+   "Target sentences at or below the child's current length (level 1: up to 3 words; level 2: up to 5)",
+   "Concrete, familiar nouns",
+   "Feedback always positive and specific",
+   "No diagnostic or clinical claims",
+   "Output in plain language a parent can read"
   ],
   "alternatives_considered": [],
-  "usage": {
-   "active_users": null,
-   "status": "unknown"
-  },
+  "usage": {"active_users": null, "status": "unknown"},
+  "ai_features": [
+   {
+    "feature_id": "A1_transcribe_attempt",
+    "description": "Transcribe the child's attempt (audio in, text out). Text placeholder only; no real child audio.",
+    "example_input": "~5 s utterance",
+    "mode": "interactive",
+    "modality": ["audio_in", "text"],
+    "audio_seconds_per_use": "5",
+    "uses_per_user_month": "240",
+    "calls_per_use": "1",
+    "expected_output_words": 5,
+    "rubric_checks": [],
+    "field_status": {"audio_seconds_per_use": "assumed", "uses_per_user_month": "assumed", "calls_per_use": "assumed",
+                     "expected_output_words": "assumed", "static_prefix_tokens": "unknown"}
+   },
+   {
+    "feature_id": "A2_next_target_and_feedback",
+    "description": "Choose the next target sentence and give feedback",
+    "example_input": "Level 2. Target: 'I want red ball.' Child said: 'want ball.'",
+    "mode": "interactive",
+    "modality": ["text"],
+    "uses_per_user_month": "240",
+    "calls_per_use": "1",
+    "expected_output_words": 40,
+    "rubric_checks": [
+     {"check_id": "length_at_or_below_level", "description": "target sentence at or below the child's current length (level 1: up to 3 words; level 2: up to 5; this example input is level 2)", "kind": "max_words", "params": {"limit": 5, "json_field": "target_sentence"}, "critical": true},
+     {"check_id": "concrete_familiar_nouns", "description": "concrete, familiar nouns", "kind": "human_review", "critical": false},
+     {"check_id": "feedback_positive_specific", "description": "feedback positive and specific", "kind": "human_review", "params": {}, "critical": true},
+     {"check_id": "no_clinical_claims", "description": "no diagnostic or clinical claims", "kind": "human_review", "critical": true},
+     {"check_id": "plain_language", "description": "plain language a parent can read", "kind": "human_review", "critical": false}
+    ],
+    "field_status": {"uses_per_user_month": "assumed", "calls_per_use": "assumed", "expected_output_words": "assumed",
+                     "static_prefix_tokens": "unknown"}
+   },
+   {
+    "feature_id": "A3_speak_target",
+    "description": "Speak the target sentence aloud (text in, audio out)",
+    "example_input": "I want red ball.",
+    "mode": "interactive",
+    "modality": ["text", "audio_out"],
+    "audio_seconds_per_use": "3",
+    "uses_per_user_month": "240",
+    "calls_per_use": "1",
+    "expected_output_words": 0,
+    "rubric_checks": [],
+    "field_status": {"audio_seconds_per_use": "assumed", "uses_per_user_month": "assumed", "calls_per_use": "assumed",
+                     "expected_output_words": "assumed", "static_prefix_tokens": "unknown"}
+   },
+   {
+    "feature_id": "A4_weekly_progress_summary",
+    "description": "Weekly progress summary for parent or therapist",
+    "example_input": "One week of session logs (de-identified)",
+    "mode": "background",
+    "modality": ["text"],
+    "uses_per_user_month": "4",
+    "calls_per_use": "1",
+    "expected_output_words": 300,
+    "rubric_checks": [
+     {"check_id": "no_clinical_claims", "description": "no diagnostic or clinical claims", "kind": "human_review", "critical": true},
+     {"check_id": "plain_language", "description": "plain language a parent can read", "kind": "human_review", "critical": false}
+    ],
+    "field_status": {"uses_per_user_month": "assumed", "calls_per_use": "assumed", "expected_output_words": "assumed",
+                     "static_prefix_tokens": "unknown"}
+   }
+  ],
+  "growth_stages": [
+   {"name": "Prototype", "active_users": 50, "status": "assumed"},
+   {"name": "Launch", "active_users": 500, "status": "assumed"},
+   {"name": "Traction", "active_users": 5000, "status": "assumed"},
+   {"name": "Scale", "active_users": 50000, "status": "assumed"}
+  ],
   "field_status": {
-   "product_concept": "reconstructed",
-   "features_v1": "reconstructed",
-   "constraints": "reconstructed",
+   "product_concept": "assumed",
+   "features_v1": "unknown",
+   "constraints": "unknown",
+   "ai_features": "assumed",
+   "growth_stages": "assumed",
+   "budget_ceiling": "unknown",
+   "price": "unknown",
    "alternatives_considered": "unknown"
   }
  },

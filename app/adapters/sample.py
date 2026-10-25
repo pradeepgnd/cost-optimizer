@@ -7,8 +7,6 @@ execution_kind=rule_policy with model=None.
 from __future__ import annotations
 
 import json
-import re
-import time
 from decimal import Decimal
 from pathlib import Path
 from typing import Optional
@@ -62,34 +60,14 @@ class SampleDataLayer(DataLayer):
 
 
 class RulePolicyInference(Inference):
-    """Deterministic stand-in for Planner/Analyst/Critic calls. Produces structure from inputs, not canned prose."""
+    """Sample mode makes no inference calls and produces no outputs. The controller estimates tokens with the
+    4/3 rule instead; any attempt to call a model here is a bug and fails loudly rather than inventing text."""
 
     def list_models(self):
         return []
 
-    def complete(self, *, role, model, system, user, json_schema=None, timeout_s=60) -> InferenceResult:
-        t0 = time.time()
-        text = self._policy(role, user)
-        return InferenceResult(text=text, requested_model=None, resolved_model=None, route_id=None,
-                               usage={"input_tokens": 0, "output_tokens": 0}, elapsed_s=round(time.time() - t0, 4),
-                               execution_kind="rule_policy")
-
-    def _policy(self, role: str, user: str) -> str:
-        if role == "candidate":
-            # Produce a spec skeleton that covers required elements named in the prompt, deliberately
-            # omitting any element the prompt marks as "context not retrieved" so the critic has work to do.
-            required = re.findall(r"required_element:(\w+)", user)
-            missing_ctx = set(re.findall(r"context_missing:(\w+)", user))
-            sections = {k: (f"[{k}] specified from brief and retrieved records" if k not in missing_ctx
-                            else f"[{k}] NOT SPECIFIED — supporting record not in context") for k in required}
-            sections["cost_note"] = "cost_note: " + ("sourced:rate_ref" if "rate_ref:" in user else "UNSOURCED")
-            return json.dumps(sections)
-        if role == "critic":
-            gaps = re.findall(r"NOT SPECIFIED — supporting record not in context", user)
-            unsourced = "UNSOURCED" in user
-            return json.dumps({"gaps": len(gaps), "unsourced_cost": unsourced,
-                               "action": "retrieve_evidence" if gaps else ("revise_prototype" if unsourced else "finalize")})
-        return json.dumps({"note": "rule_policy"})
+    def complete(self, *, role, model, system, user, json_schema=None, timeout_s=60, max_tokens=None) -> InferenceResult:
+        raise RuntimeError(f"sample mode makes no inference calls (role {role}); no output is fabricated")
 
 
 class SampleMemory(Memory):

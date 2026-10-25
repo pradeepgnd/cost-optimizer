@@ -1,7 +1,7 @@
 from decimal import Decimal
 from app.contracts import *
 from app.economics import (build_ledger, cost_per_call, detect_switch_points, estimate_feature_tokens, estimate_tokens,
-                           operating_ledger, stage_cost_row, stage_cost_table)
+                           operating_ledger, recommend_model_stack, stage_cost_row, stage_cost_table)
 
 def _src(i): return SourceRef(source_set="pricing_snapshots", record_id=i, version="t")
 def _r(cat, usd): return Rate(category=cat, unit="1M tokens", usd_per_unit=None if usd is None else Decimal(usd),
@@ -196,6 +196,43 @@ def test_rule_policy_or_missing_quality_is_not_switch_evidence():
                          rubric_results=_results({"specific": True, "no_invented_facts": True, "tone": True}, kind="rule_policy"))
     assert t.switch_points == [] and not t.pending_switch_points[0].quality_qualified
     assert stage_cost_table(_feature(), MODELS, TOKENS).switch_points == []
+
+# ---------------------------------------------------------------- model stack
+
+ALL_PASS = {"specific": True, "no_invented_facts": True, "tone": True}
+NO_TONE = {"specific": True, "no_invented_facts": True, "tone": False}
+
+def _stack(cheap_checks, frontier_checks=ALL_PASS, threshold="100", feature=None, models=MODELS):
+    f = feature or _feature()
+    res = [RubricResult(feature_id="plan", model_id="f", checks=frontier_checks, execution_kind="live_inference"),
+           RubricResult(feature_id="plan", model_id="cheap", checks=cheap_checks, execution_kind="live_inference")]
+    t = stage_cost_table(f, models, TOKENS, rubric_results=res, threshold_usd=Decimal(threshold))
+    return {e.stage: e for e in recommend_model_stack(f, t, models, res)}
+
+def test_stack_picks_cheapest_qualified_not_frontier_by_name():
+    s = _stack(ALL_PASS)
+    assert {e.model_id for e in s.values()} == {"cheap"} and s["Scale"].alternate_model_id == "f"
+
+def test_stack_keeps_higher_quality_only_below_the_threshold():
+    # frontier passes 3/3, cheap 2/3; difference is $9.90, $99.00, $990, $9,900 by stage against $100
+    s = _stack(NO_TONE)
+    assert [s[x].model_id for x in ("Prototype", "Launch", "Traction", "Scale")] == ["f", "f", "cheap", "cheap"]
+    assert "kept over cheaper cheap" in s["Launch"].reason
+
+def test_stack_never_picks_a_model_losing_money_per_use_when_a_qualified_one_does_not():
+    # cost per use: frontier $0.022, cheap $0.0022; revenue $0.01 per use
+    f = _feature().model_copy(update={"revenue_per_use": Decimal("0.01")})
+    s = _stack(NO_TONE, feature=f)
+    assert {e.model_id for e in s.values()} == {"cheap"} and "exceeds revenue per use" in s["Prototype"].reason
+
+def test_stack_says_so_when_no_candidate_passes():
+    s = _stack({"specific": False, "no_invented_facts": True, "tone": True},
+               frontier_checks={"specific": True, "no_invented_facts": False, "tone": True})
+    assert {e.status for e in s.values()} == {"no_candidate_passes"} and s["Scale"].model_id is None
+
+def test_pending_critical_human_review_blocks_until_reviewed():
+    s = _stack({"specific": True, "tone": True})          # no_invented_facts still pending
+    assert {e.model_id for e in s.values()} == {"f"}
 
 def test_no_frontier_means_no_switch_points():
     q, p, w = detect_switch_points(_feature(), default_stages(), [], [MODELS[1]])
