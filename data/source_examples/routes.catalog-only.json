@@ -1,0 +1,8 @@
+{
+  "mapping_status": "planned",
+  "routes": [
+    {"catalog_id": "anthropic/claude-sonnet-4.6", "route_id": "openrouter/anthropic/claude-sonnet-4.6", "tier": "frontier"},
+    {"catalog_id": "google/gemini-2.5-flash", "route_id": "openrouter/google/gemini-2.5-flash", "tier": "mid_tier"},
+    {"catalog_id": "nvidia/nemotron-3.5-lightning", "route_id": "nvidia/nemotron-3.5-lightning-30b-a3b", "tier": "open_source", "required": true}
+  ]
+}

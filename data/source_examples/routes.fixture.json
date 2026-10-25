@@ -1,0 +1,8 @@
+{
+  "mapping_status": "planned",
+  "routes": [
+    {"catalog_id": "fixture/frontier", "route_id": "fixture/frontier", "tier": "frontier"},
+    {"catalog_id": "fixture/mid", "route_id": "fixture/mid", "tier": "mid_tier"},
+    {"catalog_id": "fixture/nemotron", "route_id": "fixture/nemotron", "tier": "open_source", "required": true}
+  ]
+}

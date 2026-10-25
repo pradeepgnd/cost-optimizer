@@ -32,6 +32,23 @@ def validate_select_one(body) -> None:
         raise ValueError("SELECT 1 cell must be 1")
 
 
+def table_rows(body, limit=50) -> list[dict]:
+    rows = sql_rows(body)
+    if len(rows) > limit:
+        raise ValueError("SQL result exceeded its row bound; refusing truncated/incomplete source")
+    if isinstance(body, dict) and "headers" in body:
+        headers = body["headers"]
+        if (not isinstance(headers, list) or any(not isinstance(header, str) or not header for header in headers)
+                or len(set(headers)) != len(headers)):
+            raise ValueError("SQL response has ambiguous headers")
+        if any(not isinstance(row, list) or len(row) != len(headers) for row in rows):
+            raise ValueError("SQL row/header shape mismatch")
+        return [dict(zip(headers, row)) for row in rows]
+    if any(not isinstance(row, dict) for row in rows):
+        raise ValueError("SQL rows need named columns or explicit headers")
+    return rows
+
+
 def validate_model_ids(ids) -> list[str]:
     if not isinstance(ids, list) or not ids:
         raise ValueError("Model discovery must contain a nonempty data list")

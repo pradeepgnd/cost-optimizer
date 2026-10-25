@@ -6,7 +6,7 @@ import pytest
 
 from app.adapters.base import Inference, InferenceResult
 from app.adapters.sample import SampleDataLayer, SampleMemory
-from app.contracts import FounderBrief, RunRequest, RunState
+from app.contracts import FounderBrief, RunRequest, RunState, SourceRef, EvidenceStatus
 from app.controller import MAX_CANDIDATE_GENERATIONS, NOT_ADVICE, Budget, Checkpoints, Controller, StopRun
 from app.trace import Trace
 from tests.dispatch_fixtures import verified_profile
@@ -29,6 +29,16 @@ class Data(SampleDataLayer):
 
     def write_evidence(self, record):
         self.written.append(record)
+        return self.read_evidence(record["id"])[1]
+
+    def read_evidence(self, record_id):
+        from app.source_snapshots import canonical, digest
+        record = next((record for record in self.written if record["id"] == record_id), None)
+        if record is None:
+            raise KeyError(record_id)
+        sha = digest(canonical(record))
+        return record, SourceRef(source_set="evaluation_evidence", record_id=record_id, version=sha,
+            content_sha256=sha, status=EvidenceStatus.unverified, transport_ref="fixture://scripted-data-layer")
 
 
 class FakeNightshift(Inference):

@@ -23,8 +23,9 @@ def _load(name: str):
 
 
 class SampleDataLayer(DataLayer):
-    def __init__(self):
+    def __init__(self, evidence_path=None):
         self.manifest = _load("manifest.json")
+        self.evidence_path = Path(evidence_path) if evidence_path else DATA.parent / "sample_evidence_written.jsonl"
 
     def _ref(self, source_set: str, record_id: str, status=EvidenceStatus.verified) -> SourceRef:
         m = self.manifest["sources"][source_set]
@@ -52,11 +53,30 @@ class SampleDataLayer(DataLayer):
         return _load("retrospective_actuals_SYNTHETIC.json")
 
     def write_evidence(self, record: dict) -> SourceRef:
-        out = DATA.parent / "sample_evidence_written.jsonl"
-        with out.open("a", encoding="utf-8") as f:
+        if "id" not in record:
+            raise ValueError("sample evidence needs an ID")
+        try:
+            previous, source = self.read_evidence(record["id"])
+            if previous != record:
+                raise ValueError("sample evidence ID conflict")
+            return source
+        except KeyError:
+            pass
+        self.evidence_path.parent.mkdir(parents=True, exist_ok=True)
+        with self.evidence_path.open("a", encoding="utf-8") as f:
             f.write(json.dumps(record, default=str) + "\n")
-        return SourceRef(source_set="evaluation_evidence", record_id=record.get("id", "local"), version="local-unpublished",
-                         status=EvidenceStatus.verified)
+        return self.read_evidence(record["id"])[1]
+
+    def read_evidence(self, record_id):
+        from app.source_snapshots import canonical, digest
+        if self.evidence_path.exists():
+            for line in self.evidence_path.read_text(encoding="utf-8").splitlines():
+                record = json.loads(line)
+                if record.get("id") == record_id:
+                    sha = digest(canonical(record))
+                    return record, SourceRef(source_set="evaluation_evidence", record_id=record_id, version=sha,
+                        status=EvidenceStatus.unverified, content_sha256=sha, origin_url=f"sample://evidence/{record_id}")
+        raise KeyError("sample evidence not found")
 
 
 class RulePolicyInference(Inference):

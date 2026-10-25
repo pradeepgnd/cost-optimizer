@@ -1,0 +1,9 @@
+{
+  "backend": "aws",
+  "bucket": "replace-with-your-source-bucket",
+  "prefix": "cost-optimizer/v4",
+  "region": "us-east-1",
+  "publisher_endpoint": null,
+  "zetaris_endpoint": null,
+  "namespace": "cost_optimizer_v4"
+}

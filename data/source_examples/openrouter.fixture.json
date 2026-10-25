@@ -1,0 +1,9 @@
+{
+  "fixture_notice": "Synthetic offline source-pipeline fixture, not public catalog or provider evidence.",
+  "data": [
+    {"id": "fixture/frontier", "name": "Synthetic frontier", "context_length": 8192, "pricing": {"prompt": "0.000005", "completion": "0.000025"}},
+    {"id": "fixture/mid", "name": "Synthetic mid-tier", "context_length": 8192, "pricing": {"prompt": "0.000001", "completion": "0.000005"}},
+    {"id": "fixture/nemotron", "name": "Synthetic open-source", "context_length": 8192, "pricing": {"prompt": "0.0000002", "completion": "0.0000006"}}
+  ],
+  "links": {"next": null}
+}

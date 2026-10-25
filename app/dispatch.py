@@ -66,6 +66,9 @@ class Checkpoints:
             PRIMARY KEY(run_id, logical_id, attempt))""")
         self.conn.execute("""CREATE TABLE IF NOT EXISTS dispatch_budgets (
             run_id TEXT PRIMARY KEY, max_spend TEXT NOT NULL)""")
+        self.conn.execute("""CREATE TABLE IF NOT EXISTS evidence_outbox (
+            record_id TEXT PRIMARY KEY, run_id TEXT NOT NULL, payload TEXT NOT NULL,
+            status TEXT NOT NULL, source_ref TEXT, error_type TEXT)""")
         self.conn.commit()
 
     def claim(self, run_id):
@@ -84,6 +87,24 @@ class Checkpoints:
     def save_pack(self, run_id, pack):
         self.conn.execute("UPDATE runs SET pack=? WHERE run_id=?", (pack.model_dump_json(), run_id))
         self.conn.commit()
+
+    def stage_evidence(self, run_id, record):
+        payload = json.dumps(record, sort_keys=True, ensure_ascii=False, separators=(",", ":"), allow_nan=False)
+        self.conn.execute("INSERT OR IGNORE INTO evidence_outbox VALUES (?, ?, ?, 'pending', NULL, NULL)", (record["id"], run_id, payload))
+        existing = self.conn.execute("SELECT payload FROM evidence_outbox WHERE record_id=?", (record["id"],)).fetchone()
+        if existing[0] != payload:
+            self.conn.rollback()
+            raise ValueError("local evidence ID conflict")
+        self.conn.commit()
+
+    def evidence_status(self, record_id, *, source=None, error=None):
+        self.conn.execute("UPDATE evidence_outbox SET status=?, source_ref=?, error_type=? WHERE record_id=?",
+            ("published" if source else "pending", source.model_dump_json() if source else None, error, record_id))
+        self.conn.commit()
+
+    def pending_evidence(self, run_id):
+        return [json.loads(row[0]) for row in self.conn.execute(
+            "SELECT payload FROM evidence_outbox WHERE run_id=? AND status='pending' ORDER BY rowid", (run_id,))]
 
     def operations(self, run_id):
         return [DispatchRecord.model_validate_json(row[0]) for row in self.conn.execute(

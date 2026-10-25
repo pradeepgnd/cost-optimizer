@@ -47,6 +47,10 @@ class SourceRef(BaseModel):
     origin_url: Optional[str] = None
     verified_at: Optional[str] = None
     status: EvidenceStatus = EvidenceStatus.verified
+    transport_ref: Optional[str] = None
+    query_id: Optional[str] = None
+    content_sha256: Optional[str] = None
+    snapshot_id: Optional[str] = None
 
 
 # -------------------------------------------------------------- founder brief
@@ -815,6 +819,7 @@ class DecisionPack(BaseModel):
     selected_samples_per_pair: NonNegativeInt = 0
     sampling_profile: Literal["production", "validation"] = "production"
     operations: list[DispatchRecord] = Field(default_factory=list)
+    unpublished_evidence_ids: list[str] = Field(default_factory=list)
     trace_path: Optional[str] = None
     disclaimer: str = (
         "Economics are modeled estimates from entered assumptions and cited rates. "

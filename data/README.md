@@ -1,5 +1,11 @@
 # Data
 
+The [Steps 5–6 manual guide](../docs/12-M05-M06-Manual-Testing.md) documents the implemented collector, immutable source bundle, publication/registration, typed reads, reference calculation and evidence round trip. [source_examples/](source_examples/) contains public LocalStack/AWS configuration examples and explicitly synthetic/catalog-only route maps. Generated raw data, bundles and reports are under the ignored `data/localstack/` tree. Portable verification summaries are retained outside it in [m05-m06-source-checks.json](../docs/m05-m06-source-checks.json).
+
+Source manifest schema 1.0 retains raw response files, normalized catalog, quarantined entries, acquisition mode, retrieval time, counts and hashes. Application bundle/bindings schema 1.1 pins dataset/version names, exact IDs/counts and per-row envelope SHA-256. Raw source files are published with the bundle; a release marker is created only after registered data matches. Versioned tables are immutable and no current pointer is automatically promoted. Existing matching sources are reused; conflicts are reported without replacement. Application reads preserve original source URLs/dates/statuses and add separate Zetaris transport/query/hash references.
+
+The source publisher is a separate process. It uses create-only S3 publication and conditional append-only evidence writes with exact readback; the application has no S3 credential requirement. On publication failure, generated output/configuration/rubric/critique/repair evidence remains in a durable SQLite outbox. `scripts/retry_evidence.py` retries publication only, with zero model generations. Its test-fixture mode requires a new test DB and never erases real runs. LocalStack execution has been tested; AWS-side IAM/registration remains unverified.
+
 All runtime data is read through **Zetaris** (live) or from `data/sample/` (SAMPLE_MODE). Registered files live in the team's Amazon S3 bucket; Zetaris reads them from there. Bucket credentials are Zetaris-side configuration and never appear in this repository.
 
 | Source set | Live source name | Sample file | Status | Notes |

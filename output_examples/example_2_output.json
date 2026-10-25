@@ -4298,7 +4298,11 @@
       "version": "sample-2",
       "origin_url": null,
       "verified_at": null,
-      "status": "unverified"
+      "status": "unverified",
+      "transport_ref": null,
+      "query_id": null,
+      "content_sha256": null,
+      "snapshot_id": null
     },
     {
       "source_set": "pricing_snapshots",
@@ -4306,7 +4310,11 @@
       "version": "sample-2",
       "origin_url": null,
       "verified_at": null,
-      "status": "unverified"
+      "status": "unverified",
+      "transport_ref": null,
+      "query_id": null,
+      "content_sha256": null,
+      "snapshot_id": null
     },
     {
       "source_set": "pricing_snapshots",
@@ -4314,7 +4322,11 @@
       "version": "sample-2",
       "origin_url": null,
       "verified_at": null,
-      "status": "unverified"
+      "status": "unverified",
+      "transport_ref": null,
+      "query_id": null,
+      "content_sha256": null,
+      "snapshot_id": null
     },
     {
       "source_set": "pricing_snapshots",
@@ -4322,7 +4334,11 @@
       "version": "sample-2",
       "origin_url": null,
       "verified_at": null,
-      "status": "unverified"
+      "status": "unverified",
+      "transport_ref": null,
+      "query_id": null,
+      "content_sha256": null,
+      "snapshot_id": null
     },
     {
       "source_set": "pricing_snapshots",
@@ -4330,7 +4346,11 @@
       "version": "sample-3",
       "origin_url": null,
       "verified_at": null,
-      "status": "unverified"
+      "status": "unverified",
+      "transport_ref": null,
+      "query_id": null,
+      "content_sha256": null,
+      "snapshot_id": null
     },
     {
       "source_set": "pricing_snapshots",
@@ -4338,7 +4358,11 @@
       "version": "sample-5",
       "origin_url": null,
       "verified_at": null,
-      "status": "unverified"
+      "status": "unverified",
+      "transport_ref": null,
+      "query_id": null,
+      "content_sha256": null,
+      "snapshot_id": null
     },
     {
       "source_set": "pricing_snapshots",
@@ -4346,7 +4370,11 @@
       "version": "sample-3",
       "origin_url": null,
       "verified_at": null,
-      "status": "unverified"
+      "status": "unverified",
+      "transport_ref": null,
+      "query_id": null,
+      "content_sha256": null,
+      "snapshot_id": null
     },
     {
       "source_set": "pricing_snapshots",
@@ -4354,7 +4382,11 @@
       "version": "sample-3",
       "origin_url": null,
       "verified_at": null,
-      "status": "unverified"
+      "status": "unverified",
+      "transport_ref": null,
+      "query_id": null,
+      "content_sha256": null,
+      "snapshot_id": null
     }
   ],
   "memory_ids": [],
@@ -4736,6 +4768,7 @@
   "selected_samples_per_pair": 0,
   "sampling_profile": "production",
   "operations": [],
+  "unpublished_evidence_ids": [],
   "trace_path": "logs/trace-example-2.jsonl",
   "disclaimer": "Economics are modeled estimates from entered assumptions and cited rates. They are not financial advice. See evidence_gaps and limitations."
 }

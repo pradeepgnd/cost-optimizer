@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import json
 import uuid
+import httpx
 from decimal import Decimal, ROUND_HALF_UP
 from typing import Optional
 
@@ -96,21 +97,25 @@ class Controller:
         self.state = new
         self.ckpt.set_state(self.run_id, new)
 
-    def _read(self, source_key: str, fn, *args) -> Observation:
+    def _read(self, source_key: str, fn, *args):
         """Every data read passes here. Sealed sources before freeze are denied and logged."""
         allowed = ALLOWLIST.get(self.state, set())
         if source_key not in allowed:
             self.trace.event("Controller", "retrieve_evidence", status="denied_sealed" if source_key in SEALED else "denied",
                              input_summary=source_key, output_summary=f"not permitted in state {self.state.value}")
             return Observation(status="denied_sealed" if source_key in SEALED else "error",
-                               error=f"{source_key} not readable in state {self.state.value}")
+                               error=f"{source_key} not readable in state {self.state.value}"), None
         try:
             result = fn(*args)
         except KeyError as e:
-            return Observation(status="missing", missing_fields=[str(e)])
+            return Observation(status="missing", missing_fields=[str(e)]), None
+        except (SetupIncomplete, ValueError, NotImplementedError, httpx.HTTPError) as error:
+            self.trace.event("Analyst", "retrieve_evidence", status="error", input_summary=source_key,
+                             output_summary=type(error).__name__)
+            return Observation(status="error", error=type(error).__name__), None
         self.trace.event("Analyst", "retrieve_evidence", input_summary=source_key,
                          output_summary=f"{source_key} read ok", evidence_ids=[source_key])
-        return Observation(status="ok", source_ids=[source_key], result_ref=source_key)
+        return Observation(status="ok", source_ids=[source_key], result_ref=source_key), result
 
     def _validate(self, p: ActionProposal) -> ActionProposal:
         """Schema is enforced by Pydantic; here we enforce allowlist and founder-constraint protection."""
@@ -127,6 +132,7 @@ class Controller:
 
     def run(self, req: RunRequest) -> DecisionPack:
         self.run_id = req.run_id
+        self.project_id = req.project_id
         budget = Budget(max_spend=req.max_spend_usd)
         pack = DecisionPack(run_id=req.run_id, project_id=req.project_id, execution_mode=self.mode,
                             status=RunState.approved, trace_path=str(self.trace.path),
@@ -165,15 +171,20 @@ class Controller:
 
             # 2. Pricing evidence and candidates
             self._transition(RunState.investigating)
-            obs = self._read("pricing_snapshots", self.data.read_approaches)
-            if obs.status != "ok":
+            obs, models = self._read("pricing_snapshots", self.data.read_models)
+            if obs.status != "ok" or not models:
                 raise StopRun(RunState.needs_input, "pricing unavailable", ["Which models and approaches should be priced?"])
-            approaches = self.data.read_approaches()
-            models = self.data.read_models()
+            build_obs, approaches = self._read("pricing_snapshots", self.data.read_approaches)
+            if build_obs.status != "ok":
+                approaches = []
+                self.limitations.append("Optional build prices unavailable; operating comparison continues independently.")
+                self.gaps.append(EvidenceGap(field="build_prices", status=EvidenceStatus.unknown, note="optional build source unavailable"))
             self.dispatcher = Dispatcher(self.inf, self.ckpt, req.run_id, budget, models, self.trace)
             self.evidence += [a.source for a in approaches] + [m.source for m in models]
             route_list = self.inf.list_models() if self.mode == "live" else []   # GET /v1/models is free
             candidates, pack.candidate_shortlist = self._candidates(models, set(route_list) if self.mode == "live" else None)
+            if not candidates:
+                raise StopRun(RunState.needs_input, "no candidate models available in the pinned price source")
 
             # 3. Critic route, before any paid call
             self._check_critic_route(candidates, route_list)
@@ -262,6 +273,19 @@ class Controller:
         if runs:
             self._project(pack, brief, candidates, runs)
             pack.feature_runs = list(runs.values()) + repairs
+        if self.mode == "live" and budget.dispatch_count:
+            self._publish_evidence({"id": f"{req.run_id}/decision-evidence", "run_id": req.run_id, "project_id": req.project_id,
+                "kind": "decision_evidence", "payload": {"feature_runs": [run.model_dump(mode="json") for run in pack.feature_runs],
+                    "critiques": [critique.model_dump(mode="json") for critique in pack.critiques],
+                    "revisions": [revision.model_dump(mode="json") for revision in pack.revisions],
+                    "operation_ids": [operation.operation_id for operation in self.ckpt.operations(req.run_id)]}})
+        pending = self.ckpt.pending_evidence(req.run_id)
+        pack.unpublished_evidence_ids = [record["id"] for record in pending]
+        if pending:
+            self.limitations.append(f"{len(pending)} evidence record(s) remain unpublished in the local outbox; no verified writeback is claimed.")
+            if pack.status == RunState.complete:
+                pack.status = RunState.partial
+                self._transition(RunState.partial)
         if pack.status == RunState.complete:
             try:
                 saved = self.mem.remember_confirmed(req.project_id, {"kind": "accepted_finding", "run_id": req.run_id,
@@ -571,11 +595,30 @@ class Controller:
                          output_summary="usage unavailable" if usage is None else
                          f"measured {usage.input_tokens} in / {usage.output_tokens} out"
                          + ("" if usage.reasoning_tokens is None else f" (incl. {usage.reasoning_tokens} reasoning)"))
-        try:
-            self.data.write_evidence({"id": ref, "feature_id": f.feature_id, "model_id": m.model_id, **s.model_dump(mode="json")})
-        except NotImplementedError:
-            self.limitations.append("Evidence writeback to the data layer is not wired yet; runs are kept in the pack only.")
+        self._publish_evidence({"id": ref, "run_id": self.run_id, "project_id": self.project_id,
+            "kind": "feature_sample", "payload": {"feature_id": f.feature_id, "model_id": m.model_id,
+                "configuration": {"system_prompt": self._prompt(f), "max_tokens": s.max_tokens}, **s.model_dump(mode="json")}})
         return s
+
+    def _publish_evidence(self, record):
+        self.ckpt.stage_evidence(self.run_id, record)
+        try:
+            written = self.data.write_evidence(record)
+            obs, returned = self._read("evaluation_evidence", self.data.read_evidence, record["id"])
+            if obs.status != "ok" or returned is None:
+                raise SetupIncomplete("evidence readback unavailable")
+            payload, source = returned
+            from app.source_snapshots import canonical, digest
+            if (not isinstance(written, SourceRef) or canonical(payload) != canonical(record)
+                    or source.record_id != record["id"] or source.version != written.version
+                    or source.content_sha256 != digest(canonical(record))):
+                raise ValueError("published evidence continuity mismatch")
+            self.ckpt.evidence_status(record["id"], source=source)
+            self.evidence.append(source)
+        except (SetupIncomplete, ValueError, NotImplementedError, KeyError, httpx.HTTPError) as error:
+            self.ckpt.evidence_status(record["id"], error=type(error).__name__)
+            self.trace.event("Analyst", "evidence_publication", status="pending", evidence_ids=[record["id"]],
+                             output_summary=f"local outbox retained: {type(error).__name__}")
 
     def _finish_run(self, run: FeatureRun, f: FeatureProfile, samples: list[FeatureSample], req: RunRequest):
         run.executed, run.samples, run.not_executed_reason = True, samples, None
