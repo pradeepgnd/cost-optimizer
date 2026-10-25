@@ -4,7 +4,7 @@ All runtime data is read through **Zetaris** (live) or from `data/sample/` (SAMP
 
 | Source set | Live source name | Sample file | Status | Notes |
 |---|---|---|---|---|
-| founder_briefs | `oah.founder_briefs` | `founder_briefs.json` | reconstructed | The AVL brief is reconstructed from pre-build artifacts by the founder, leakage-reviewed by a teammate (06 §4). Two additional briefs are synthetic. |
+| founder_briefs | `oah.founder_briefs` | `founder_briefs.json` | synthetic | Two synthetic briefs. The AVL pre-build brief was removed in v4 (the retrospective is shelved, 07 §10). Founder ideas used as run inputs are in `input_examples/` and `docs/founder_ideas_examples.md`, every number labeled assumed. |
 | pricing_snapshots | `oah.pricing_snapshots_*` | `pricing_snapshots.json` | **PLACEHOLDER / unverified** | To be replaced by dated, URL-cited public pricing (W04). Unknown rates stay unknown. |
 | dev_task_cases | `oah.dev_task_cases` | `dev_task_cases.json` | derived | 6 spec-level tasks (T1–T6); 3 development, 3 holdout. Holdout rows are sealed until freeze. |
 | evaluation_evidence | `oah.evaluation_evidence` | written at run time | generated | Case results and critiques; live writeback via the supported registration path. |

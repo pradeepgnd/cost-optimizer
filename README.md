@@ -47,7 +47,7 @@ Founder brief ─► Controller (allowlist by state, call caps, spend reservatio
                    └─ freeze ─► holdout ─► DecisionPack (+ sealed-actuals comparison, separate script)
 ```
 
-Hard limits per run: 1 planning call, 1 batched critique, ≤1 revision, ≤23 candidate generations, ≤2 transport retries. `retrospective_actuals` and holdout tasks are unreadable before `frozen`; an attempt is logged `denied_sealed`.
+Hard limits per run: 1 planning call, 1 batched critique, ≤1 revision, ≤30 candidate generations, ≤2 transport retries. `retrospective_actuals` and holdout tasks are unreadable before `frozen`; an attempt is logged `denied_sealed`.
 
 ## Sponsor technology
 
