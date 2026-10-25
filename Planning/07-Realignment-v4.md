@@ -1,6 +1,6 @@
 # v4 Realignment: AI SaaS Cost Advisor
 
-Version 4.0 | October 25, 2026 | Owner: Narin | **Authoritative.** Where this document conflicts with PRD/architecture/plan v3.4 or `06`, this document wins. Sections of v3.4 not contradicted here still apply: sponsor requirements, controller limits, trace format, sample mode rules, secrets, submission package.
+Version 4.1 | October 25, 2026 | Owner: Narin | v4.1 applies Isioma's review (precision, reasoning tokens, critic authority, lever labels, self-host inputs) | **Authoritative.** Where this document conflicts with PRD/architecture/plan v3.4 or `06`, this document wins. Sections of v3.4 not contradicted here still apply: sponsor requirements, controller limits, trace format, sample mode rules, secrets, submission package.
 
 ## 1. What changed and why
 
@@ -36,7 +36,7 @@ The objection to answer: *an architecture advisor is a spreadsheet with guessed 
 2. **Plan** (Planner via Nightshift): turn each feature into a representative AI task with a rubric, and choose the candidate models. Ask the founder when a cost-critical input is missing.
 3. **Retrieve** (Analyst via Zetaris): current prices (input, output, cache, batch, long-context thresholds) and an intelligence index for each candidate, dated and cited.
 4. **Execute** (Analyst via Nightshift): run each task's example input on each candidate. Record **measured** input, output and reasoning tokens from the API `usage` fields, plus latency.
-5. **Critique** (Critic via Nightshift): check each output against its rubric, flag unsupported claims, flag estimate-versus-measured token gaps, and propose one corrective action, such as a tighter output limit or moving a static instruction into a cacheable prefix.
+5. **Check, then critique.** Deterministic rubric checks score each output; they and human review are the authority. The Critic (via Nightshift) only *flags*: unsupported claims, flag estimate-versus-measured token gaps, and propose one corrective action, such as a tighter output limit or moving a static instruction into a cacheable prefix.
 6. **Repair** (at most one): apply the validated change and re-run the affected task once.
 7. **Project** (deterministic): monthly cost per stage, per candidate, with levers applied where eligible, plus switch points.
 8. **Recommend and remember**: the model stack per feature per stage, switch points with quality evidence, and risks. Store the accepted decisions in H-MEM.
@@ -54,7 +54,7 @@ User volume remains the founder's estimate and is labeled that way. Tokens and q
 
 Exact route IDs are pinned from Nightshift's `GET /v1/models` during setup. `meterless/auto` is not a candidate.
 
-**The critic is not Nemotron.** Nemotron is now a candidate, and a model should not grade its own outputs. The critic uses the frontier route; human review stays authoritative. NVIDIA award eligibility comes from Nemotron handling a working feature with its model identity logged per request (Submission Requirements §4).
+**No model grades the comparison.** Every candidate, frontier included, is being compared, so pass/fail comes from deterministic rubric checks plus human review. The Critic only flags issues and proposes one corrective action. Where Nightshift exposes a route from a lab that is not a candidate, the Critic uses it; otherwise the trace discloses that the Critic shares a lab with a candidate. NVIDIA award eligibility comes from Nemotron handling a working feature with its model identity logged per request (Submission Requirements §4).
 
 ## 5. Economics (two ledgers, never summed)
 
@@ -64,11 +64,16 @@ Default stages, all editable: **Prototype 50 · Launch 500 · Traction 5,000 · 
 
 ```text
 calls[f,s]       = users[s] × uses_per_user_month[f] × calls_per_use[f]
-cost_call[f,m]   = (in_measured × p_in[m] + out_measured × p_out[m] + reasoning × p_out[m]) / 1e6
+cost_call[f,m]   = (in_measured × p_in[m] + out_measured × p_out[m]) / 1e6
+                   # out_measured = completion/output tokens, which already INCLUDE reasoning tokens
+                   # (OpenAI-compatible usage). Reasoning is reported as a breakdown, never added.
+                   # Pradeep confirms Nightshift's usage semantics on one real response.
+# Precision: full Decimal internally; round only for display. Per-call costs show
+# at least 6 decimal places (or per 1,000 calls); monthly totals to cents.
 monthly[f,m,s]   = calls[f,s] × cost_call[f,m] × (1 + retry_rate)
 ```
 
-**Levers**, each applied only when eligible and shown separately, never silently netted:
+**Levers**, each applied only when eligible and shown separately, never silently netted. Caching and batch are **projections for the founder's production setup**, not measured in our runs (whether they pass through Nightshift is unknown). Rules are per provider: cache minimums, TTLs and long-context thresholds differ.
 
 | Lever | Eligible when | Effect |
 |---|---|---|
@@ -77,9 +82,9 @@ monthly[f,m,s]   = calls[f,s] × cost_call[f,m] × (1 + retry_rate)
 | Output cap | critic finds output longer than the rubric needs | measured re-run with the cap |
 | Long-context cliff | measured input above the provider threshold | **warning**: surcharge applies to the whole request |
 
-**Switch point:** the first stage at which moving a feature from frontier to mid or open-source saves at least the founder's threshold (default $100/month) **and** the cheaper model passed the same rubric checks. Reported as: "From Traction (5,000 users), plan generation on Nemotron saves ~$X/month; measured quality 5/6 checks vs 6/6 on frontier. Test on your own data before switching."
+**Switch point:** the first stage at which moving a feature from frontier to mid or open-source is projected to cost at least the founder's threshold (default $100/month) less **and** the cheaper model passed every critical rubric check. Reported as: "From Traction (5,000 users), plan generation on Nemotron is projected to cost ~$X/month less; measured quality 5/6 checks vs 6/6 on frontier. Test on your own data before switching."
 
-**Self-host break-even (stretch):** GPU $/hour × 730 against monthly API cost for the open model; reported as the user count at which renting a GPU becomes cheaper, plus the utilization assumption.
+**Self-host break-even (stretch, cut first):** needs three inputs, not one: GPU $/hour (Isioma, AWS), the pinned Nemotron variant's served throughput in tokens/second on that GPU (cited benchmark), and a utilization assumption. Without a cited throughput figure, this item is not shown.
 
 Unknown prices stay unknown. Revenue present → contribution and margin per stage; absent → cost-only.
 
@@ -102,7 +107,7 @@ The four build approaches and the rework multiplier from v3.4, unchanged. Shown 
 - **Agent behaviour:** retrieves missing evidence, runs tasks, critiques, one repair, stops within limits, remembers across runs.
 - **Measurement validity:** measured tokens come only from API `usage` fields; estimate-versus-measured gaps are reported, never hidden.
 - **Quality comparison:** each task has 3–5 deterministic rubric checks plus human review. Small samples, stated as such. No "Nemotron is as good as frontier" claim beyond the measured tasks.
-- **Founder impact:** Narin runs 2–3 of his own future ideas through the tool and records whether the output changed what he would build or which model he'd start with. Negative results are kept.
+- **Founder impact:** Narin runs his own ideas (self-evaluation, labeled as such), **plus one or two outside founders**, e.g. from the Outskill cohort, who run one idea each and record before/after decisions with consent. Negative results are kept.
 
 **Call budget:** 3 features × 3 candidates × 2 samples = 18 executions + 1 planning + 1 critique + ≤1 revision + ≤6 repair re-runs = ≤27. The cap rises from 23 to 30; the spend cap stays $25. At spec-sized outputs this is cents per run.
 
@@ -113,7 +118,7 @@ The four build approaches and the rework multiplier from v3.4, unchanged. Shown 
 | Zetaris | Data layer: price snapshots, intelligence index, founder ideas, measured runs (evaluation evidence). Every price the agent uses comes from a Zetaris query. |
 | Meterless H-MEM | The idea's memory: confirmed assumptions and earlier stage decisions, recalled on a re-run so the agent reports what changed as the SaaS matures. |
 | Meterless Nightshift | The router for every model call: frontier, mid and Nemotron all go through it, which is what makes side-by-side measurement possible. |
-| NVIDIA Nemotron | The open-source contender in every comparison; its measured cost and quality drive the switch points. |
+| NVIDIA Nemotron | The open-source contender in every comparison; its measured cost and deterministic quality checks drive the switch points. |
 | Cursor | Used by Shrie for UI and Zetaris work, truthfully described. |
 
 ## 9. Hosting: why Zetaris runs locally, and what Vercel can and can't do
