@@ -79,6 +79,9 @@ class RateCategory(str, Enum):
     output_tokens = "output_tokens"
     cached_input_tokens = "cached_input_tokens"
     reasoning_tokens = "reasoning_tokens"
+    cache_write_tokens = "cache_write_tokens"                 # cached_input_tokens is the cache-read rate
+    long_context_input_tokens = "long_context_input_tokens"   # whole-request rate above the threshold
+    long_context_output_tokens = "long_context_output_tokens"
     credits = "credits"
     seat_month = "seat_month"
     hosting_month = "hosting_month"
@@ -104,11 +107,81 @@ class ApproachProfile(BaseModel):
     source: SourceRef
 
 
+class ModelPricingTerms(BaseModel):
+    """Provider terms that decide lever eligibility (07 §5.1). None == unknown, so the lever is not applied."""
+    cache_min_prefix_tokens: Optional[int] = None
+    cache_ttl_minutes: Optional[Decimal] = None
+    batch_available: Optional[bool] = None
+    batch_discount: Optional[Decimal] = None          # 0.5 == 50% off input and output
+    long_context_threshold_tokens: Optional[int] = None
+    status: EvidenceStatus = EvidenceStatus.unknown
+
+
 class ModelProfile(BaseModel):
     model_id: str                    # as exposed by Nightshift GET /v1/models
     provider_label: str              # e.g. "nvidia" — informational
+    tier: Optional[Literal["frontier", "mid_tier", "open_source"]] = None
     rates: list[Rate]
+    terms: ModelPricingTerms = Field(default_factory=ModelPricingTerms)
     source: SourceRef
+
+
+# ------------------------------------------------- AI features and stages (07 §2, §5.1)
+
+class RubricCheck(BaseModel):
+    check_id: str
+    description: str
+    critical: bool = True            # a cheaper model must pass every critical check to qualify a switch point
+
+
+class FeatureProfile(BaseModel):
+    """One AI feature of the founder's SaaS idea. Volume fields are the founder's estimate."""
+    feature_id: str
+    description: str
+    example_input: str
+    mode: Literal["interactive", "background"]
+    uses_per_user_month: Optional[Decimal] = None
+    calls_per_use: Decimal = Decimal("1")
+    static_prefix_tokens: int = 0    # instructions repeated on every call; part of the input
+    expected_output_words: Optional[int] = None   # used only to estimate output tokens offline
+    rubric_checks: list[RubricCheck] = Field(default_factory=list)
+    field_status: dict[str, EvidenceStatus] = Field(default_factory=dict)
+
+
+class Stage(BaseModel):
+    name: str
+    active_users: int
+    status: EvidenceStatus = EvidenceStatus.assumed
+
+
+def default_stages() -> list[Stage]:
+    """Editable defaults (07 §5.1), labeled assumed."""
+    return [Stage(name="Prototype", active_users=50), Stage(name="Launch", active_users=500),
+            Stage(name="Traction", active_users=5000), Stage(name="Scale", active_users=50000)]
+
+
+class TokenUsage(BaseModel):
+    """Per-call tokens. measured == from API usage fields only; estimated == 4/3 rule on words."""
+    input_tokens: int
+    output_tokens: int
+    reasoning_tokens: Optional[int] = None   # None == unknown; never coerced to zero
+    basis: Literal["measured", "estimated"]
+    method: str
+
+
+class RubricResult(BaseModel):
+    feature_id: str
+    model_id: str
+    checks: dict[str, bool]
+    execution_kind: Literal["live_inference", "rule_policy"]
+
+
+class OutputCapRerun(BaseModel):
+    """Critic found output longer than the rubric needs; the capped prompt was re-run and measured."""
+    feature_id: str
+    model_id: str
+    critic_flagged: bool
+    rerun: TokenUsage
 
 
 # ------------------------------------------------------------- task cases
@@ -242,6 +315,62 @@ class OperatingLedger(BaseModel):
     margin: Optional[Scenario] = None
     rate_ids: list[str]
     cost_only: bool = False
+
+
+class CostLine(BaseModel):
+    name: Literal["input", "output", "reasoning", "retries"]
+    monthly_usd: Optional[Decimal]
+    note: str = ""
+
+
+class LeverLine(BaseModel):
+    """Shown separately from the gross cost, never silently netted."""
+    lever: Literal["prompt_caching", "batch_api", "output_cap", "long_context_cliff"]
+    applies: bool
+    reason: str
+    monthly_delta_usd: Optional[Decimal] = None   # negative == saving, positive == surcharge
+
+
+class StageCostRow(BaseModel):
+    feature_id: str
+    stage: str
+    active_users: int
+    model_id: str
+    tier: Optional[str] = None
+    calls_per_month: Optional[Decimal]
+    cost_per_call_usd: Optional[Decimal]
+    token_basis: Literal["measured", "estimated"]
+    lines: list[CostLine]
+    gross_monthly_usd: Optional[Decimal]
+    levers: list[LeverLine]
+    monthly_with_levers_usd: Optional[Decimal]
+    lower_bound: bool = False        # True when an unknown component (e.g. reasoning tokens) is excluded
+    rate_ids: list[str] = Field(default_factory=list)
+    warnings: list[str] = Field(default_factory=list)
+
+
+class SwitchPoint(BaseModel):
+    feature_id: str
+    stage: str
+    active_users: int
+    from_model: str
+    to_model: str
+    to_tier: Optional[str] = None
+    monthly_difference_usd: Decimal
+    quality_to: Optional[str] = None     # "5/6"
+    quality_from: Optional[str] = None
+    quality_qualified: bool
+    statement: str
+
+
+class StageCostTable(BaseModel):
+    feature_id: str
+    stages: list[Stage]
+    rows: list[StageCostRow]
+    threshold_usd: Decimal
+    switch_points: list[SwitchPoint] = Field(default_factory=list)          # cost and quality rule both met
+    pending_switch_points: list[SwitchPoint] = Field(default_factory=list)  # cost met, quality not shown
+    warnings: list[str] = Field(default_factory=list)
 
 
 # ----------------------------------------------------------- run envelope
