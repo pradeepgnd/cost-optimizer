@@ -219,8 +219,9 @@ class IntelligenceScore(BaseModel):
 
 
 class MarketReference(BaseModel):
-    """A catalog snapshot (e.g. OpenRouter). Ranks the shortlist only; costs always use the price snapshots."""
+    """A catalog snapshot used for ranking and separately labeled hypothetical serving scenarios."""
     catalog: Literal["OpenRouter"] = "OpenRouter"
+    catalog_id: Optional[str] = Field(default=None, exclude_if=lambda value: value is None)
     snapshot_date: str
     list_price_input_usd_per_m: Optional[NonNegativeDecimal] = None
     list_price_output_usd_per_m: Optional[NonNegativeDecimal] = None
@@ -639,6 +640,15 @@ class StageCostTable(BaseModel):
     warnings: list[str] = Field(default_factory=list)
 
 
+class OpenRouterProjectionTable(BaseModel):
+    """Conditional OpenRouter serving cost, separate from the actual-route operating table."""
+    feature_id: str
+    pricing_scope: Literal["openrouter_listed_token_scenario"] = "openrouter_listed_token_scenario"
+    rows: list[StageCostRow] = Field(default_factory=list)
+    sources: list[SourceRef] = Field(default_factory=list)
+    warnings: list[str] = Field(default_factory=list)
+
+
 class ModelStackEntry(BaseModel):
     """Recommended candidate for one feature at one stage, from rubric results and cost only."""
     feature_id: str
@@ -797,6 +807,7 @@ class DecisionPack(BaseModel):
     candidate_shortlist: list[ShortlistEntry] = Field(default_factory=list)
     model_stack: list[ModelStackEntry] = Field(default_factory=list)
     stage_tables: list[StageCostTable] = Field(default_factory=list)
+    openrouter_projection_tables: list[OpenRouterProjectionTable] = Field(default_factory=list)
     feature_runs: list[FeatureRun] = Field(default_factory=list)
     build_panel: BuildPanel = Field(default_factory=BuildPanel)
     build_ledgers: list[BuildLedger] = Field(default_factory=list)

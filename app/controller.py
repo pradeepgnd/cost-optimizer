@@ -26,7 +26,7 @@ from app.contracts import (
     FeatureProfile, FeatureRun, FeatureSample, ModelProfile, ModelStackEntry, Observation, OutputCapRerun,
     Revision, Risk, RiskCause, RunRequest, RunState, ShortlistEntry, SourceRef, TokenUsage,
 )
-from app.economics import (SIZE_MULTIPLIER, build_ledger, estimate_feature_tokens,
+from app.economics import (SIZE_MULTIPLIER, build_ledger, estimate_feature_tokens, openrouter_projection_table,
                            recommend_model_stack, stage_cost_table)
 from app.rubric import evaluate, json_fields_requested, parse_json_object
 from app.trace import Trace
@@ -47,7 +47,7 @@ AUDIO_NOT_EXECUTABLE = ("audio modality: not executable through chat completions
 # Source sets readable per state. Anything not listed for a state is denied and logged.
 ALLOWLIST = {
     RunState.approved: {"founder_briefs", "pricing_snapshots"},
-    RunState.investigating: {"founder_briefs", "pricing_snapshots", "dev_task_cases:development", "evaluation_evidence"},
+    RunState.investigating: {"founder_briefs", "pricing_snapshots", "catalog", "dev_task_cases:development", "evaluation_evidence"},
     RunState.development_check: {"dev_task_cases:development", "evaluation_evidence", "pricing_snapshots"},
     RunState.repair: {"dev_task_cases:development", "evaluation_evidence", "pricing_snapshots"},
     RunState.frozen: {"dev_task_cases:holdout", "evaluation_evidence", "retrospective_actuals"},
@@ -89,6 +89,7 @@ class Controller:
         self.questions: list[str] = []      # non-blocking: what would change the result
         self.limitations: list[str] = []
         self.output_caps: list[OutputCapRerun] = []
+        self.openrouter_catalog = {}
 
     # ------------------------------------------------------------ guards
 
@@ -185,6 +186,28 @@ class Controller:
             candidates, pack.candidate_shortlist = self._candidates(models, set(route_list) if self.mode == "live" else None)
             if not candidates:
                 raise StopRun(RunState.needs_input, "no candidate models available in the pinned price source")
+
+            # OpenRouter is a separate, conditional serving scenario. Its prices are queried through Zetaris
+            # and never become the profiles passed to the paid dispatcher or the actual-route recommendation.
+            if self.mode == "live":
+                for model in candidates:
+                    catalog_id = model.market.catalog_id if model.market else None
+                    if not catalog_id:
+                        continue
+                    reader = getattr(self.data, "read_catalog", None)
+                    catalog_obs, returned = self._read("catalog", reader, catalog_id) if callable(reader) else (None, None)
+                    if catalog_obs is None or catalog_obs.status != "ok" or returned is None:
+                        self.gaps.append(EvidenceGap(field=f"openrouter_catalog:{model.model_id}", status=EvidenceStatus.unknown,
+                                                     note="pinned OpenRouter catalog row unavailable"))
+                        continue
+                    catalog, source = returned
+                    if (catalog.catalog_id != catalog_id or source.snapshot_id is None
+                            or source.snapshot_id != model.source.snapshot_id):
+                        self.gaps.append(EvidenceGap(field=f"openrouter_catalog:{model.model_id}", status=EvidenceStatus.unknown,
+                                                     note="catalog/model snapshot identity mismatch"))
+                        continue
+                    self.openrouter_catalog[model.model_id] = (model, catalog, source)
+                    self.evidence.append(source)
 
             # 3. Critic route, before any paid call
             self._check_critic_route(candidates, route_list)
@@ -771,6 +794,10 @@ class Controller:
             table = stage_cost_table(f, candidates, tokens, brief.growth_stages, rubric,
                                      threshold_usd=brief.switch_threshold_usd, output_caps=self.output_caps)
             pack.stage_tables.append(table)
+            matched = [self.openrouter_catalog[m.model_id] for m in candidates if m.model_id in self.openrouter_catalog]
+            if matched:
+                pack.openrouter_projection_tables.append(openrouter_projection_table(f, matched, tokens,
+                                                                                      brief.growth_stages))
             pack.risks += table.risks
             if live_executed:   # features that could not run (audio) are reported as "no candidate passes", with why
                 pack.model_stack += recommend_model_stack(f, table, candidates, rubric)

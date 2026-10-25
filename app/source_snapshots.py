@@ -245,7 +245,7 @@ def build_bundle(catalog_dir: Path, mapping: RouteMap, output_dir: Path, briefs=
         if route.catalog_id not in by_id:
             raise ValueError(f"required catalog ID missing: {route.catalog_id}")
         catalog = by_id[route.catalog_id]
-        market = MarketReference(snapshot_date=manifest.retrieved_at[:10], list_price_input_usd_per_m=catalog.input_usd_per_m,
+        market = MarketReference(catalog_id=route.catalog_id, snapshot_date=manifest.retrieved_at[:10], list_price_input_usd_per_m=catalog.input_usd_per_m,
             list_price_output_usd_per_m=catalog.output_usd_per_m,
             status=EvidenceStatus.verified if manifest.acquisition == "https_api" else EvidenceStatus.unverified)
         if route.billing_profile:

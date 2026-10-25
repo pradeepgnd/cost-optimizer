@@ -8,21 +8,29 @@ Catalog prices remain reference data. OpenRouter documents model-level pricing a
 
 ## Current-machine quick check
 
-The following bindings were actually registered on this machine:
+The latest NVIDIA candidate/Critic bindings were actually registered on this machine:
 
 ```text
-data/localstack/openrouter/bindings-final.json
+data/localstack/openrouter/bindings-final-scenario.json
 ```
 
 With the project environment activated and the existing Zetaris/LocalStack containers running:
 
 ```text
-python scripts/check_zetaris_sources.py --bindings data/localstack/openrouter/bindings-final.json --catalog-id nvidia/nemotron-3.5-lightning --round-trip --storage data/source_examples/localstack.json --run-id manual-source-check-001 --output-dir data/localstack/manual-check-001
+python scripts/check_zetaris_sources.py --bindings data/localstack/openrouter/bindings-final-scenario.json --catalog-id nvidia/nemotron-3.5-lightning --round-trip --storage data/source_examples/localstack.json --run-id manual-source-check-002 --output-dir data/localstack/manual-check-002
 ```
 
 Expected: `status: pass`, five successful checks, `model_completions: 0`, `execution_billing_verified: false`. The final check covers fixture write/readback, a second append, publisher recreation and a repeated identical write. `report.json`, `reference-scenario.json`, `models.json`, `select-one.json` and a JSONL trace are retained in the output directory.
 
-For a repeat, keep the same `--run-id` and choose a new `--output-dir`, such as `data/localstack/manual-check-002`. The first evidence record's version/hash should remain identical; query IDs and check timestamps may change. Existing output directories are refused.
+For a repeat, keep the same `--run-id` and choose a new `--output-dir`, such as `data/localstack/manual-check-003`. The first evidence record's version/hash should remain identical; query IDs and check timestamps may change. Existing output directories are refused. Choose a new run ID and directory if those example names are already in use.
+
+The current bundle also supports a full-controller OpenRouter listed-token projection with zero paid calls:
+
+```text
+python scripts/check_openrouter_projection.py --input input_examples/example_3.json --bindings data/localstack/openrouter/bindings-final-scenario.json --output-dir data/localstack/manual-openrouter-projection-001
+```
+
+Expected: `status: pass`, `scenario_rows: 24`, `model_completions: 0`, `actual_route_monthly_rows_known: 0`. The `pack.json` keeps `openrouter_projection_tables` separate from actual-route `stage_tables`. Use a new directory if the example name already exists.
 
 The bindings and data above are local artifacts, not files available automatically on another machine. Use the full sequence below to rebuild them.
 
@@ -100,7 +108,7 @@ python scripts/prepare_source_bundle.py --catalog <CATALOG_DIR> --route-map data
 
 Expected: 3 model records, 1 synthetic founder brief, the accepted catalog count, a returned `bundle_dir`, and `execution_tariffs_verified: false`. Use that directory as `<BUNDLE_DIR>`. Inspect `models.json`: catalog reference prices appear under `market`; execution rates remain null and dispatch policies remain absent unless a separate curated `billing_profile` was supplied. No intelligence score is invented. Optional build prices can be supplied with `--approaches <JSON-list>`; omission does not block model reads.
 
-The catalog-only route map is an example for data-path testing, not a quality recommendation or a claim that the routes are configured. Its frontier/mid routes were **not offered by the current runtime**; the Lightning route was advertised. It must remain `mapping_status: planned` until validated against retained discovery. An observed alternative with Ultra, Super, Lightning and a separate Qwen Critic is recorded in the [M05 serving/billing selection](13-M05-Serving-and-Billing-Selection.md) and [routes.nvidia-selected.json](../data/source_examples/routes.nvidia-selected.json). Its four routes were advertised and registered locally, but no execution tariff or actual serving result was verified.
+The catalog-only route map is an example for data-path testing, not a quality recommendation or a claim that the routes are configured. Its frontier/mid routes were **not offered by the current runtime**; the Lightning route was advertised. It must remain `mapping_status: planned` until validated against retained discovery. An observed alternative with Ultra, Super, Lightning and a separate NVIDIA Nemotron Nano Critic is recorded in the [M05 serving/billing selection](13-M05-Serving-and-Billing-Selection.md) and [routes.nvidia-selected.json](../data/source_examples/routes.nvidia-selected.json). Its four routes were advertised and registered locally, but no execution tariff or actual serving result was verified.
 
 Optional free route verification:
 
@@ -146,6 +154,14 @@ Use `fixture/nemotron` for the offline fixture bundle or `nvidia/nemotron-3.5-li
 Expected: `SELECT 1`, typed model read, founder read and reference arithmetic checks pass. Inspect each source's query ID, snapshot ID, original source URL where supplied, transport reference and payload hash. Original provider citations/statuses are preserved; reading through Zetaris cannot promote an assumed founder input to verified. The model query uses the exact pinned source/version and expected IDs, fetching an extra row to detect overflow; it does not silently truncate the catalog at 50 rows.
 
 `reference-scenario.json` uses explicit synthetic volumes/tokens to verify that a queried real catalog price reaches the deterministic calculator. It states `execution_tariff: false`, `model_execution_performed: false` and `complete_billing_estimate: false`. This is a token-only reference scenario, not a verified Nightshift bill. Actual serving-provider tariff acceptance remains pending.
+
+To preview the same OpenRouter listed-token scenario in the full controller, with the selected NVIDIA Critic and **zero model calls**:
+
+```text
+python scripts/check_openrouter_projection.py --input input_examples/example_3.json --bindings data/localstack/openrouter/bindings-final-scenario.json --output-dir data/localstack/openrouter/openrouter-projection-next
+```
+
+Expected: `status: pass`, `model_completions: 0`, 24 scenario rows across two features, three candidates and four stages, each with a pinned Zetaris catalog source. The actual-route monthly rows remain unknown. Inspect `pack.json` fields `openrouter_projection_tables` and `stage_tables` separately. The scenario uses listed input/output prices and a transferred Nightshift workload estimate; unknown provider variation, conditional rates and account fees keep every row labeled as a lower bound. Use a new output directory for each check.
 
 Optional SQL-editor inspection: obtain the namespace/table from `bindings.json`, then run:
 
@@ -201,6 +217,6 @@ python -m pytest -q -rs
 python scripts/check_sample_examples.py
 ```
 
-Actual local collection, S3 emulation registration, typed reads, reference arithmetic and labeled evidence round trips are separate from fixture tests. Recorded results and source hashes are in [m05-m06-source-checks.json](m05-m06-source-checks.json). M05 remains partial for actual serving-provider/variant tariffs, index/terms coverage and usage-rights review; M06 component plumbing passes, while an applicable execution-tariff calculation and a measured model-sample round trip remain pending. Real measured evidence is repeated at M08. AWS, Windows and real H-MEM proof are not established by these checks.
+Actual local collection, S3 emulation registration, typed reads, reference arithmetic and labeled evidence round trips are separate from fixture tests. Earlier results and source hashes are in [m05-m06-source-checks.json](m05-m06-source-checks.json); the latest route/projection evidence is in [the M05 selection record](13-M05-Serving-and-Billing-Selection.md). M05 remains partial for actual serving-provider/variant tariffs, index/terms coverage and usage-rights review; M06 component plumbing passes, while an applicable execution-tariff calculation remains pending. A measured model-sample round trip is the later M08 check. AWS, Windows and real H-MEM proof are not established by these checks.
 
-Final validation on the implementation working tree: **72 focused source/integration tests passed; 449 total tests passed, 9 known tests skipped; all three guarded sample examples passed and were regenerated.** The nine skips remain eight shelved retrospective checks and the unavailable real H-MEM feature test. Retained full test output and regenerated CLI packs are under `/private/var/folders/8m/69np3l210snb8twb3tb0d7mh0000gn/T/cost-optimizer-m05-m06-final-idb5tw9c/`; these temporary paths are machine-specific and should be regenerated elsewhere.
+Latest validation on the working tree: **451 tests passed, 9 known tests skipped; all three guarded sample examples passed.** The nine skips remain eight shelved retrospective checks and the unavailable real H-MEM feature test. Earlier M05/M06 implementation output and regenerated sample packs are under `/private/var/folders/8m/69np3l210snb8twb3tb0d7mh0000gn/T/cost-optimizer-m05-m06-final-idb5tw9c/`; these temporary paths are machine-specific and should be regenerated elsewhere.

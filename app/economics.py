@@ -14,7 +14,8 @@ from typing import Optional
 
 from app.contracts import (
     ApproachProfile, BuildLedger, Checkpoint, CostLine, EvidenceStatus, FeatureItem, FeatureProfile, LeverLine,
-    ModelProfile, ModelStackEntry, OperatingLedger, OutputCapRerun, RateCategory, Risk, RiskCause, RubricResult, Scenario, Stage,
+    ModelPricingTerms, ModelProfile, ModelStackEntry, OpenRouterProjectionTable, OperatingLedger, OutputCapRerun, Rate,
+    RateCategory, Risk, RiskCause, RubricResult, Scenario, SourceRef, Stage,
     StageCostRow, StageCostTable, SwitchPoint, TokenUsage, UsageAssumptions, default_stages,
 )
 
@@ -687,3 +688,30 @@ def stage_cost_table(feature: FeatureProfile, models: list[ModelProfile],
     return StageCostTable(feature_id=feature.feature_id, stages=stages, rows=rows, threshold_usd=threshold_usd,
                           switch_points=qualified, pending_switch_points=pending,
                           risks=revenue_share_risks(feature, rows), warnings=warnings)
+
+
+def openrouter_projection_table(feature: FeatureProfile, matched_catalog: list[tuple[ModelProfile, object, SourceRef]],
+                                tokens_by_model: dict[str, TokenUsage], stages: list[Stage]) -> OpenRouterProjectionTable:
+    """Price the same workload as a conditional OpenRouter token scenario, never as an execution tariff."""
+    rows, sources = [], []
+    for model, catalog, source in matched_catalog:
+        if model.market is None or model.market.catalog_id != catalog.catalog_id:
+            raise ValueError("OpenRouter projection catalog mapping mismatch")
+        rates = [Rate(category=category, unit="1M tokens", usd_per_unit=value,
+                      status=source.status if value is not None else EvidenceStatus.unknown, source=source)
+                 for category, value in ((RateCategory.input_tokens, catalog.input_usd_per_m),
+                                         (RateCategory.output_tokens, catalog.output_usd_per_m))]
+        scenario = model.model_copy(deep=True, update={"model_id": f"openrouter/{catalog.catalog_id}", "rates": rates,
+                         "terms": ModelPricingTerms(status=EvidenceStatus.unknown), "dispatch_policy": None,
+                         "source": source})
+        for stage in stages:
+            row = stage_cost_row(feature, scenario, stage,
+                                 tokens_by_model.get(model.model_id, estimate_feature_tokens(feature)))
+            row.lower_bound = True
+            row.warnings.append("OpenRouter listed-token scenario; provider, conditional tariffs and account fees are not verified for this request.")
+            rows.append(row)
+        sources.append(source)
+    return OpenRouterProjectionTable(feature_id=feature.feature_id, rows=rows, sources=sources,
+        warnings=["Hypothetical OpenRouter serving at the pinned catalog list price; not the Nightshift bill or a model recommendation.",
+                  "Measured tokens, when available, came from Nightshift and may differ under OpenRouter tokenization or routing.",
+                  "Account fees, provider selection, conditional tariffs and actual billing remain unverified."])
