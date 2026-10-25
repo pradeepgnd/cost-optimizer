@@ -41,9 +41,11 @@ v4 (`Planning/07-Realignment-v4.md`). The founder describes an AI SaaS idea and 
 ```
 Founder idea + AI features ─► Controller (allowlist by state, call caps, spend reservation, SQLite checkpoints)
   1  Recall     H-MEM (Meterless)         earlier runs and confirmed assumptions for this idea
-  2  Retrieve   Analyst ◄─ Zetaris         dated prices: input, output, cache, batch, audio, long-context
-                                           candidates by tier: frontier · mid-tier · open-source (Nemotron)
-  3  Check      Controller ◄─ Nightshift   Critic route must not be a candidate's route (GET /v1/models, before any paid call)
+  2  Retrieve   Analyst ◄─ Zetaris         dated prices (input, output, cache, batch, audio, long-context),
+                                           intelligence scores, OpenRouter market reference
+  3  Select     Controller ◄─ Nightshift   candidate shortlist: one Nightshift route per tier (GET /v1/models,
+                                           before any paid call); open-source is always the Nemotron route;
+                                           Critic route must not be a candidate's route
   4  Estimate   Analyst                    4/3 rule per feature × candidate, labeled estimated
      ── approval gate (evaluation_approved, max_spend_usd) ──
   5  Plan       Planner ◄─ Nightshift      domain risks only, labeled model-generated, not advice
@@ -57,6 +59,18 @@ Founder idea + AI features ─► Controller (allowlist by state, call caps, spe
  10  Project    economics (Decimal)        stage cost tables, levers, switch points, model stack
      └─ frozen ─► complete ─► DecisionPack ─► H-MEM (accepted decisions)
 ```
+
+**Candidate shortlist.** One candidate per tier: frontier, mid-tier and open-source. In live mode only Nightshift routes are eligible; sample mode says the route check needs live mode.
+
+- **Frontier and mid-tier:** the top-ranked eligible model by intelligence score, then OpenRouter usage rank, then snapshot order.
+- **Open-source:** always the Nemotron route, from `METERLESS_OPEN_MODEL` or the snapshot row marked `required`, regardless of score. Other open models can appear in the shortlist but never replace it. If the pinned route has no price snapshot or Nightshift doesn't offer it, the run stops for input before any paid call.
+- **In the pack:** `candidate_shortlist` lists every snapshot model, with:
+  - whether it's a Nightshift route;
+  - its intelligence score, with source and date;
+  - its market reference, labeled *market reference (OpenRouter, date)*;
+  - its price per intelligence point (list price blended 3:1 input:output ÷ score), labeled with source and date;
+  - why it was or wasn't selected.
+- **Reference data only ranks the shortlist.** Costs come from the price snapshots and pass/fail from rubric checks; scores and market prices never feed stage tables, switch points or the model stack.
 
 **Decision pack.** Two ledgers, never summed:
 
@@ -76,7 +90,7 @@ Hard limits per run: 1 Planner call, 1 Critic call, ≤1 repair, ≤30 candidate
 | Zetaris | Data layer: price snapshots for every candidate (S3-backed sources) and writeback of measured runs | `app/adapters/live_zetaris.py`; trace `zetaris_query` events with query IDs |
 | Meterless H-MEM | The idea's memory: confirmed assumptions recalled at the start of a run; accepted model-stack decisions saved at the end | `app/engines/hmem/`; `tests/test_hmem_engine.py` |
 | Meterless Nightshift | The router for every model call: Planner, all three candidates and the Critic; requested and resolved model logged per request | `app/adapters/live_nightshift.py`; trace `nightshift_request` and `run_feature` events |
-| NVIDIA Nemotron | The open-source candidate in every comparison; its measured cost and deterministic quality checks drive the switch points | trace `run_feature` events with `model` per request |
+| NVIDIA Nemotron | The open-source candidate in every comparison, pinned so no higher-scored open model replaces it; its measured cost and deterministic quality checks drive the switch points | `METERLESS_OPEN_MODEL`; trace `select_candidates` (chosen routes) and `run_feature` events (`model` per request) |
 | Cursor | Used by Shrie for UI and Zetaris work | — |
 
 No model grades the comparison. The Critic only flags issues and proposes one action, which the controller validates. It never uses a candidate's route when Nightshift offers another; when none is available, the trace and the pack's limitations say so.
@@ -98,7 +112,7 @@ The offline core is complete, with 89 passing tests: contracts, Decimal economic
 ## Limitations
 
 - Economics are modeled estimates from entered assumptions and the rates in the price snapshots, not financial advice. Small samples throughout; no claim about a model's quality beyond the measured tasks.
-- All prices are unverified placeholders until replaced with dated, cited snapshots.
+- All prices are unverified placeholders until replaced with dated, cited snapshots; so are the intelligence scores and OpenRouter market references in the sample data.
 - Audio is priced from per-second conversions, not measured; audio is never sent to a model.
 - Prompt caching, batch API and output reuse are projections for a production setup, not measured in our runs.
 - The self-host break-even is not shown: it needs a cited throughput figure for the pinned Nemotron variant.
