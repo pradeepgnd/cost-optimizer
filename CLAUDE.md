@@ -14,7 +14,7 @@ A decision agent that helps a founder choose an AI-assisted development approach
 - `app/controller.py` → the brain. Allowlist by run state, call caps, spend reservation, sealed-source rule, Planner/Analyst/Critic sequence.
 - `app/contracts.py` → every data structure. Change a field here and every user of it must update; tests catch breakage.
 - `app/economics.py` → Decimal arithmetic only. Unknown stays unknown; never coerce to zero.
-- `app/adapters/` → the only path to the outside world. `sample.py` (offline, zero network), `live.py` (Zetaris, Nightshift).
+- `app/adapters/` → the only path to the outside world. `sample.py` (offline, zero network), `live_zetaris.py` (Zetaris), `live_nightshift.py` (Nightshift).
 - `app/engines/hmem/` → Meterless H-MEM bridge. A Python dict is never an acceptable substitute.
 - `app/trace.py` → JSONL trace in the organizer's format. Never invent `confidence` or events.
 - `tests/` → run before every commit.

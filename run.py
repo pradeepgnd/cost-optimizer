@@ -35,7 +35,8 @@ def build_controller(req: RunRequest, trace: Trace) -> Controller:
         from app.engines.hmem.bridge import offline_bridge_available
         return Controller(SampleDataLayer(), RulePolicyInference(), SampleMemory(bridge_available=offline_bridge_available()),
                           trace, "sample", Checkpoints(os.getenv("RUNS_DB", "runs-sample.db")))
-    from app.adapters.live import NightshiftInference, ZetarisDataLayer
+    from app.adapters.live_nightshift import NightshiftInference
+    from app.adapters.live_zetaris import ZetarisDataLayer
     from app.engines.hmem.bridge import HmemBridge
     critic = os.getenv("METERLESS_CRITIC_MODEL", "")
     cands = [m for m in os.getenv("METERLESS_CANDIDATE_MODELS", "").split(",") if m]

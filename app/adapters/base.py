@@ -60,3 +60,12 @@ class Memory(ABC):
 
 class SetupIncomplete(RuntimeError):
     """Raised by live adapters when configuration or runtime is missing. Never swallowed."""
+
+
+def require_env(name: str) -> str:
+    """A live setting that is absent or still a .env.example placeholder fails visibly."""
+    import os
+    v = os.getenv(name)
+    if not v or v.startswith("your-"):
+        raise SetupIncomplete(f"{name} is not configured. Copy .env.example to .env and fill real values.")
+    return v

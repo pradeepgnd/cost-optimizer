@@ -53,9 +53,9 @@ Hard limits per run: 1 planning call, 1 batched critique, ≤1 revision, ≤23 c
 
 | Sponsor | Role in this project | Proof |
 |---|---|---|
-| Zetaris | Sole data layer: brief, pricing snapshots, task cases, evidence, sealed actuals (S3-backed sources) | `app/adapters/live.py`; trace `zetaris_query` events with query IDs |
+| Zetaris | Sole data layer: brief, pricing snapshots, task cases, evidence, sealed actuals (S3-backed sources) | `app/adapters/live_zetaris.py`; trace `zetaris_query` events with query IDs |
 | Meterless H-MEM | Stores founder-confirmed constraints and accepted findings across restarts; recalled into the next plan | `app/engines/hmem/`; `tests/test_hmem_engine.py` |
-| Meterless Nightshift | Every inference call; requested and resolved model logged | `app/adapters/live.py`; trace `nightshift_request` events |
+| Meterless Nightshift | Every inference call; requested and resolved model logged | `app/adapters/live_nightshift.py`; trace `nightshift_request` events |
 | NVIDIA Nemotron | Evidence critic; its structured finding drives the one repair; model ID attributable per request | trace `critique` events with `model`; `feature=nemotron_evidence_critic` |
 | Cursor | (to be stated truthfully by the team) | — |
 
