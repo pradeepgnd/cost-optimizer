@@ -207,8 +207,20 @@ class FeatureProfile(BaseModel):
     calls_per_use: Decimal = Decimal("1")
     static_prefix_tokens: int = 0    # instructions repeated on every call; part of the input
     expected_output_words: Optional[int] = None   # used only to estimate output tokens offline
+    # Share of uses served from a cache of previously generated outputs (e.g. the same sentence spoken again);
+    # a production-setup projection, not measured. distinct_outputs sizes the one-time cache fill.
+    output_reuse_rate: Optional[Decimal] = None
+    distinct_outputs: Optional[int] = None
     rubric_checks: list[RubricCheck] = Field(default_factory=list)
     field_status: dict[str, EvidenceStatus] = Field(default_factory=dict)
+
+    @model_validator(mode="after")
+    def _reuse_in_range(self):
+        if self.output_reuse_rate is not None and not Decimal("0") <= self.output_reuse_rate <= Decimal("1"):
+            raise ValueError(f"{self.feature_id}: output_reuse_rate must be between 0 and 1")
+        if self.distinct_outputs is not None and self.distinct_outputs <= 0:
+            raise ValueError(f"{self.feature_id}: distinct_outputs must be positive")
+        return self
 
 
 class Stage(BaseModel):
@@ -425,11 +437,12 @@ class CostLine(BaseModel):
 
 class LeverLine(BaseModel):
     """Shown separately from the gross cost, never silently netted."""
-    lever: Literal["prompt_caching", "batch_api", "output_cap", "long_context_cliff"]
+    lever: Literal["prompt_caching", "batch_api", "output_cap", "long_context_cliff", "output_reuse"]
     applies: bool
     reason: str
     monthly_delta_usd: Optional[Decimal] = None   # negative == saving, positive == surcharge
-    label: Optional[str] = None                   # "projected (production setup)" for caching and batch
+    one_time_usd: Optional[Decimal] = None        # output_reuse: filling the cache once; never added to a monthly total
+    label: Optional[str] = None                   # "projected (production setup)" for caching, batch and output reuse
 
 
 class StageCostRow(BaseModel):

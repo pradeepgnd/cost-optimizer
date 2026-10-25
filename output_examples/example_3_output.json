@@ -146,6 +146,7 @@
               "applies": false,
               "reason": "660.00 calls/month do not repeat within the 5-minute TTL on average",
               "monthly_delta_usd": null,
+              "one_time_usd": null,
               "label": "projected (production setup)"
             },
             {
@@ -153,6 +154,7 @@
               "applies": false,
               "reason": "feature is interactive",
               "monthly_delta_usd": null,
+              "one_time_usd": null,
               "label": "projected (production setup)"
             },
             {
@@ -160,6 +162,7 @@
               "applies": false,
               "reason": "no critic finding that output exceeds what the rubric needs",
               "monthly_delta_usd": null,
+              "one_time_usd": null,
               "label": null
             },
             {
@@ -167,7 +170,16 @@
               "applies": false,
               "reason": "input 1234 <= threshold 200000",
               "monthly_delta_usd": null,
+              "one_time_usd": null,
               "label": null
+            },
+            {
+              "lever": "output_reuse",
+              "applies": false,
+              "reason": "no output reuse rate given",
+              "monthly_delta_usd": null,
+              "one_time_usd": null,
+              "label": "projected (production setup)"
             }
           ],
           "monthly_with_levers_usd": "9.58",
@@ -232,6 +244,7 @@
               "applies": false,
               "reason": "6600.00 calls/month do not repeat within the 5-minute TTL on average",
               "monthly_delta_usd": null,
+              "one_time_usd": null,
               "label": "projected (production setup)"
             },
             {
@@ -239,6 +252,7 @@
               "applies": false,
               "reason": "feature is interactive",
               "monthly_delta_usd": null,
+              "one_time_usd": null,
               "label": "projected (production setup)"
             },
             {
@@ -246,6 +260,7 @@
               "applies": false,
               "reason": "no critic finding that output exceeds what the rubric needs",
               "monthly_delta_usd": null,
+              "one_time_usd": null,
               "label": null
             },
             {
@@ -253,7 +268,16 @@
               "applies": false,
               "reason": "input 1234 <= threshold 200000",
               "monthly_delta_usd": null,
+              "one_time_usd": null,
               "label": null
+            },
+            {
+              "lever": "output_reuse",
+              "applies": false,
+              "reason": "no output reuse rate given",
+              "monthly_delta_usd": null,
+              "one_time_usd": null,
+              "label": "projected (production setup)"
             }
           ],
           "monthly_with_levers_usd": "95.83",
@@ -318,6 +342,7 @@
               "applies": true,
               "reason": "1200-token prefix: ~8760.00 writes at write rate, ~57240.00 reads at cache-read rate",
               "monthly_delta_usd": "-295.96",
+              "one_time_usd": null,
               "label": "projected (production setup)"
             },
             {
@@ -325,6 +350,7 @@
               "applies": false,
               "reason": "feature is interactive",
               "monthly_delta_usd": null,
+              "one_time_usd": null,
               "label": "projected (production setup)"
             },
             {
@@ -332,6 +358,7 @@
               "applies": false,
               "reason": "no critic finding that output exceeds what the rubric needs",
               "monthly_delta_usd": null,
+              "one_time_usd": null,
               "label": null
             },
             {
@@ -339,7 +366,16 @@
               "applies": false,
               "reason": "input 1234 <= threshold 200000",
               "monthly_delta_usd": null,
+              "one_time_usd": null,
               "label": null
+            },
+            {
+              "lever": "output_reuse",
+              "applies": false,
+              "reason": "no output reuse rate given",
+              "monthly_delta_usd": null,
+              "one_time_usd": null,
+              "label": "projected (production setup)"
             }
           ],
           "monthly_with_levers_usd": "662.36",
@@ -404,6 +440,7 @@
               "applies": true,
               "reason": "1200-token prefix: ~8760.00 writes at write rate, ~651240.00 reads at cache-read rate",
               "monthly_delta_usd": "-3503.56",
+              "one_time_usd": null,
               "label": "projected (production setup)"
             },
             {
@@ -411,6 +448,7 @@
               "applies": false,
               "reason": "feature is interactive",
               "monthly_delta_usd": null,
+              "one_time_usd": null,
               "label": "projected (production setup)"
             },
             {
@@ -418,6 +456,7 @@
               "applies": false,
               "reason": "no critic finding that output exceeds what the rubric needs",
               "monthly_delta_usd": null,
+              "one_time_usd": null,
               "label": null
             },
             {
@@ -425,7 +464,16 @@
               "applies": false,
               "reason": "input 1234 <= threshold 200000",
               "monthly_delta_usd": null,
+              "one_time_usd": null,
               "label": null
+            },
+            {
+              "lever": "output_reuse",
+              "applies": false,
+              "reason": "no output reuse rate given",
+              "monthly_delta_usd": null,
+              "one_time_usd": null,
+              "label": "projected (production setup)"
             }
           ],
           "monthly_with_levers_usd": "6079.64",
@@ -490,6 +538,7 @@
               "applies": false,
               "reason": "660.00 calls/month do not repeat within the 5-minute TTL on average",
               "monthly_delta_usd": null,
+              "one_time_usd": null,
               "label": "projected (production setup)"
             },
             {
@@ -497,6 +546,7 @@
               "applies": false,
               "reason": "feature is interactive",
               "monthly_delta_usd": null,
+              "one_time_usd": null,
               "label": "projected (production setup)"
             },
             {
@@ -504,6 +554,7 @@
               "applies": false,
               "reason": "no critic finding that output exceeds what the rubric needs",
               "monthly_delta_usd": null,
+              "one_time_usd": null,
               "label": null
             },
             {
@@ -511,7 +562,16 @@
               "applies": false,
               "reason": "no provider threshold recorded",
               "monthly_delta_usd": null,
+              "one_time_usd": null,
               "label": null
+            },
+            {
+              "lever": "output_reuse",
+              "applies": false,
+              "reason": "no output reuse rate given",
+              "monthly_delta_usd": null,
+              "one_time_usd": null,
+              "label": "projected (production setup)"
             }
           ],
           "monthly_with_levers_usd": "1.92",
@@ -574,6 +634,7 @@
               "applies": false,
               "reason": "6600.00 calls/month do not repeat within the 5-minute TTL on average",
               "monthly_delta_usd": null,
+              "one_time_usd": null,
               "label": "projected (production setup)"
             },
             {
@@ -581,6 +642,7 @@
               "applies": false,
               "reason": "feature is interactive",
               "monthly_delta_usd": null,
+              "one_time_usd": null,
               "label": "projected (production setup)"
             },
             {
@@ -588,6 +650,7 @@
               "applies": false,
               "reason": "no critic finding that output exceeds what the rubric needs",
               "monthly_delta_usd": null,
+              "one_time_usd": null,
               "label": null
             },
             {
@@ -595,7 +658,16 @@
               "applies": false,
               "reason": "no provider threshold recorded",
               "monthly_delta_usd": null,
+              "one_time_usd": null,
               "label": null
+            },
+            {
+              "lever": "output_reuse",
+              "applies": false,
+              "reason": "no output reuse rate given",
+              "monthly_delta_usd": null,
+              "one_time_usd": null,
+              "label": "projected (production setup)"
             }
           ],
           "monthly_with_levers_usd": "19.17",
@@ -658,6 +730,7 @@
               "applies": true,
               "reason": "1200-token prefix: ~8760.00 writes at write rate, ~57240.00 reads at cache-read rate",
               "monthly_delta_usd": "-59.19",
+              "one_time_usd": null,
               "label": "projected (production setup)"
             },
             {
@@ -665,6 +738,7 @@
               "applies": false,
               "reason": "feature is interactive",
               "monthly_delta_usd": null,
+              "one_time_usd": null,
               "label": "projected (production setup)"
             },
             {
@@ -672,6 +746,7 @@
               "applies": false,
               "reason": "no critic finding that output exceeds what the rubric needs",
               "monthly_delta_usd": null,
+              "one_time_usd": null,
               "label": null
             },
             {
@@ -679,7 +754,16 @@
               "applies": false,
               "reason": "no provider threshold recorded",
               "monthly_delta_usd": null,
+              "one_time_usd": null,
               "label": null
+            },
+            {
+              "lever": "output_reuse",
+              "applies": false,
+              "reason": "no output reuse rate given",
+              "monthly_delta_usd": null,
+              "one_time_usd": null,
+              "label": "projected (production setup)"
             }
           ],
           "monthly_with_levers_usd": "132.47",
@@ -742,6 +826,7 @@
               "applies": true,
               "reason": "1200-token prefix: ~8760.00 writes at write rate, ~651240.00 reads at cache-read rate",
               "monthly_delta_usd": "-700.71",
+              "one_time_usd": null,
               "label": "projected (production setup)"
             },
             {
@@ -749,6 +834,7 @@
               "applies": false,
               "reason": "feature is interactive",
               "monthly_delta_usd": null,
+              "one_time_usd": null,
               "label": "projected (production setup)"
             },
             {
@@ -756,6 +842,7 @@
               "applies": false,
               "reason": "no critic finding that output exceeds what the rubric needs",
               "monthly_delta_usd": null,
+              "one_time_usd": null,
               "label": null
             },
             {
@@ -763,7 +850,16 @@
               "applies": false,
               "reason": "no provider threshold recorded",
               "monthly_delta_usd": null,
+              "one_time_usd": null,
               "label": null
+            },
+            {
+              "lever": "output_reuse",
+              "applies": false,
+              "reason": "no output reuse rate given",
+              "monthly_delta_usd": null,
+              "one_time_usd": null,
+              "label": "projected (production setup)"
             }
           ],
           "monthly_with_levers_usd": "1215.93",
@@ -826,6 +922,7 @@
               "applies": false,
               "reason": "provider cache minimum or TTL unknown",
               "monthly_delta_usd": null,
+              "one_time_usd": null,
               "label": "projected (production setup)"
             },
             {
@@ -833,6 +930,7 @@
               "applies": false,
               "reason": "feature is interactive",
               "monthly_delta_usd": null,
+              "one_time_usd": null,
               "label": "projected (production setup)"
             },
             {
@@ -840,6 +938,7 @@
               "applies": false,
               "reason": "no critic finding that output exceeds what the rubric needs",
               "monthly_delta_usd": null,
+              "one_time_usd": null,
               "label": null
             },
             {
@@ -847,7 +946,16 @@
               "applies": false,
               "reason": "no provider threshold recorded",
               "monthly_delta_usd": null,
+              "one_time_usd": null,
               "label": null
+            },
+            {
+              "lever": "output_reuse",
+              "applies": false,
+              "reason": "no output reuse rate given",
+              "monthly_delta_usd": null,
+              "one_time_usd": null,
+              "label": "projected (production setup)"
             }
           ],
           "monthly_with_levers_usd": "0.30",
@@ -908,6 +1016,7 @@
               "applies": false,
               "reason": "provider cache minimum or TTL unknown",
               "monthly_delta_usd": null,
+              "one_time_usd": null,
               "label": "projected (production setup)"
             },
             {
@@ -915,6 +1024,7 @@
               "applies": false,
               "reason": "feature is interactive",
               "monthly_delta_usd": null,
+              "one_time_usd": null,
               "label": "projected (production setup)"
             },
             {
@@ -922,6 +1032,7 @@
               "applies": false,
               "reason": "no critic finding that output exceeds what the rubric needs",
               "monthly_delta_usd": null,
+              "one_time_usd": null,
               "label": null
             },
             {
@@ -929,7 +1040,16 @@
               "applies": false,
               "reason": "no provider threshold recorded",
               "monthly_delta_usd": null,
+              "one_time_usd": null,
               "label": null
+            },
+            {
+              "lever": "output_reuse",
+              "applies": false,
+              "reason": "no output reuse rate given",
+              "monthly_delta_usd": null,
+              "one_time_usd": null,
+              "label": "projected (production setup)"
             }
           ],
           "monthly_with_levers_usd": "2.95",
@@ -990,6 +1110,7 @@
               "applies": false,
               "reason": "provider cache minimum or TTL unknown",
               "monthly_delta_usd": null,
+              "one_time_usd": null,
               "label": "projected (production setup)"
             },
             {
@@ -997,6 +1118,7 @@
               "applies": false,
               "reason": "feature is interactive",
               "monthly_delta_usd": null,
+              "one_time_usd": null,
               "label": "projected (production setup)"
             },
             {
@@ -1004,6 +1126,7 @@
               "applies": false,
               "reason": "no critic finding that output exceeds what the rubric needs",
               "monthly_delta_usd": null,
+              "one_time_usd": null,
               "label": null
             },
             {
@@ -1011,7 +1134,16 @@
               "applies": false,
               "reason": "no provider threshold recorded",
               "monthly_delta_usd": null,
+              "one_time_usd": null,
               "label": null
+            },
+            {
+              "lever": "output_reuse",
+              "applies": false,
+              "reason": "no output reuse rate given",
+              "monthly_delta_usd": null,
+              "one_time_usd": null,
+              "label": "projected (production setup)"
             }
           ],
           "monthly_with_levers_usd": "29.52",
@@ -1072,6 +1204,7 @@
               "applies": false,
               "reason": "provider cache minimum or TTL unknown",
               "monthly_delta_usd": null,
+              "one_time_usd": null,
               "label": "projected (production setup)"
             },
             {
@@ -1079,6 +1212,7 @@
               "applies": false,
               "reason": "feature is interactive",
               "monthly_delta_usd": null,
+              "one_time_usd": null,
               "label": "projected (production setup)"
             },
             {
@@ -1086,6 +1220,7 @@
               "applies": false,
               "reason": "no critic finding that output exceeds what the rubric needs",
               "monthly_delta_usd": null,
+              "one_time_usd": null,
               "label": null
             },
             {
@@ -1093,7 +1228,16 @@
               "applies": false,
               "reason": "no provider threshold recorded",
               "monthly_delta_usd": null,
+              "one_time_usd": null,
               "label": null
+            },
+            {
+              "lever": "output_reuse",
+              "applies": false,
+              "reason": "no output reuse rate given",
+              "monthly_delta_usd": null,
+              "one_time_usd": null,
+              "label": "projected (production setup)"
             }
           ],
           "monthly_with_levers_usd": "295.15",
@@ -1215,6 +1359,7 @@
               "applies": false,
               "reason": "static prefix 800 tokens is below provider minimum 1024",
               "monthly_delta_usd": null,
+              "one_time_usd": null,
               "label": "projected (production setup)"
             },
             {
@@ -1222,6 +1367,7 @@
               "applies": true,
               "reason": "background feature; 50% off input and output (after caching)",
               "monthly_delta_usd": "-1.55",
+              "one_time_usd": null,
               "label": "projected (production setup)"
             },
             {
@@ -1229,6 +1375,7 @@
               "applies": false,
               "reason": "no critic finding that output exceeds what the rubric needs",
               "monthly_delta_usd": null,
+              "one_time_usd": null,
               "label": null
             },
             {
@@ -1236,7 +1383,16 @@
               "applies": false,
               "reason": "input 815 <= threshold 200000",
               "monthly_delta_usd": null,
+              "one_time_usd": null,
               "label": null
+            },
+            {
+              "lever": "output_reuse",
+              "applies": false,
+              "reason": "no output reuse rate given",
+              "monthly_delta_usd": null,
+              "one_time_usd": null,
+              "label": "projected (production setup)"
             }
           ],
           "monthly_with_levers_usd": "1.55",
@@ -1300,6 +1456,7 @@
               "applies": false,
               "reason": "static prefix 800 tokens is below provider minimum 1024",
               "monthly_delta_usd": null,
+              "one_time_usd": null,
               "label": "projected (production setup)"
             },
             {
@@ -1307,6 +1464,7 @@
               "applies": true,
               "reason": "background feature; 50% off input and output (after caching)",
               "monthly_delta_usd": "-15.48",
+              "one_time_usd": null,
               "label": "projected (production setup)"
             },
             {
@@ -1314,6 +1472,7 @@
               "applies": false,
               "reason": "no critic finding that output exceeds what the rubric needs",
               "monthly_delta_usd": null,
+              "one_time_usd": null,
               "label": null
             },
             {
@@ -1321,7 +1480,16 @@
               "applies": false,
               "reason": "input 815 <= threshold 200000",
               "monthly_delta_usd": null,
+              "one_time_usd": null,
               "label": null
+            },
+            {
+              "lever": "output_reuse",
+              "applies": false,
+              "reason": "no output reuse rate given",
+              "monthly_delta_usd": null,
+              "one_time_usd": null,
+              "label": "projected (production setup)"
             }
           ],
           "monthly_with_levers_usd": "15.48",
@@ -1385,6 +1553,7 @@
               "applies": false,
               "reason": "static prefix 800 tokens is below provider minimum 1024",
               "monthly_delta_usd": null,
+              "one_time_usd": null,
               "label": "projected (production setup)"
             },
             {
@@ -1392,6 +1561,7 @@
               "applies": true,
               "reason": "background feature; 50% off input and output (after caching)",
               "monthly_delta_usd": "-154.83",
+              "one_time_usd": null,
               "label": "projected (production setup)"
             },
             {
@@ -1399,6 +1569,7 @@
               "applies": false,
               "reason": "no critic finding that output exceeds what the rubric needs",
               "monthly_delta_usd": null,
+              "one_time_usd": null,
               "label": null
             },
             {
@@ -1406,7 +1577,16 @@
               "applies": false,
               "reason": "input 815 <= threshold 200000",
               "monthly_delta_usd": null,
+              "one_time_usd": null,
               "label": null
+            },
+            {
+              "lever": "output_reuse",
+              "applies": false,
+              "reason": "no output reuse rate given",
+              "monthly_delta_usd": null,
+              "one_time_usd": null,
+              "label": "projected (production setup)"
             }
           ],
           "monthly_with_levers_usd": "154.83",
@@ -1470,6 +1650,7 @@
               "applies": false,
               "reason": "static prefix 800 tokens is below provider minimum 1024",
               "monthly_delta_usd": null,
+              "one_time_usd": null,
               "label": "projected (production setup)"
             },
             {
@@ -1477,6 +1658,7 @@
               "applies": true,
               "reason": "background feature; 50% off input and output (after caching)",
               "monthly_delta_usd": "-1548.25",
+              "one_time_usd": null,
               "label": "projected (production setup)"
             },
             {
@@ -1484,6 +1666,7 @@
               "applies": false,
               "reason": "no critic finding that output exceeds what the rubric needs",
               "monthly_delta_usd": null,
+              "one_time_usd": null,
               "label": null
             },
             {
@@ -1491,7 +1674,16 @@
               "applies": false,
               "reason": "input 815 <= threshold 200000",
               "monthly_delta_usd": null,
+              "one_time_usd": null,
               "label": null
+            },
+            {
+              "lever": "output_reuse",
+              "applies": false,
+              "reason": "no output reuse rate given",
+              "monthly_delta_usd": null,
+              "one_time_usd": null,
+              "label": "projected (production setup)"
             }
           ],
           "monthly_with_levers_usd": "1548.25",
@@ -1555,6 +1747,7 @@
               "applies": false,
               "reason": "static prefix 800 tokens is below provider minimum 1024",
               "monthly_delta_usd": null,
+              "one_time_usd": null,
               "label": "projected (production setup)"
             },
             {
@@ -1562,6 +1755,7 @@
               "applies": true,
               "reason": "background feature; 50% off input and output (after caching)",
               "monthly_delta_usd": "-0.31",
+              "one_time_usd": null,
               "label": "projected (production setup)"
             },
             {
@@ -1569,6 +1763,7 @@
               "applies": false,
               "reason": "no critic finding that output exceeds what the rubric needs",
               "monthly_delta_usd": null,
+              "one_time_usd": null,
               "label": null
             },
             {
@@ -1576,7 +1771,16 @@
               "applies": false,
               "reason": "no provider threshold recorded",
               "monthly_delta_usd": null,
+              "one_time_usd": null,
               "label": null
+            },
+            {
+              "lever": "output_reuse",
+              "applies": false,
+              "reason": "no output reuse rate given",
+              "monthly_delta_usd": null,
+              "one_time_usd": null,
+              "label": "projected (production setup)"
             }
           ],
           "monthly_with_levers_usd": "0.31",
@@ -1638,6 +1842,7 @@
               "applies": false,
               "reason": "static prefix 800 tokens is below provider minimum 1024",
               "monthly_delta_usd": null,
+              "one_time_usd": null,
               "label": "projected (production setup)"
             },
             {
@@ -1645,6 +1850,7 @@
               "applies": true,
               "reason": "background feature; 50% off input and output (after caching)",
               "monthly_delta_usd": "-3.10",
+              "one_time_usd": null,
               "label": "projected (production setup)"
             },
             {
@@ -1652,6 +1858,7 @@
               "applies": false,
               "reason": "no critic finding that output exceeds what the rubric needs",
               "monthly_delta_usd": null,
+              "one_time_usd": null,
               "label": null
             },
             {
@@ -1659,7 +1866,16 @@
               "applies": false,
               "reason": "no provider threshold recorded",
               "monthly_delta_usd": null,
+              "one_time_usd": null,
               "label": null
+            },
+            {
+              "lever": "output_reuse",
+              "applies": false,
+              "reason": "no output reuse rate given",
+              "monthly_delta_usd": null,
+              "one_time_usd": null,
+              "label": "projected (production setup)"
             }
           ],
           "monthly_with_levers_usd": "3.10",
@@ -1721,6 +1937,7 @@
               "applies": false,
               "reason": "static prefix 800 tokens is below provider minimum 1024",
               "monthly_delta_usd": null,
+              "one_time_usd": null,
               "label": "projected (production setup)"
             },
             {
@@ -1728,6 +1945,7 @@
               "applies": true,
               "reason": "background feature; 50% off input and output (after caching)",
               "monthly_delta_usd": "-30.97",
+              "one_time_usd": null,
               "label": "projected (production setup)"
             },
             {
@@ -1735,6 +1953,7 @@
               "applies": false,
               "reason": "no critic finding that output exceeds what the rubric needs",
               "monthly_delta_usd": null,
+              "one_time_usd": null,
               "label": null
             },
             {
@@ -1742,7 +1961,16 @@
               "applies": false,
               "reason": "no provider threshold recorded",
               "monthly_delta_usd": null,
+              "one_time_usd": null,
               "label": null
+            },
+            {
+              "lever": "output_reuse",
+              "applies": false,
+              "reason": "no output reuse rate given",
+              "monthly_delta_usd": null,
+              "one_time_usd": null,
+              "label": "projected (production setup)"
             }
           ],
           "monthly_with_levers_usd": "30.97",
@@ -1804,6 +2032,7 @@
               "applies": false,
               "reason": "static prefix 800 tokens is below provider minimum 1024",
               "monthly_delta_usd": null,
+              "one_time_usd": null,
               "label": "projected (production setup)"
             },
             {
@@ -1811,6 +2040,7 @@
               "applies": true,
               "reason": "background feature; 50% off input and output (after caching)",
               "monthly_delta_usd": "-309.65",
+              "one_time_usd": null,
               "label": "projected (production setup)"
             },
             {
@@ -1818,6 +2048,7 @@
               "applies": false,
               "reason": "no critic finding that output exceeds what the rubric needs",
               "monthly_delta_usd": null,
+              "one_time_usd": null,
               "label": null
             },
             {
@@ -1825,7 +2056,16 @@
               "applies": false,
               "reason": "no provider threshold recorded",
               "monthly_delta_usd": null,
+              "one_time_usd": null,
               "label": null
+            },
+            {
+              "lever": "output_reuse",
+              "applies": false,
+              "reason": "no output reuse rate given",
+              "monthly_delta_usd": null,
+              "one_time_usd": null,
+              "label": "projected (production setup)"
             }
           ],
           "monthly_with_levers_usd": "309.65",
@@ -1887,6 +2127,7 @@
               "applies": false,
               "reason": "provider cache minimum or TTL unknown",
               "monthly_delta_usd": null,
+              "one_time_usd": null,
               "label": "projected (production setup)"
             },
             {
@@ -1894,6 +2135,7 @@
               "applies": false,
               "reason": "provider batch availability unknown",
               "monthly_delta_usd": null,
+              "one_time_usd": null,
               "label": "projected (production setup)"
             },
             {
@@ -1901,6 +2143,7 @@
               "applies": false,
               "reason": "no critic finding that output exceeds what the rubric needs",
               "monthly_delta_usd": null,
+              "one_time_usd": null,
               "label": null
             },
             {
@@ -1908,7 +2151,16 @@
               "applies": false,
               "reason": "no provider threshold recorded",
               "monthly_delta_usd": null,
+              "one_time_usd": null,
               "label": null
+            },
+            {
+              "lever": "output_reuse",
+              "applies": false,
+              "reason": "no output reuse rate given",
+              "monthly_delta_usd": null,
+              "one_time_usd": null,
+              "label": "projected (production setup)"
             }
           ],
           "monthly_with_levers_usd": "0.09",
@@ -1968,6 +2220,7 @@
               "applies": false,
               "reason": "provider cache minimum or TTL unknown",
               "monthly_delta_usd": null,
+              "one_time_usd": null,
               "label": "projected (production setup)"
             },
             {
@@ -1975,6 +2228,7 @@
               "applies": false,
               "reason": "provider batch availability unknown",
               "monthly_delta_usd": null,
+              "one_time_usd": null,
               "label": "projected (production setup)"
             },
             {
@@ -1982,6 +2236,7 @@
               "applies": false,
               "reason": "no critic finding that output exceeds what the rubric needs",
               "monthly_delta_usd": null,
+              "one_time_usd": null,
               "label": null
             },
             {
@@ -1989,7 +2244,16 @@
               "applies": false,
               "reason": "no provider threshold recorded",
               "monthly_delta_usd": null,
+              "one_time_usd": null,
               "label": null
+            },
+            {
+              "lever": "output_reuse",
+              "applies": false,
+              "reason": "no output reuse rate given",
+              "monthly_delta_usd": null,
+              "one_time_usd": null,
+              "label": "projected (production setup)"
             }
           ],
           "monthly_with_levers_usd": "0.89",
@@ -2049,6 +2313,7 @@
               "applies": false,
               "reason": "provider cache minimum or TTL unknown",
               "monthly_delta_usd": null,
+              "one_time_usd": null,
               "label": "projected (production setup)"
             },
             {
@@ -2056,6 +2321,7 @@
               "applies": false,
               "reason": "provider batch availability unknown",
               "monthly_delta_usd": null,
+              "one_time_usd": null,
               "label": "projected (production setup)"
             },
             {
@@ -2063,6 +2329,7 @@
               "applies": false,
               "reason": "no critic finding that output exceeds what the rubric needs",
               "monthly_delta_usd": null,
+              "one_time_usd": null,
               "label": null
             },
             {
@@ -2070,7 +2337,16 @@
               "applies": false,
               "reason": "no provider threshold recorded",
               "monthly_delta_usd": null,
+              "one_time_usd": null,
               "label": null
+            },
+            {
+              "lever": "output_reuse",
+              "applies": false,
+              "reason": "no output reuse rate given",
+              "monthly_delta_usd": null,
+              "one_time_usd": null,
+              "label": "projected (production setup)"
             }
           ],
           "monthly_with_levers_usd": "8.87",
@@ -2130,6 +2406,7 @@
               "applies": false,
               "reason": "provider cache minimum or TTL unknown",
               "monthly_delta_usd": null,
+              "one_time_usd": null,
               "label": "projected (production setup)"
             },
             {
@@ -2137,6 +2414,7 @@
               "applies": false,
               "reason": "provider batch availability unknown",
               "monthly_delta_usd": null,
+              "one_time_usd": null,
               "label": "projected (production setup)"
             },
             {
@@ -2144,6 +2422,7 @@
               "applies": false,
               "reason": "no critic finding that output exceeds what the rubric needs",
               "monthly_delta_usd": null,
+              "one_time_usd": null,
               "label": null
             },
             {
@@ -2151,7 +2430,16 @@
               "applies": false,
               "reason": "no provider threshold recorded",
               "monthly_delta_usd": null,
+              "one_time_usd": null,
               "label": null
+            },
+            {
+              "lever": "output_reuse",
+              "applies": false,
+              "reason": "no output reuse rate given",
+              "monthly_delta_usd": null,
+              "one_time_usd": null,
+              "label": "projected (production setup)"
             }
           ],
           "monthly_with_levers_usd": "88.66",

@@ -96,6 +96,49 @@ def test_caching_and_batch_labeled_projected():
     assert labels["prompt_caching"] == labels["batch_api"] == "projected (production setup)"
     assert labels["output_cap"] is None and labels["long_context_cliff"] is None
 
+def _reuse(rate, distinct=None, mode="interactive"):
+    return _feature(mode=mode).model_copy(update={"output_reuse_rate": None if rate is None else Decimal(rate),
+                                                  "distinct_outputs": distinct})
+
+def test_output_reuse_removes_the_share_and_is_labeled_projected():
+    row = stage_cost_row(_reuse("0.9", 2000), _model(), STAGE, _tok(reasoning=0))
+    r = _lever(row, "output_reuse")
+    assert r.applies and r.label == "projected (production setup)"
+    assert row.gross_monthly_usd == Decimal("22.00")                # 1,000 calls × $0.02 × 1.1
+    assert r.monthly_delta_usd == Decimal("-19.80") and row.monthly_with_levers_usd == Decimal("2.20")
+
+def test_one_time_cache_fill_is_shown_and_never_added_to_a_monthly_total():
+    row = stage_cost_row(_reuse("0.9", 2000), _model(), STAGE, _tok(reasoning=0))
+    assert _lever(row, "output_reuse").one_time_usd == Decimal("44.00")   # 2,000 outputs × $0.02 × 1.1
+    assert row.monthly_with_levers_usd == Decimal("2.20")
+    unknown = _lever(stage_cost_row(_reuse("0.9"), _model(), STAGE, _tok(reasoning=0)), "output_reuse")
+    assert unknown.applies and unknown.one_time_usd is None and "distinct_outputs not given" in unknown.reason
+
+def test_output_reuse_applies_after_the_other_levers():
+    row = stage_cost_row(_reuse("0.9", mode="background"), _model(), STAGE, _tok(reasoning=0))
+    assert _lever(row, "batch_api").monthly_delta_usd == Decimal("-11.00")
+    assert _lever(row, "output_reuse").monthly_delta_usd == Decimal("-9.90")   # 0.9 × (22.00 − 11.00)
+    assert row.monthly_with_levers_usd == Decimal("1.10")
+
+def test_no_reuse_rate_means_no_reuse_line_effect():
+    for f in (_feature(), _reuse("0")):
+        lv = _lever(stage_cost_row(f, _model(), STAGE, _tok(reasoning=0)), "output_reuse")
+        assert not lv.applies and lv.monthly_delta_usd is None and lv.one_time_usd is None
+
+def test_reuse_inputs_are_validated():
+    import pytest
+    for upd in ({"output_reuse_rate": Decimal("1.2")}, {"output_reuse_rate": Decimal("-0.1")}, {"distinct_outputs": 0}):
+        with pytest.raises(ValueError):
+            FeatureProfile.model_validate({**_feature().model_dump(), **upd})
+
+def test_audio_output_reuse_removes_audio_cost_too():
+    f = _feature().model_copy(update={"modality": ["text", "audio_out"], "audio_seconds_per_use": Decimal("3"),
+                                      "output_reuse_rate": Decimal("0.9"), "distinct_outputs": 2000})
+    row = stage_cost_row(f, _model(), STAGE, _tok(reasoning=0))
+    # 1,000 calls: text $20.00 + audio (3 s × 20 tok/s × $80/M = $0.0048 a call) $4.80, × 1.1 retries
+    assert row.gross_monthly_usd == Decimal("27.28")
+    assert row.monthly_with_levers_usd == Decimal("2.73")           # 10% of 27.28, rounded once
+
 def test_unknown_usage_or_rate_stays_unknown():
     f = _feature().model_copy(update={"uses_per_user_month": None})
     assert stage_cost_row(f, _model(), STAGE, _tok()).gross_monthly_usd is None

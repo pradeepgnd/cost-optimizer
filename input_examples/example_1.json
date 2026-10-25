@@ -62,9 +62,12 @@
     "uses_per_user_month": "960",
     "calls_per_use": "1",
     "expected_output_words": 0,
+    "output_reuse_rate": "0.9",
+    "distinct_outputs": 2000,
     "rubric_checks": [],
     "field_status": {"audio_seconds_per_use": "assumed", "uses_per_user_month": "assumed", "calls_per_use": "assumed",
-                     "expected_output_words": "assumed", "static_prefix_tokens": "unknown"}
+                     "expected_output_words": "assumed", "output_reuse_rate": "assumed", "distinct_outputs": "assumed",
+                     "static_prefix_tokens": "unknown"}
    },
    {
     "feature_id": "A4_weekly_progress_summary",

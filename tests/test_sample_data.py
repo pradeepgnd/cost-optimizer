@@ -37,6 +37,16 @@ def test_sample_stage_table_is_estimated_and_never_claims_a_switch():
     assert len(t.rows) == 12 and all(r.token_basis == "estimated" and r.lower_bound for r in t.rows)
     assert t.switch_points == []          # no measured quality offline
 
+def test_example_a3_output_reuse_is_assumed():
+    import json
+    from pathlib import Path
+    from app.contracts import RunRequest
+    p = Path(__file__).resolve().parents[1] / "input_examples" / "example_1.json"
+    a3 = next(f for f in RunRequest.model_validate(json.loads(p.read_text(encoding="utf-8"))).brief.ai_features
+              if f.feature_id == "A3_speak_target")
+    assert str(a3.output_reuse_rate) == "0.9" and a3.distinct_outputs == 2000
+    assert a3.field_status["output_reuse_rate"] == a3.field_status["distinct_outputs"] == EvidenceStatus.assumed
+
 def test_retrospective_actuals_stay_synthetic():
     actuals = SampleDataLayer().read_sealed_actuals("any")
     assert "SYNTHETIC" in actuals["NOTE"] and actuals["total_spend"]["status"] == "synthetic"

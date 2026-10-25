@@ -217,9 +217,23 @@ def cost_per_call(tokens: TokenUsage, p_in: Decimal, p_out: Decimal) -> Decimal:
 
 # Each lever returns (display line, exact delta). Exact deltas feed totals; only the line is rounded.
 
-def _lever(lever, reason, delta=None, applies=True):
-    return LeverLine(lever=lever, applies=applies, reason=reason, monthly_delta_usd=_q(delta),
-                     label=PROJECTED if lever in ("prompt_caching", "batch_api") else None), (delta if applies else None)
+def _lever(lever, reason, delta=None, applies=True, one_time=None):
+    return LeverLine(lever=lever, applies=applies, reason=reason, monthly_delta_usd=_q(delta), one_time_usd=_q(one_time),
+                     label=PROJECTED if lever in ("prompt_caching", "batch_api", "output_reuse") else None), \
+        (delta if applies else None)
+
+
+def _output_reuse(feature, cost_after_levers, call_cost_with_retries):
+    """Uses served from a cache of earlier outputs make no call at all, so the share is removed from the cost
+    after the other levers. Filling the cache is a one-time cost, kept off every monthly total."""
+    r = feature.output_reuse_rate
+    if r is None or r == 0:
+        return _lever("output_reuse", "no output reuse rate given", applies=False)
+    one_time = None if feature.distinct_outputs is None else feature.distinct_outputs * call_cost_with_retries
+    why = (f"{r * 100:.0f}% of uses served from cached outputs; "
+           + (f"one-time generation of {feature.distinct_outputs:,} distinct outputs" if one_time is not None
+              else "one-time cache fill cost unknown (distinct_outputs not given)"))
+    return _lever("output_reuse", why, -r * cost_after_levers, one_time=one_time)
 
 
 def _caching(feature, model, tokens, calls_eff, rates):
@@ -355,7 +369,9 @@ def stage_cost_row(feature: FeatureProfile, model: ModelProfile, stage: Stage, t
         if lv.applies and lv.monthly_delta_usd is None:
             lower_bound = True
             warnings.append(f"{lv.lever} applies but its amount is unknown.")
-    with_levers = gross + _sum_known(d for _, d in pairs)
+    before_reuse = gross + _sum_known(d for _, d in pairs)
+    pairs.append(_output_reuse(feature, before_reuse, call * (1 + retry_rate)))
+    with_levers = before_reuse + (pairs[-1][1] or Decimal("0"))
 
     uses = Decimal(stage.active_users) * feature.uses_per_user_month
     per_use = with_levers / uses if uses else None
