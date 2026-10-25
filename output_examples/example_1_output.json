@@ -182,19 +182,19 @@
           "active_users": 50,
           "model_id": "sample/frontier-placeholder",
           "tier": "frontier",
-          "calls_per_month": "12000",
+          "calls_per_month": "48000",
           "cost_per_call_usd": "0.002195",
           "token_basis": "estimated",
           "lines": [
             {
               "name": "input",
-              "monthly_usd": "0.24",
+              "monthly_usd": "0.96",
               "billed": true,
               "note": ""
             },
             {
               "name": "output",
-              "monthly_usd": "2.10",
+              "monthly_usd": "8.40",
               "billed": true,
               "note": ""
             },
@@ -206,18 +206,18 @@
             },
             {
               "name": "audio_input",
-              "monthly_usd": "24.00",
+              "monthly_usd": "96.00",
               "billed": true,
               "note": "50.00 audio tokens per call"
             },
             {
               "name": "retries",
-              "monthly_usd": "2.63",
+              "monthly_usd": "10.54",
               "billed": true,
               "note": "retry_rate 0.1 (assumed)"
             }
           ],
-          "gross_monthly_usd": "28.97",
+          "gross_monthly_usd": "115.90",
           "levers": [
             {
               "lever": "prompt_caching",
@@ -248,7 +248,7 @@
               "label": null
             }
           ],
-          "monthly_with_levers_usd": "28.97",
+          "monthly_with_levers_usd": "115.90",
           "cost_per_use_usd": "0.0024145",
           "revenue_per_use_usd": null,
           "revenue_share": null,
@@ -276,19 +276,19 @@
           "active_users": 500,
           "model_id": "sample/frontier-placeholder",
           "tier": "frontier",
-          "calls_per_month": "120000",
+          "calls_per_month": "480000",
           "cost_per_call_usd": "0.002195",
           "token_basis": "estimated",
           "lines": [
             {
               "name": "input",
-              "monthly_usd": "2.40",
+              "monthly_usd": "9.60",
               "billed": true,
               "note": ""
             },
             {
               "name": "output",
-              "monthly_usd": "21.00",
+              "monthly_usd": "84.00",
               "billed": true,
               "note": ""
             },
@@ -300,18 +300,18 @@
             },
             {
               "name": "audio_input",
-              "monthly_usd": "240.00",
+              "monthly_usd": "960.00",
               "billed": true,
               "note": "50.00 audio tokens per call"
             },
             {
               "name": "retries",
-              "monthly_usd": "26.34",
+              "monthly_usd": "105.36",
               "billed": true,
               "note": "retry_rate 0.1 (assumed)"
             }
           ],
-          "gross_monthly_usd": "289.74",
+          "gross_monthly_usd": "1158.96",
           "levers": [
             {
               "lever": "prompt_caching",
@@ -342,7 +342,7 @@
               "label": null
             }
           ],
-          "monthly_with_levers_usd": "289.74",
+          "monthly_with_levers_usd": "1158.96",
           "cost_per_use_usd": "0.0024145",
           "revenue_per_use_usd": null,
           "revenue_share": null,
@@ -370,19 +370,391 @@
           "active_users": 5000,
           "model_id": "sample/frontier-placeholder",
           "tier": "frontier",
-          "calls_per_month": "1200000",
+          "calls_per_month": "4800000",
           "cost_per_call_usd": "0.002195",
           "token_basis": "estimated",
           "lines": [
             {
               "name": "input",
-              "monthly_usd": "24.00",
+              "monthly_usd": "96.00",
               "billed": true,
               "note": ""
             },
             {
               "name": "output",
-              "monthly_usd": "210.00",
+              "monthly_usd": "840.00",
+              "billed": true,
+              "note": ""
+            },
+            {
+              "name": "reasoning",
+              "monthly_usd": null,
+              "billed": false,
+              "note": "unknown"
+            },
+            {
+              "name": "audio_input",
+              "monthly_usd": "9600.00",
+              "billed": true,
+              "note": "50.00 audio tokens per call"
+            },
+            {
+              "name": "retries",
+              "monthly_usd": "1053.60",
+              "billed": true,
+              "note": "retry_rate 0.1 (assumed)"
+            }
+          ],
+          "gross_monthly_usd": "11589.60",
+          "levers": [
+            {
+              "lever": "prompt_caching",
+              "applies": false,
+              "reason": "static prefix 0 tokens is below provider minimum 1024",
+              "monthly_delta_usd": null,
+              "label": "projected (production setup)"
+            },
+            {
+              "lever": "batch_api",
+              "applies": false,
+              "reason": "feature is interactive",
+              "monthly_delta_usd": null,
+              "label": "projected (production setup)"
+            },
+            {
+              "lever": "output_cap",
+              "applies": false,
+              "reason": "no critic finding that output exceeds what the rubric needs",
+              "monthly_delta_usd": null,
+              "label": null
+            },
+            {
+              "lever": "long_context_cliff",
+              "applies": false,
+              "reason": "input 4 <= threshold 200000",
+              "monthly_delta_usd": null,
+              "label": null
+            }
+          ],
+          "monthly_with_levers_usd": "11589.60",
+          "cost_per_use_usd": "0.0024145",
+          "revenue_per_use_usd": null,
+          "revenue_share": null,
+          "lower_bound": true,
+          "rate_ids": [
+            "rate-fr-in",
+            "rate-fr-out",
+            "rate-fr-cache-read",
+            "rate-fr-cache-write",
+            "rate-fr-lc-in",
+            "rate-fr-lc-out",
+            "rate-fr-audio-in",
+            "audio-conv-frontier"
+          ],
+          "warnings": [
+            "Rates are not verified.",
+            "Tokens estimated (4/3 words rule), not measured.",
+            "audio_in tokens estimated from per-second conversion (unverified), not measured.",
+            "Estimated output tokens exclude any hidden reasoning tokens; cost is a lower bound."
+          ]
+        },
+        {
+          "feature_id": "A1_transcribe_attempt",
+          "stage": "Scale",
+          "active_users": 50000,
+          "model_id": "sample/frontier-placeholder",
+          "tier": "frontier",
+          "calls_per_month": "48000000",
+          "cost_per_call_usd": "0.002195",
+          "token_basis": "estimated",
+          "lines": [
+            {
+              "name": "input",
+              "monthly_usd": "960.00",
+              "billed": true,
+              "note": ""
+            },
+            {
+              "name": "output",
+              "monthly_usd": "8400.00",
+              "billed": true,
+              "note": ""
+            },
+            {
+              "name": "reasoning",
+              "monthly_usd": null,
+              "billed": false,
+              "note": "unknown"
+            },
+            {
+              "name": "audio_input",
+              "monthly_usd": "96000.00",
+              "billed": true,
+              "note": "50.00 audio tokens per call"
+            },
+            {
+              "name": "retries",
+              "monthly_usd": "10536.00",
+              "billed": true,
+              "note": "retry_rate 0.1 (assumed)"
+            }
+          ],
+          "gross_monthly_usd": "115896.00",
+          "levers": [
+            {
+              "lever": "prompt_caching",
+              "applies": false,
+              "reason": "static prefix 0 tokens is below provider minimum 1024",
+              "monthly_delta_usd": null,
+              "label": "projected (production setup)"
+            },
+            {
+              "lever": "batch_api",
+              "applies": false,
+              "reason": "feature is interactive",
+              "monthly_delta_usd": null,
+              "label": "projected (production setup)"
+            },
+            {
+              "lever": "output_cap",
+              "applies": false,
+              "reason": "no critic finding that output exceeds what the rubric needs",
+              "monthly_delta_usd": null,
+              "label": null
+            },
+            {
+              "lever": "long_context_cliff",
+              "applies": false,
+              "reason": "input 4 <= threshold 200000",
+              "monthly_delta_usd": null,
+              "label": null
+            }
+          ],
+          "monthly_with_levers_usd": "115896.00",
+          "cost_per_use_usd": "0.0024145",
+          "revenue_per_use_usd": null,
+          "revenue_share": null,
+          "lower_bound": true,
+          "rate_ids": [
+            "rate-fr-in",
+            "rate-fr-out",
+            "rate-fr-cache-read",
+            "rate-fr-cache-write",
+            "rate-fr-lc-in",
+            "rate-fr-lc-out",
+            "rate-fr-audio-in",
+            "audio-conv-frontier"
+          ],
+          "warnings": [
+            "Rates are not verified.",
+            "Tokens estimated (4/3 words rule), not measured.",
+            "audio_in tokens estimated from per-second conversion (unverified), not measured.",
+            "Estimated output tokens exclude any hidden reasoning tokens; cost is a lower bound."
+          ]
+        },
+        {
+          "feature_id": "A1_transcribe_attempt",
+          "stage": "Prototype",
+          "active_users": 50,
+          "model_id": "sample/mid-tier-placeholder",
+          "tier": "mid_tier",
+          "calls_per_month": "48000",
+          "cost_per_call_usd": "0.000539",
+          "token_basis": "estimated",
+          "lines": [
+            {
+              "name": "input",
+              "monthly_usd": "0.19",
+              "billed": true,
+              "note": ""
+            },
+            {
+              "name": "output",
+              "monthly_usd": "1.68",
+              "billed": true,
+              "note": ""
+            },
+            {
+              "name": "reasoning",
+              "monthly_usd": null,
+              "billed": false,
+              "note": "unknown"
+            },
+            {
+              "name": "audio_input",
+              "monthly_usd": "24.00",
+              "billed": true,
+              "note": "50.00 audio tokens per call"
+            },
+            {
+              "name": "retries",
+              "monthly_usd": "2.59",
+              "billed": true,
+              "note": "retry_rate 0.1 (assumed)"
+            }
+          ],
+          "gross_monthly_usd": "28.46",
+          "levers": [
+            {
+              "lever": "prompt_caching",
+              "applies": false,
+              "reason": "static prefix 0 tokens is below provider minimum 1024",
+              "monthly_delta_usd": null,
+              "label": "projected (production setup)"
+            },
+            {
+              "lever": "batch_api",
+              "applies": false,
+              "reason": "feature is interactive",
+              "monthly_delta_usd": null,
+              "label": "projected (production setup)"
+            },
+            {
+              "lever": "output_cap",
+              "applies": false,
+              "reason": "no critic finding that output exceeds what the rubric needs",
+              "monthly_delta_usd": null,
+              "label": null
+            },
+            {
+              "lever": "long_context_cliff",
+              "applies": false,
+              "reason": "no provider threshold recorded",
+              "monthly_delta_usd": null,
+              "label": null
+            }
+          ],
+          "monthly_with_levers_usd": "28.46",
+          "cost_per_use_usd": "0.0005929",
+          "revenue_per_use_usd": null,
+          "revenue_share": null,
+          "lower_bound": true,
+          "rate_ids": [
+            "rate-mid-in",
+            "rate-mid-out",
+            "rate-mid-cache-read",
+            "rate-mid-cache-write",
+            "rate-mid-audio-in",
+            "audio-conv-mid-tier"
+          ],
+          "warnings": [
+            "Rates are not verified.",
+            "Tokens estimated (4/3 words rule), not measured.",
+            "audio_in tokens estimated from per-second conversion (unverified), not measured.",
+            "Estimated output tokens exclude any hidden reasoning tokens; cost is a lower bound."
+          ]
+        },
+        {
+          "feature_id": "A1_transcribe_attempt",
+          "stage": "Launch",
+          "active_users": 500,
+          "model_id": "sample/mid-tier-placeholder",
+          "tier": "mid_tier",
+          "calls_per_month": "480000",
+          "cost_per_call_usd": "0.000539",
+          "token_basis": "estimated",
+          "lines": [
+            {
+              "name": "input",
+              "monthly_usd": "1.92",
+              "billed": true,
+              "note": ""
+            },
+            {
+              "name": "output",
+              "monthly_usd": "16.80",
+              "billed": true,
+              "note": ""
+            },
+            {
+              "name": "reasoning",
+              "monthly_usd": null,
+              "billed": false,
+              "note": "unknown"
+            },
+            {
+              "name": "audio_input",
+              "monthly_usd": "240.00",
+              "billed": true,
+              "note": "50.00 audio tokens per call"
+            },
+            {
+              "name": "retries",
+              "monthly_usd": "25.87",
+              "billed": true,
+              "note": "retry_rate 0.1 (assumed)"
+            }
+          ],
+          "gross_monthly_usd": "284.59",
+          "levers": [
+            {
+              "lever": "prompt_caching",
+              "applies": false,
+              "reason": "static prefix 0 tokens is below provider minimum 1024",
+              "monthly_delta_usd": null,
+              "label": "projected (production setup)"
+            },
+            {
+              "lever": "batch_api",
+              "applies": false,
+              "reason": "feature is interactive",
+              "monthly_delta_usd": null,
+              "label": "projected (production setup)"
+            },
+            {
+              "lever": "output_cap",
+              "applies": false,
+              "reason": "no critic finding that output exceeds what the rubric needs",
+              "monthly_delta_usd": null,
+              "label": null
+            },
+            {
+              "lever": "long_context_cliff",
+              "applies": false,
+              "reason": "no provider threshold recorded",
+              "monthly_delta_usd": null,
+              "label": null
+            }
+          ],
+          "monthly_with_levers_usd": "284.59",
+          "cost_per_use_usd": "0.0005929",
+          "revenue_per_use_usd": null,
+          "revenue_share": null,
+          "lower_bound": true,
+          "rate_ids": [
+            "rate-mid-in",
+            "rate-mid-out",
+            "rate-mid-cache-read",
+            "rate-mid-cache-write",
+            "rate-mid-audio-in",
+            "audio-conv-mid-tier"
+          ],
+          "warnings": [
+            "Rates are not verified.",
+            "Tokens estimated (4/3 words rule), not measured.",
+            "audio_in tokens estimated from per-second conversion (unverified), not measured.",
+            "Estimated output tokens exclude any hidden reasoning tokens; cost is a lower bound."
+          ]
+        },
+        {
+          "feature_id": "A1_transcribe_attempt",
+          "stage": "Traction",
+          "active_users": 5000,
+          "model_id": "sample/mid-tier-placeholder",
+          "tier": "mid_tier",
+          "calls_per_month": "4800000",
+          "cost_per_call_usd": "0.000539",
+          "token_basis": "estimated",
+          "lines": [
+            {
+              "name": "input",
+              "monthly_usd": "19.20",
+              "billed": true,
+              "note": ""
+            },
+            {
+              "name": "output",
+              "monthly_usd": "168.00",
               "billed": true,
               "note": ""
             },
@@ -400,12 +772,12 @@
             },
             {
               "name": "retries",
-              "monthly_usd": "263.40",
+              "monthly_usd": "258.72",
               "billed": true,
               "note": "retry_rate 0.1 (assumed)"
             }
           ],
-          "gross_monthly_usd": "2897.40",
+          "gross_monthly_usd": "2845.92",
           "levers": [
             {
               "lever": "prompt_caching",
@@ -431,25 +803,23 @@
             {
               "lever": "long_context_cliff",
               "applies": false,
-              "reason": "input 4 <= threshold 200000",
+              "reason": "no provider threshold recorded",
               "monthly_delta_usd": null,
               "label": null
             }
           ],
-          "monthly_with_levers_usd": "2897.40",
-          "cost_per_use_usd": "0.0024145",
+          "monthly_with_levers_usd": "2845.92",
+          "cost_per_use_usd": "0.0005929",
           "revenue_per_use_usd": null,
           "revenue_share": null,
           "lower_bound": true,
           "rate_ids": [
-            "rate-fr-in",
-            "rate-fr-out",
-            "rate-fr-cache-read",
-            "rate-fr-cache-write",
-            "rate-fr-lc-in",
-            "rate-fr-lc-out",
-            "rate-fr-audio-in",
-            "audio-conv-frontier"
+            "rate-mid-in",
+            "rate-mid-out",
+            "rate-mid-cache-read",
+            "rate-mid-cache-write",
+            "rate-mid-audio-in",
+            "audio-conv-mid-tier"
           ],
           "warnings": [
             "Rates are not verified.",
@@ -462,21 +832,21 @@
           "feature_id": "A1_transcribe_attempt",
           "stage": "Scale",
           "active_users": 50000,
-          "model_id": "sample/frontier-placeholder",
-          "tier": "frontier",
-          "calls_per_month": "12000000",
-          "cost_per_call_usd": "0.002195",
+          "model_id": "sample/mid-tier-placeholder",
+          "tier": "mid_tier",
+          "calls_per_month": "48000000",
+          "cost_per_call_usd": "0.000539",
           "token_basis": "estimated",
           "lines": [
             {
               "name": "input",
-              "monthly_usd": "240.00",
+              "monthly_usd": "192.00",
               "billed": true,
               "note": ""
             },
             {
               "name": "output",
-              "monthly_usd": "2100.00",
+              "monthly_usd": "1680.00",
               "billed": true,
               "note": ""
             },
@@ -494,106 +864,12 @@
             },
             {
               "name": "retries",
-              "monthly_usd": "2634.00",
+              "monthly_usd": "2587.20",
               "billed": true,
               "note": "retry_rate 0.1 (assumed)"
             }
           ],
-          "gross_monthly_usd": "28974.00",
-          "levers": [
-            {
-              "lever": "prompt_caching",
-              "applies": false,
-              "reason": "static prefix 0 tokens is below provider minimum 1024",
-              "monthly_delta_usd": null,
-              "label": "projected (production setup)"
-            },
-            {
-              "lever": "batch_api",
-              "applies": false,
-              "reason": "feature is interactive",
-              "monthly_delta_usd": null,
-              "label": "projected (production setup)"
-            },
-            {
-              "lever": "output_cap",
-              "applies": false,
-              "reason": "no critic finding that output exceeds what the rubric needs",
-              "monthly_delta_usd": null,
-              "label": null
-            },
-            {
-              "lever": "long_context_cliff",
-              "applies": false,
-              "reason": "input 4 <= threshold 200000",
-              "monthly_delta_usd": null,
-              "label": null
-            }
-          ],
-          "monthly_with_levers_usd": "28974.00",
-          "cost_per_use_usd": "0.0024145",
-          "revenue_per_use_usd": null,
-          "revenue_share": null,
-          "lower_bound": true,
-          "rate_ids": [
-            "rate-fr-in",
-            "rate-fr-out",
-            "rate-fr-cache-read",
-            "rate-fr-cache-write",
-            "rate-fr-lc-in",
-            "rate-fr-lc-out",
-            "rate-fr-audio-in",
-            "audio-conv-frontier"
-          ],
-          "warnings": [
-            "Rates are not verified.",
-            "Tokens estimated (4/3 words rule), not measured.",
-            "audio_in tokens estimated from per-second conversion (unverified), not measured.",
-            "Estimated output tokens exclude any hidden reasoning tokens; cost is a lower bound."
-          ]
-        },
-        {
-          "feature_id": "A1_transcribe_attempt",
-          "stage": "Prototype",
-          "active_users": 50,
-          "model_id": "sample/mid-tier-placeholder",
-          "tier": "mid_tier",
-          "calls_per_month": "12000",
-          "cost_per_call_usd": "0.000539",
-          "token_basis": "estimated",
-          "lines": [
-            {
-              "name": "input",
-              "monthly_usd": "0.05",
-              "billed": true,
-              "note": ""
-            },
-            {
-              "name": "output",
-              "monthly_usd": "0.42",
-              "billed": true,
-              "note": ""
-            },
-            {
-              "name": "reasoning",
-              "monthly_usd": null,
-              "billed": false,
-              "note": "unknown"
-            },
-            {
-              "name": "audio_input",
-              "monthly_usd": "6.00",
-              "billed": true,
-              "note": "50.00 audio tokens per call"
-            },
-            {
-              "name": "retries",
-              "monthly_usd": "0.65",
-              "billed": true,
-              "note": "retry_rate 0.1 (assumed)"
-            }
-          ],
-          "gross_monthly_usd": "7.11",
+          "gross_monthly_usd": "28459.20",
           "levers": [
             {
               "lever": "prompt_caching",
@@ -624,283 +900,7 @@
               "label": null
             }
           ],
-          "monthly_with_levers_usd": "7.11",
-          "cost_per_use_usd": "0.0005929",
-          "revenue_per_use_usd": null,
-          "revenue_share": null,
-          "lower_bound": true,
-          "rate_ids": [
-            "rate-mid-in",
-            "rate-mid-out",
-            "rate-mid-cache-read",
-            "rate-mid-cache-write",
-            "rate-mid-audio-in",
-            "audio-conv-mid-tier"
-          ],
-          "warnings": [
-            "Rates are not verified.",
-            "Tokens estimated (4/3 words rule), not measured.",
-            "audio_in tokens estimated from per-second conversion (unverified), not measured.",
-            "Estimated output tokens exclude any hidden reasoning tokens; cost is a lower bound."
-          ]
-        },
-        {
-          "feature_id": "A1_transcribe_attempt",
-          "stage": "Launch",
-          "active_users": 500,
-          "model_id": "sample/mid-tier-placeholder",
-          "tier": "mid_tier",
-          "calls_per_month": "120000",
-          "cost_per_call_usd": "0.000539",
-          "token_basis": "estimated",
-          "lines": [
-            {
-              "name": "input",
-              "monthly_usd": "0.48",
-              "billed": true,
-              "note": ""
-            },
-            {
-              "name": "output",
-              "monthly_usd": "4.20",
-              "billed": true,
-              "note": ""
-            },
-            {
-              "name": "reasoning",
-              "monthly_usd": null,
-              "billed": false,
-              "note": "unknown"
-            },
-            {
-              "name": "audio_input",
-              "monthly_usd": "60.00",
-              "billed": true,
-              "note": "50.00 audio tokens per call"
-            },
-            {
-              "name": "retries",
-              "monthly_usd": "6.47",
-              "billed": true,
-              "note": "retry_rate 0.1 (assumed)"
-            }
-          ],
-          "gross_monthly_usd": "71.15",
-          "levers": [
-            {
-              "lever": "prompt_caching",
-              "applies": false,
-              "reason": "static prefix 0 tokens is below provider minimum 1024",
-              "monthly_delta_usd": null,
-              "label": "projected (production setup)"
-            },
-            {
-              "lever": "batch_api",
-              "applies": false,
-              "reason": "feature is interactive",
-              "monthly_delta_usd": null,
-              "label": "projected (production setup)"
-            },
-            {
-              "lever": "output_cap",
-              "applies": false,
-              "reason": "no critic finding that output exceeds what the rubric needs",
-              "monthly_delta_usd": null,
-              "label": null
-            },
-            {
-              "lever": "long_context_cliff",
-              "applies": false,
-              "reason": "no provider threshold recorded",
-              "monthly_delta_usd": null,
-              "label": null
-            }
-          ],
-          "monthly_with_levers_usd": "71.15",
-          "cost_per_use_usd": "0.0005929",
-          "revenue_per_use_usd": null,
-          "revenue_share": null,
-          "lower_bound": true,
-          "rate_ids": [
-            "rate-mid-in",
-            "rate-mid-out",
-            "rate-mid-cache-read",
-            "rate-mid-cache-write",
-            "rate-mid-audio-in",
-            "audio-conv-mid-tier"
-          ],
-          "warnings": [
-            "Rates are not verified.",
-            "Tokens estimated (4/3 words rule), not measured.",
-            "audio_in tokens estimated from per-second conversion (unverified), not measured.",
-            "Estimated output tokens exclude any hidden reasoning tokens; cost is a lower bound."
-          ]
-        },
-        {
-          "feature_id": "A1_transcribe_attempt",
-          "stage": "Traction",
-          "active_users": 5000,
-          "model_id": "sample/mid-tier-placeholder",
-          "tier": "mid_tier",
-          "calls_per_month": "1200000",
-          "cost_per_call_usd": "0.000539",
-          "token_basis": "estimated",
-          "lines": [
-            {
-              "name": "input",
-              "monthly_usd": "4.80",
-              "billed": true,
-              "note": ""
-            },
-            {
-              "name": "output",
-              "monthly_usd": "42.00",
-              "billed": true,
-              "note": ""
-            },
-            {
-              "name": "reasoning",
-              "monthly_usd": null,
-              "billed": false,
-              "note": "unknown"
-            },
-            {
-              "name": "audio_input",
-              "monthly_usd": "600.00",
-              "billed": true,
-              "note": "50.00 audio tokens per call"
-            },
-            {
-              "name": "retries",
-              "monthly_usd": "64.68",
-              "billed": true,
-              "note": "retry_rate 0.1 (assumed)"
-            }
-          ],
-          "gross_monthly_usd": "711.48",
-          "levers": [
-            {
-              "lever": "prompt_caching",
-              "applies": false,
-              "reason": "static prefix 0 tokens is below provider minimum 1024",
-              "monthly_delta_usd": null,
-              "label": "projected (production setup)"
-            },
-            {
-              "lever": "batch_api",
-              "applies": false,
-              "reason": "feature is interactive",
-              "monthly_delta_usd": null,
-              "label": "projected (production setup)"
-            },
-            {
-              "lever": "output_cap",
-              "applies": false,
-              "reason": "no critic finding that output exceeds what the rubric needs",
-              "monthly_delta_usd": null,
-              "label": null
-            },
-            {
-              "lever": "long_context_cliff",
-              "applies": false,
-              "reason": "no provider threshold recorded",
-              "monthly_delta_usd": null,
-              "label": null
-            }
-          ],
-          "monthly_with_levers_usd": "711.48",
-          "cost_per_use_usd": "0.0005929",
-          "revenue_per_use_usd": null,
-          "revenue_share": null,
-          "lower_bound": true,
-          "rate_ids": [
-            "rate-mid-in",
-            "rate-mid-out",
-            "rate-mid-cache-read",
-            "rate-mid-cache-write",
-            "rate-mid-audio-in",
-            "audio-conv-mid-tier"
-          ],
-          "warnings": [
-            "Rates are not verified.",
-            "Tokens estimated (4/3 words rule), not measured.",
-            "audio_in tokens estimated from per-second conversion (unverified), not measured.",
-            "Estimated output tokens exclude any hidden reasoning tokens; cost is a lower bound."
-          ]
-        },
-        {
-          "feature_id": "A1_transcribe_attempt",
-          "stage": "Scale",
-          "active_users": 50000,
-          "model_id": "sample/mid-tier-placeholder",
-          "tier": "mid_tier",
-          "calls_per_month": "12000000",
-          "cost_per_call_usd": "0.000539",
-          "token_basis": "estimated",
-          "lines": [
-            {
-              "name": "input",
-              "monthly_usd": "48.00",
-              "billed": true,
-              "note": ""
-            },
-            {
-              "name": "output",
-              "monthly_usd": "420.00",
-              "billed": true,
-              "note": ""
-            },
-            {
-              "name": "reasoning",
-              "monthly_usd": null,
-              "billed": false,
-              "note": "unknown"
-            },
-            {
-              "name": "audio_input",
-              "monthly_usd": "6000.00",
-              "billed": true,
-              "note": "50.00 audio tokens per call"
-            },
-            {
-              "name": "retries",
-              "monthly_usd": "646.80",
-              "billed": true,
-              "note": "retry_rate 0.1 (assumed)"
-            }
-          ],
-          "gross_monthly_usd": "7114.80",
-          "levers": [
-            {
-              "lever": "prompt_caching",
-              "applies": false,
-              "reason": "static prefix 0 tokens is below provider minimum 1024",
-              "monthly_delta_usd": null,
-              "label": "projected (production setup)"
-            },
-            {
-              "lever": "batch_api",
-              "applies": false,
-              "reason": "feature is interactive",
-              "monthly_delta_usd": null,
-              "label": "projected (production setup)"
-            },
-            {
-              "lever": "output_cap",
-              "applies": false,
-              "reason": "no critic finding that output exceeds what the rubric needs",
-              "monthly_delta_usd": null,
-              "label": null
-            },
-            {
-              "lever": "long_context_cliff",
-              "applies": false,
-              "reason": "no provider threshold recorded",
-              "monthly_delta_usd": null,
-              "label": null
-            }
-          ],
-          "monthly_with_levers_usd": "7114.80",
+          "monthly_with_levers_usd": "28459.20",
           "cost_per_use_usd": "0.0005929",
           "revenue_per_use_usd": null,
           "revenue_share": null,
@@ -926,7 +926,7 @@
           "active_users": 50,
           "model_id": "sample/open-source-placeholder",
           "tier": "open_source",
-          "calls_per_month": "12000",
+          "calls_per_month": "48000",
           "cost_per_call_usd": null,
           "token_basis": "estimated",
           "lines": [],
@@ -953,7 +953,7 @@
           "active_users": 500,
           "model_id": "sample/open-source-placeholder",
           "tier": "open_source",
-          "calls_per_month": "120000",
+          "calls_per_month": "480000",
           "cost_per_call_usd": null,
           "token_basis": "estimated",
           "lines": [],
@@ -980,7 +980,7 @@
           "active_users": 5000,
           "model_id": "sample/open-source-placeholder",
           "tier": "open_source",
-          "calls_per_month": "1200000",
+          "calls_per_month": "4800000",
           "cost_per_call_usd": null,
           "token_basis": "estimated",
           "lines": [],
@@ -1007,7 +1007,7 @@
           "active_users": 50000,
           "model_id": "sample/open-source-placeholder",
           "tier": "open_source",
-          "calls_per_month": "12000000",
+          "calls_per_month": "48000000",
           "cost_per_call_usd": null,
           "token_basis": "estimated",
           "lines": [],
@@ -1039,11 +1039,11 @@
           "from_model": "sample/frontier-placeholder",
           "to_model": "sample/mid-tier-placeholder",
           "to_tier": "mid_tier",
-          "monthly_difference_usd": "218.59",
+          "monthly_difference_usd": "874.37",
           "quality_to": null,
           "quality_from": null,
           "quality_qualified": false,
-          "statement": "From Launch (500 users), A1_transcribe_attempt on sample/mid-tier-placeholder is projected to cost ~$218.59/month less (estimated tokens), but this is not a switch point: quality not measured. Both costs are lower bounds."
+          "statement": "From Launch (500 users), A1_transcribe_attempt on sample/mid-tier-placeholder is projected to cost ~$874.37/month less (estimated tokens), but this is not a switch point: quality not measured. Both costs are lower bounds."
         }
       ],
       "risks": [],
@@ -1082,842 +1082,8 @@
           "active_users": 50,
           "model_id": "sample/frontier-placeholder",
           "tier": "frontier",
-          "calls_per_month": "12000",
+          "calls_per_month": "48000",
           "cost_per_call_usd": "0.001425",
-          "token_basis": "estimated",
-          "lines": [
-            {
-              "name": "input",
-              "monthly_usd": "0.90",
-              "billed": true,
-              "note": ""
-            },
-            {
-              "name": "output",
-              "monthly_usd": "16.20",
-              "billed": true,
-              "note": ""
-            },
-            {
-              "name": "reasoning",
-              "monthly_usd": null,
-              "billed": false,
-              "note": "unknown"
-            },
-            {
-              "name": "retries",
-              "monthly_usd": "1.71",
-              "billed": true,
-              "note": "retry_rate 0.1 (assumed)"
-            }
-          ],
-          "gross_monthly_usd": "18.81",
-          "levers": [
-            {
-              "lever": "prompt_caching",
-              "applies": false,
-              "reason": "static prefix 0 tokens is below provider minimum 1024",
-              "monthly_delta_usd": null,
-              "label": "projected (production setup)"
-            },
-            {
-              "lever": "batch_api",
-              "applies": false,
-              "reason": "feature is interactive",
-              "monthly_delta_usd": null,
-              "label": "projected (production setup)"
-            },
-            {
-              "lever": "output_cap",
-              "applies": false,
-              "reason": "no critic finding that output exceeds what the rubric needs",
-              "monthly_delta_usd": null,
-              "label": null
-            },
-            {
-              "lever": "long_context_cliff",
-              "applies": false,
-              "reason": "input 15 <= threshold 200000",
-              "monthly_delta_usd": null,
-              "label": null
-            }
-          ],
-          "monthly_with_levers_usd": "18.81",
-          "cost_per_use_usd": "0.0015675",
-          "revenue_per_use_usd": null,
-          "revenue_share": null,
-          "lower_bound": true,
-          "rate_ids": [
-            "rate-fr-in",
-            "rate-fr-out",
-            "rate-fr-cache-read",
-            "rate-fr-cache-write",
-            "rate-fr-lc-in",
-            "rate-fr-lc-out"
-          ],
-          "warnings": [
-            "Rates are not verified.",
-            "Tokens estimated (4/3 words rule), not measured.",
-            "Estimated output tokens exclude any hidden reasoning tokens; cost is a lower bound."
-          ]
-        },
-        {
-          "feature_id": "A2_next_target_and_feedback",
-          "stage": "Launch",
-          "active_users": 500,
-          "model_id": "sample/frontier-placeholder",
-          "tier": "frontier",
-          "calls_per_month": "120000",
-          "cost_per_call_usd": "0.001425",
-          "token_basis": "estimated",
-          "lines": [
-            {
-              "name": "input",
-              "monthly_usd": "9.00",
-              "billed": true,
-              "note": ""
-            },
-            {
-              "name": "output",
-              "monthly_usd": "162.00",
-              "billed": true,
-              "note": ""
-            },
-            {
-              "name": "reasoning",
-              "monthly_usd": null,
-              "billed": false,
-              "note": "unknown"
-            },
-            {
-              "name": "retries",
-              "monthly_usd": "17.10",
-              "billed": true,
-              "note": "retry_rate 0.1 (assumed)"
-            }
-          ],
-          "gross_monthly_usd": "188.10",
-          "levers": [
-            {
-              "lever": "prompt_caching",
-              "applies": false,
-              "reason": "static prefix 0 tokens is below provider minimum 1024",
-              "monthly_delta_usd": null,
-              "label": "projected (production setup)"
-            },
-            {
-              "lever": "batch_api",
-              "applies": false,
-              "reason": "feature is interactive",
-              "monthly_delta_usd": null,
-              "label": "projected (production setup)"
-            },
-            {
-              "lever": "output_cap",
-              "applies": false,
-              "reason": "no critic finding that output exceeds what the rubric needs",
-              "monthly_delta_usd": null,
-              "label": null
-            },
-            {
-              "lever": "long_context_cliff",
-              "applies": false,
-              "reason": "input 15 <= threshold 200000",
-              "monthly_delta_usd": null,
-              "label": null
-            }
-          ],
-          "monthly_with_levers_usd": "188.10",
-          "cost_per_use_usd": "0.0015675",
-          "revenue_per_use_usd": null,
-          "revenue_share": null,
-          "lower_bound": true,
-          "rate_ids": [
-            "rate-fr-in",
-            "rate-fr-out",
-            "rate-fr-cache-read",
-            "rate-fr-cache-write",
-            "rate-fr-lc-in",
-            "rate-fr-lc-out"
-          ],
-          "warnings": [
-            "Rates are not verified.",
-            "Tokens estimated (4/3 words rule), not measured.",
-            "Estimated output tokens exclude any hidden reasoning tokens; cost is a lower bound."
-          ]
-        },
-        {
-          "feature_id": "A2_next_target_and_feedback",
-          "stage": "Traction",
-          "active_users": 5000,
-          "model_id": "sample/frontier-placeholder",
-          "tier": "frontier",
-          "calls_per_month": "1200000",
-          "cost_per_call_usd": "0.001425",
-          "token_basis": "estimated",
-          "lines": [
-            {
-              "name": "input",
-              "monthly_usd": "90.00",
-              "billed": true,
-              "note": ""
-            },
-            {
-              "name": "output",
-              "monthly_usd": "1620.00",
-              "billed": true,
-              "note": ""
-            },
-            {
-              "name": "reasoning",
-              "monthly_usd": null,
-              "billed": false,
-              "note": "unknown"
-            },
-            {
-              "name": "retries",
-              "monthly_usd": "171.00",
-              "billed": true,
-              "note": "retry_rate 0.1 (assumed)"
-            }
-          ],
-          "gross_monthly_usd": "1881.00",
-          "levers": [
-            {
-              "lever": "prompt_caching",
-              "applies": false,
-              "reason": "static prefix 0 tokens is below provider minimum 1024",
-              "monthly_delta_usd": null,
-              "label": "projected (production setup)"
-            },
-            {
-              "lever": "batch_api",
-              "applies": false,
-              "reason": "feature is interactive",
-              "monthly_delta_usd": null,
-              "label": "projected (production setup)"
-            },
-            {
-              "lever": "output_cap",
-              "applies": false,
-              "reason": "no critic finding that output exceeds what the rubric needs",
-              "monthly_delta_usd": null,
-              "label": null
-            },
-            {
-              "lever": "long_context_cliff",
-              "applies": false,
-              "reason": "input 15 <= threshold 200000",
-              "monthly_delta_usd": null,
-              "label": null
-            }
-          ],
-          "monthly_with_levers_usd": "1881.00",
-          "cost_per_use_usd": "0.0015675",
-          "revenue_per_use_usd": null,
-          "revenue_share": null,
-          "lower_bound": true,
-          "rate_ids": [
-            "rate-fr-in",
-            "rate-fr-out",
-            "rate-fr-cache-read",
-            "rate-fr-cache-write",
-            "rate-fr-lc-in",
-            "rate-fr-lc-out"
-          ],
-          "warnings": [
-            "Rates are not verified.",
-            "Tokens estimated (4/3 words rule), not measured.",
-            "Estimated output tokens exclude any hidden reasoning tokens; cost is a lower bound."
-          ]
-        },
-        {
-          "feature_id": "A2_next_target_and_feedback",
-          "stage": "Scale",
-          "active_users": 50000,
-          "model_id": "sample/frontier-placeholder",
-          "tier": "frontier",
-          "calls_per_month": "12000000",
-          "cost_per_call_usd": "0.001425",
-          "token_basis": "estimated",
-          "lines": [
-            {
-              "name": "input",
-              "monthly_usd": "900.00",
-              "billed": true,
-              "note": ""
-            },
-            {
-              "name": "output",
-              "monthly_usd": "16200.00",
-              "billed": true,
-              "note": ""
-            },
-            {
-              "name": "reasoning",
-              "monthly_usd": null,
-              "billed": false,
-              "note": "unknown"
-            },
-            {
-              "name": "retries",
-              "monthly_usd": "1710.00",
-              "billed": true,
-              "note": "retry_rate 0.1 (assumed)"
-            }
-          ],
-          "gross_monthly_usd": "18810.00",
-          "levers": [
-            {
-              "lever": "prompt_caching",
-              "applies": false,
-              "reason": "static prefix 0 tokens is below provider minimum 1024",
-              "monthly_delta_usd": null,
-              "label": "projected (production setup)"
-            },
-            {
-              "lever": "batch_api",
-              "applies": false,
-              "reason": "feature is interactive",
-              "monthly_delta_usd": null,
-              "label": "projected (production setup)"
-            },
-            {
-              "lever": "output_cap",
-              "applies": false,
-              "reason": "no critic finding that output exceeds what the rubric needs",
-              "monthly_delta_usd": null,
-              "label": null
-            },
-            {
-              "lever": "long_context_cliff",
-              "applies": false,
-              "reason": "input 15 <= threshold 200000",
-              "monthly_delta_usd": null,
-              "label": null
-            }
-          ],
-          "monthly_with_levers_usd": "18810.00",
-          "cost_per_use_usd": "0.0015675",
-          "revenue_per_use_usd": null,
-          "revenue_share": null,
-          "lower_bound": true,
-          "rate_ids": [
-            "rate-fr-in",
-            "rate-fr-out",
-            "rate-fr-cache-read",
-            "rate-fr-cache-write",
-            "rate-fr-lc-in",
-            "rate-fr-lc-out"
-          ],
-          "warnings": [
-            "Rates are not verified.",
-            "Tokens estimated (4/3 words rule), not measured.",
-            "Estimated output tokens exclude any hidden reasoning tokens; cost is a lower bound."
-          ]
-        },
-        {
-          "feature_id": "A2_next_target_and_feedback",
-          "stage": "Prototype",
-          "active_users": 50,
-          "model_id": "sample/mid-tier-placeholder",
-          "tier": "mid_tier",
-          "calls_per_month": "12000",
-          "cost_per_call_usd": "0.000285",
-          "token_basis": "estimated",
-          "lines": [
-            {
-              "name": "input",
-              "monthly_usd": "0.18",
-              "billed": true,
-              "note": ""
-            },
-            {
-              "name": "output",
-              "monthly_usd": "3.24",
-              "billed": true,
-              "note": ""
-            },
-            {
-              "name": "reasoning",
-              "monthly_usd": null,
-              "billed": false,
-              "note": "unknown"
-            },
-            {
-              "name": "retries",
-              "monthly_usd": "0.34",
-              "billed": true,
-              "note": "retry_rate 0.1 (assumed)"
-            }
-          ],
-          "gross_monthly_usd": "3.76",
-          "levers": [
-            {
-              "lever": "prompt_caching",
-              "applies": false,
-              "reason": "static prefix 0 tokens is below provider minimum 1024",
-              "monthly_delta_usd": null,
-              "label": "projected (production setup)"
-            },
-            {
-              "lever": "batch_api",
-              "applies": false,
-              "reason": "feature is interactive",
-              "monthly_delta_usd": null,
-              "label": "projected (production setup)"
-            },
-            {
-              "lever": "output_cap",
-              "applies": false,
-              "reason": "no critic finding that output exceeds what the rubric needs",
-              "monthly_delta_usd": null,
-              "label": null
-            },
-            {
-              "lever": "long_context_cliff",
-              "applies": false,
-              "reason": "no provider threshold recorded",
-              "monthly_delta_usd": null,
-              "label": null
-            }
-          ],
-          "monthly_with_levers_usd": "3.76",
-          "cost_per_use_usd": "0.0003135",
-          "revenue_per_use_usd": null,
-          "revenue_share": null,
-          "lower_bound": true,
-          "rate_ids": [
-            "rate-mid-in",
-            "rate-mid-out",
-            "rate-mid-cache-read",
-            "rate-mid-cache-write"
-          ],
-          "warnings": [
-            "Rates are not verified.",
-            "Tokens estimated (4/3 words rule), not measured.",
-            "Estimated output tokens exclude any hidden reasoning tokens; cost is a lower bound."
-          ]
-        },
-        {
-          "feature_id": "A2_next_target_and_feedback",
-          "stage": "Launch",
-          "active_users": 500,
-          "model_id": "sample/mid-tier-placeholder",
-          "tier": "mid_tier",
-          "calls_per_month": "120000",
-          "cost_per_call_usd": "0.000285",
-          "token_basis": "estimated",
-          "lines": [
-            {
-              "name": "input",
-              "monthly_usd": "1.80",
-              "billed": true,
-              "note": ""
-            },
-            {
-              "name": "output",
-              "monthly_usd": "32.40",
-              "billed": true,
-              "note": ""
-            },
-            {
-              "name": "reasoning",
-              "monthly_usd": null,
-              "billed": false,
-              "note": "unknown"
-            },
-            {
-              "name": "retries",
-              "monthly_usd": "3.42",
-              "billed": true,
-              "note": "retry_rate 0.1 (assumed)"
-            }
-          ],
-          "gross_monthly_usd": "37.62",
-          "levers": [
-            {
-              "lever": "prompt_caching",
-              "applies": false,
-              "reason": "static prefix 0 tokens is below provider minimum 1024",
-              "monthly_delta_usd": null,
-              "label": "projected (production setup)"
-            },
-            {
-              "lever": "batch_api",
-              "applies": false,
-              "reason": "feature is interactive",
-              "monthly_delta_usd": null,
-              "label": "projected (production setup)"
-            },
-            {
-              "lever": "output_cap",
-              "applies": false,
-              "reason": "no critic finding that output exceeds what the rubric needs",
-              "monthly_delta_usd": null,
-              "label": null
-            },
-            {
-              "lever": "long_context_cliff",
-              "applies": false,
-              "reason": "no provider threshold recorded",
-              "monthly_delta_usd": null,
-              "label": null
-            }
-          ],
-          "monthly_with_levers_usd": "37.62",
-          "cost_per_use_usd": "0.0003135",
-          "revenue_per_use_usd": null,
-          "revenue_share": null,
-          "lower_bound": true,
-          "rate_ids": [
-            "rate-mid-in",
-            "rate-mid-out",
-            "rate-mid-cache-read",
-            "rate-mid-cache-write"
-          ],
-          "warnings": [
-            "Rates are not verified.",
-            "Tokens estimated (4/3 words rule), not measured.",
-            "Estimated output tokens exclude any hidden reasoning tokens; cost is a lower bound."
-          ]
-        },
-        {
-          "feature_id": "A2_next_target_and_feedback",
-          "stage": "Traction",
-          "active_users": 5000,
-          "model_id": "sample/mid-tier-placeholder",
-          "tier": "mid_tier",
-          "calls_per_month": "1200000",
-          "cost_per_call_usd": "0.000285",
-          "token_basis": "estimated",
-          "lines": [
-            {
-              "name": "input",
-              "monthly_usd": "18.00",
-              "billed": true,
-              "note": ""
-            },
-            {
-              "name": "output",
-              "monthly_usd": "324.00",
-              "billed": true,
-              "note": ""
-            },
-            {
-              "name": "reasoning",
-              "monthly_usd": null,
-              "billed": false,
-              "note": "unknown"
-            },
-            {
-              "name": "retries",
-              "monthly_usd": "34.20",
-              "billed": true,
-              "note": "retry_rate 0.1 (assumed)"
-            }
-          ],
-          "gross_monthly_usd": "376.20",
-          "levers": [
-            {
-              "lever": "prompt_caching",
-              "applies": false,
-              "reason": "static prefix 0 tokens is below provider minimum 1024",
-              "monthly_delta_usd": null,
-              "label": "projected (production setup)"
-            },
-            {
-              "lever": "batch_api",
-              "applies": false,
-              "reason": "feature is interactive",
-              "monthly_delta_usd": null,
-              "label": "projected (production setup)"
-            },
-            {
-              "lever": "output_cap",
-              "applies": false,
-              "reason": "no critic finding that output exceeds what the rubric needs",
-              "monthly_delta_usd": null,
-              "label": null
-            },
-            {
-              "lever": "long_context_cliff",
-              "applies": false,
-              "reason": "no provider threshold recorded",
-              "monthly_delta_usd": null,
-              "label": null
-            }
-          ],
-          "monthly_with_levers_usd": "376.20",
-          "cost_per_use_usd": "0.0003135",
-          "revenue_per_use_usd": null,
-          "revenue_share": null,
-          "lower_bound": true,
-          "rate_ids": [
-            "rate-mid-in",
-            "rate-mid-out",
-            "rate-mid-cache-read",
-            "rate-mid-cache-write"
-          ],
-          "warnings": [
-            "Rates are not verified.",
-            "Tokens estimated (4/3 words rule), not measured.",
-            "Estimated output tokens exclude any hidden reasoning tokens; cost is a lower bound."
-          ]
-        },
-        {
-          "feature_id": "A2_next_target_and_feedback",
-          "stage": "Scale",
-          "active_users": 50000,
-          "model_id": "sample/mid-tier-placeholder",
-          "tier": "mid_tier",
-          "calls_per_month": "12000000",
-          "cost_per_call_usd": "0.000285",
-          "token_basis": "estimated",
-          "lines": [
-            {
-              "name": "input",
-              "monthly_usd": "180.00",
-              "billed": true,
-              "note": ""
-            },
-            {
-              "name": "output",
-              "monthly_usd": "3240.00",
-              "billed": true,
-              "note": ""
-            },
-            {
-              "name": "reasoning",
-              "monthly_usd": null,
-              "billed": false,
-              "note": "unknown"
-            },
-            {
-              "name": "retries",
-              "monthly_usd": "342.00",
-              "billed": true,
-              "note": "retry_rate 0.1 (assumed)"
-            }
-          ],
-          "gross_monthly_usd": "3762.00",
-          "levers": [
-            {
-              "lever": "prompt_caching",
-              "applies": false,
-              "reason": "static prefix 0 tokens is below provider minimum 1024",
-              "monthly_delta_usd": null,
-              "label": "projected (production setup)"
-            },
-            {
-              "lever": "batch_api",
-              "applies": false,
-              "reason": "feature is interactive",
-              "monthly_delta_usd": null,
-              "label": "projected (production setup)"
-            },
-            {
-              "lever": "output_cap",
-              "applies": false,
-              "reason": "no critic finding that output exceeds what the rubric needs",
-              "monthly_delta_usd": null,
-              "label": null
-            },
-            {
-              "lever": "long_context_cliff",
-              "applies": false,
-              "reason": "no provider threshold recorded",
-              "monthly_delta_usd": null,
-              "label": null
-            }
-          ],
-          "monthly_with_levers_usd": "3762.00",
-          "cost_per_use_usd": "0.0003135",
-          "revenue_per_use_usd": null,
-          "revenue_share": null,
-          "lower_bound": true,
-          "rate_ids": [
-            "rate-mid-in",
-            "rate-mid-out",
-            "rate-mid-cache-read",
-            "rate-mid-cache-write"
-          ],
-          "warnings": [
-            "Rates are not verified.",
-            "Tokens estimated (4/3 words rule), not measured.",
-            "Estimated output tokens exclude any hidden reasoning tokens; cost is a lower bound."
-          ]
-        },
-        {
-          "feature_id": "A2_next_target_and_feedback",
-          "stage": "Prototype",
-          "active_users": 50,
-          "model_id": "sample/open-source-placeholder",
-          "tier": "open_source",
-          "calls_per_month": "12000",
-          "cost_per_call_usd": "0.0000354",
-          "token_basis": "estimated",
-          "lines": [
-            {
-              "name": "input",
-              "monthly_usd": "0.04",
-              "billed": true,
-              "note": ""
-            },
-            {
-              "name": "output",
-              "monthly_usd": "0.39",
-              "billed": true,
-              "note": ""
-            },
-            {
-              "name": "reasoning",
-              "monthly_usd": null,
-              "billed": false,
-              "note": "unknown"
-            },
-            {
-              "name": "retries",
-              "monthly_usd": "0.04",
-              "billed": true,
-              "note": "retry_rate 0.1 (assumed)"
-            }
-          ],
-          "gross_monthly_usd": "0.47",
-          "levers": [
-            {
-              "lever": "prompt_caching",
-              "applies": false,
-              "reason": "provider cache minimum or TTL unknown",
-              "monthly_delta_usd": null,
-              "label": "projected (production setup)"
-            },
-            {
-              "lever": "batch_api",
-              "applies": false,
-              "reason": "feature is interactive",
-              "monthly_delta_usd": null,
-              "label": "projected (production setup)"
-            },
-            {
-              "lever": "output_cap",
-              "applies": false,
-              "reason": "no critic finding that output exceeds what the rubric needs",
-              "monthly_delta_usd": null,
-              "label": null
-            },
-            {
-              "lever": "long_context_cliff",
-              "applies": false,
-              "reason": "no provider threshold recorded",
-              "monthly_delta_usd": null,
-              "label": null
-            }
-          ],
-          "monthly_with_levers_usd": "0.47",
-          "cost_per_use_usd": "0.00003894",
-          "revenue_per_use_usd": null,
-          "revenue_share": null,
-          "lower_bound": true,
-          "rate_ids": [
-            "rate-os-in",
-            "rate-os-out"
-          ],
-          "warnings": [
-            "Rates are not verified.",
-            "Tokens estimated (4/3 words rule), not measured.",
-            "Estimated output tokens exclude any hidden reasoning tokens; cost is a lower bound."
-          ]
-        },
-        {
-          "feature_id": "A2_next_target_and_feedback",
-          "stage": "Launch",
-          "active_users": 500,
-          "model_id": "sample/open-source-placeholder",
-          "tier": "open_source",
-          "calls_per_month": "120000",
-          "cost_per_call_usd": "0.0000354",
-          "token_basis": "estimated",
-          "lines": [
-            {
-              "name": "input",
-              "monthly_usd": "0.36",
-              "billed": true,
-              "note": ""
-            },
-            {
-              "name": "output",
-              "monthly_usd": "3.89",
-              "billed": true,
-              "note": ""
-            },
-            {
-              "name": "reasoning",
-              "monthly_usd": null,
-              "billed": false,
-              "note": "unknown"
-            },
-            {
-              "name": "retries",
-              "monthly_usd": "0.42",
-              "billed": true,
-              "note": "retry_rate 0.1 (assumed)"
-            }
-          ],
-          "gross_monthly_usd": "4.67",
-          "levers": [
-            {
-              "lever": "prompt_caching",
-              "applies": false,
-              "reason": "provider cache minimum or TTL unknown",
-              "monthly_delta_usd": null,
-              "label": "projected (production setup)"
-            },
-            {
-              "lever": "batch_api",
-              "applies": false,
-              "reason": "feature is interactive",
-              "monthly_delta_usd": null,
-              "label": "projected (production setup)"
-            },
-            {
-              "lever": "output_cap",
-              "applies": false,
-              "reason": "no critic finding that output exceeds what the rubric needs",
-              "monthly_delta_usd": null,
-              "label": null
-            },
-            {
-              "lever": "long_context_cliff",
-              "applies": false,
-              "reason": "no provider threshold recorded",
-              "monthly_delta_usd": null,
-              "label": null
-            }
-          ],
-          "monthly_with_levers_usd": "4.67",
-          "cost_per_use_usd": "0.00003894",
-          "revenue_per_use_usd": null,
-          "revenue_share": null,
-          "lower_bound": true,
-          "rate_ids": [
-            "rate-os-in",
-            "rate-os-out"
-          ],
-          "warnings": [
-            "Rates are not verified.",
-            "Tokens estimated (4/3 words rule), not measured.",
-            "Estimated output tokens exclude any hidden reasoning tokens; cost is a lower bound."
-          ]
-        },
-        {
-          "feature_id": "A2_next_target_and_feedback",
-          "stage": "Traction",
-          "active_users": 5000,
-          "model_id": "sample/open-source-placeholder",
-          "tier": "open_source",
-          "calls_per_month": "1200000",
-          "cost_per_call_usd": "0.0000354",
           "token_basis": "estimated",
           "lines": [
             {
@@ -1928,7 +1094,7 @@
             },
             {
               "name": "output",
-              "monthly_usd": "38.88",
+              "monthly_usd": "64.80",
               "billed": true,
               "note": ""
             },
@@ -1940,12 +1106,684 @@
             },
             {
               "name": "retries",
-              "monthly_usd": "4.25",
+              "monthly_usd": "6.84",
               "billed": true,
               "note": "retry_rate 0.1 (assumed)"
             }
           ],
-          "gross_monthly_usd": "46.73",
+          "gross_monthly_usd": "75.24",
+          "levers": [
+            {
+              "lever": "prompt_caching",
+              "applies": false,
+              "reason": "static prefix 0 tokens is below provider minimum 1024",
+              "monthly_delta_usd": null,
+              "label": "projected (production setup)"
+            },
+            {
+              "lever": "batch_api",
+              "applies": false,
+              "reason": "feature is interactive",
+              "monthly_delta_usd": null,
+              "label": "projected (production setup)"
+            },
+            {
+              "lever": "output_cap",
+              "applies": false,
+              "reason": "no critic finding that output exceeds what the rubric needs",
+              "monthly_delta_usd": null,
+              "label": null
+            },
+            {
+              "lever": "long_context_cliff",
+              "applies": false,
+              "reason": "input 15 <= threshold 200000",
+              "monthly_delta_usd": null,
+              "label": null
+            }
+          ],
+          "monthly_with_levers_usd": "75.24",
+          "cost_per_use_usd": "0.0015675",
+          "revenue_per_use_usd": null,
+          "revenue_share": null,
+          "lower_bound": true,
+          "rate_ids": [
+            "rate-fr-in",
+            "rate-fr-out",
+            "rate-fr-cache-read",
+            "rate-fr-cache-write",
+            "rate-fr-lc-in",
+            "rate-fr-lc-out"
+          ],
+          "warnings": [
+            "Rates are not verified.",
+            "Tokens estimated (4/3 words rule), not measured.",
+            "Estimated output tokens exclude any hidden reasoning tokens; cost is a lower bound."
+          ]
+        },
+        {
+          "feature_id": "A2_next_target_and_feedback",
+          "stage": "Launch",
+          "active_users": 500,
+          "model_id": "sample/frontier-placeholder",
+          "tier": "frontier",
+          "calls_per_month": "480000",
+          "cost_per_call_usd": "0.001425",
+          "token_basis": "estimated",
+          "lines": [
+            {
+              "name": "input",
+              "monthly_usd": "36.00",
+              "billed": true,
+              "note": ""
+            },
+            {
+              "name": "output",
+              "monthly_usd": "648.00",
+              "billed": true,
+              "note": ""
+            },
+            {
+              "name": "reasoning",
+              "monthly_usd": null,
+              "billed": false,
+              "note": "unknown"
+            },
+            {
+              "name": "retries",
+              "monthly_usd": "68.40",
+              "billed": true,
+              "note": "retry_rate 0.1 (assumed)"
+            }
+          ],
+          "gross_monthly_usd": "752.40",
+          "levers": [
+            {
+              "lever": "prompt_caching",
+              "applies": false,
+              "reason": "static prefix 0 tokens is below provider minimum 1024",
+              "monthly_delta_usd": null,
+              "label": "projected (production setup)"
+            },
+            {
+              "lever": "batch_api",
+              "applies": false,
+              "reason": "feature is interactive",
+              "monthly_delta_usd": null,
+              "label": "projected (production setup)"
+            },
+            {
+              "lever": "output_cap",
+              "applies": false,
+              "reason": "no critic finding that output exceeds what the rubric needs",
+              "monthly_delta_usd": null,
+              "label": null
+            },
+            {
+              "lever": "long_context_cliff",
+              "applies": false,
+              "reason": "input 15 <= threshold 200000",
+              "monthly_delta_usd": null,
+              "label": null
+            }
+          ],
+          "monthly_with_levers_usd": "752.40",
+          "cost_per_use_usd": "0.0015675",
+          "revenue_per_use_usd": null,
+          "revenue_share": null,
+          "lower_bound": true,
+          "rate_ids": [
+            "rate-fr-in",
+            "rate-fr-out",
+            "rate-fr-cache-read",
+            "rate-fr-cache-write",
+            "rate-fr-lc-in",
+            "rate-fr-lc-out"
+          ],
+          "warnings": [
+            "Rates are not verified.",
+            "Tokens estimated (4/3 words rule), not measured.",
+            "Estimated output tokens exclude any hidden reasoning tokens; cost is a lower bound."
+          ]
+        },
+        {
+          "feature_id": "A2_next_target_and_feedback",
+          "stage": "Traction",
+          "active_users": 5000,
+          "model_id": "sample/frontier-placeholder",
+          "tier": "frontier",
+          "calls_per_month": "4800000",
+          "cost_per_call_usd": "0.001425",
+          "token_basis": "estimated",
+          "lines": [
+            {
+              "name": "input",
+              "monthly_usd": "360.00",
+              "billed": true,
+              "note": ""
+            },
+            {
+              "name": "output",
+              "monthly_usd": "6480.00",
+              "billed": true,
+              "note": ""
+            },
+            {
+              "name": "reasoning",
+              "monthly_usd": null,
+              "billed": false,
+              "note": "unknown"
+            },
+            {
+              "name": "retries",
+              "monthly_usd": "684.00",
+              "billed": true,
+              "note": "retry_rate 0.1 (assumed)"
+            }
+          ],
+          "gross_monthly_usd": "7524.00",
+          "levers": [
+            {
+              "lever": "prompt_caching",
+              "applies": false,
+              "reason": "static prefix 0 tokens is below provider minimum 1024",
+              "monthly_delta_usd": null,
+              "label": "projected (production setup)"
+            },
+            {
+              "lever": "batch_api",
+              "applies": false,
+              "reason": "feature is interactive",
+              "monthly_delta_usd": null,
+              "label": "projected (production setup)"
+            },
+            {
+              "lever": "output_cap",
+              "applies": false,
+              "reason": "no critic finding that output exceeds what the rubric needs",
+              "monthly_delta_usd": null,
+              "label": null
+            },
+            {
+              "lever": "long_context_cliff",
+              "applies": false,
+              "reason": "input 15 <= threshold 200000",
+              "monthly_delta_usd": null,
+              "label": null
+            }
+          ],
+          "monthly_with_levers_usd": "7524.00",
+          "cost_per_use_usd": "0.0015675",
+          "revenue_per_use_usd": null,
+          "revenue_share": null,
+          "lower_bound": true,
+          "rate_ids": [
+            "rate-fr-in",
+            "rate-fr-out",
+            "rate-fr-cache-read",
+            "rate-fr-cache-write",
+            "rate-fr-lc-in",
+            "rate-fr-lc-out"
+          ],
+          "warnings": [
+            "Rates are not verified.",
+            "Tokens estimated (4/3 words rule), not measured.",
+            "Estimated output tokens exclude any hidden reasoning tokens; cost is a lower bound."
+          ]
+        },
+        {
+          "feature_id": "A2_next_target_and_feedback",
+          "stage": "Scale",
+          "active_users": 50000,
+          "model_id": "sample/frontier-placeholder",
+          "tier": "frontier",
+          "calls_per_month": "48000000",
+          "cost_per_call_usd": "0.001425",
+          "token_basis": "estimated",
+          "lines": [
+            {
+              "name": "input",
+              "monthly_usd": "3600.00",
+              "billed": true,
+              "note": ""
+            },
+            {
+              "name": "output",
+              "monthly_usd": "64800.00",
+              "billed": true,
+              "note": ""
+            },
+            {
+              "name": "reasoning",
+              "monthly_usd": null,
+              "billed": false,
+              "note": "unknown"
+            },
+            {
+              "name": "retries",
+              "monthly_usd": "6840.00",
+              "billed": true,
+              "note": "retry_rate 0.1 (assumed)"
+            }
+          ],
+          "gross_monthly_usd": "75240.00",
+          "levers": [
+            {
+              "lever": "prompt_caching",
+              "applies": false,
+              "reason": "static prefix 0 tokens is below provider minimum 1024",
+              "monthly_delta_usd": null,
+              "label": "projected (production setup)"
+            },
+            {
+              "lever": "batch_api",
+              "applies": false,
+              "reason": "feature is interactive",
+              "monthly_delta_usd": null,
+              "label": "projected (production setup)"
+            },
+            {
+              "lever": "output_cap",
+              "applies": false,
+              "reason": "no critic finding that output exceeds what the rubric needs",
+              "monthly_delta_usd": null,
+              "label": null
+            },
+            {
+              "lever": "long_context_cliff",
+              "applies": false,
+              "reason": "input 15 <= threshold 200000",
+              "monthly_delta_usd": null,
+              "label": null
+            }
+          ],
+          "monthly_with_levers_usd": "75240.00",
+          "cost_per_use_usd": "0.0015675",
+          "revenue_per_use_usd": null,
+          "revenue_share": null,
+          "lower_bound": true,
+          "rate_ids": [
+            "rate-fr-in",
+            "rate-fr-out",
+            "rate-fr-cache-read",
+            "rate-fr-cache-write",
+            "rate-fr-lc-in",
+            "rate-fr-lc-out"
+          ],
+          "warnings": [
+            "Rates are not verified.",
+            "Tokens estimated (4/3 words rule), not measured.",
+            "Estimated output tokens exclude any hidden reasoning tokens; cost is a lower bound."
+          ]
+        },
+        {
+          "feature_id": "A2_next_target_and_feedback",
+          "stage": "Prototype",
+          "active_users": 50,
+          "model_id": "sample/mid-tier-placeholder",
+          "tier": "mid_tier",
+          "calls_per_month": "48000",
+          "cost_per_call_usd": "0.000285",
+          "token_basis": "estimated",
+          "lines": [
+            {
+              "name": "input",
+              "monthly_usd": "0.72",
+              "billed": true,
+              "note": ""
+            },
+            {
+              "name": "output",
+              "monthly_usd": "12.96",
+              "billed": true,
+              "note": ""
+            },
+            {
+              "name": "reasoning",
+              "monthly_usd": null,
+              "billed": false,
+              "note": "unknown"
+            },
+            {
+              "name": "retries",
+              "monthly_usd": "1.37",
+              "billed": true,
+              "note": "retry_rate 0.1 (assumed)"
+            }
+          ],
+          "gross_monthly_usd": "15.05",
+          "levers": [
+            {
+              "lever": "prompt_caching",
+              "applies": false,
+              "reason": "static prefix 0 tokens is below provider minimum 1024",
+              "monthly_delta_usd": null,
+              "label": "projected (production setup)"
+            },
+            {
+              "lever": "batch_api",
+              "applies": false,
+              "reason": "feature is interactive",
+              "monthly_delta_usd": null,
+              "label": "projected (production setup)"
+            },
+            {
+              "lever": "output_cap",
+              "applies": false,
+              "reason": "no critic finding that output exceeds what the rubric needs",
+              "monthly_delta_usd": null,
+              "label": null
+            },
+            {
+              "lever": "long_context_cliff",
+              "applies": false,
+              "reason": "no provider threshold recorded",
+              "monthly_delta_usd": null,
+              "label": null
+            }
+          ],
+          "monthly_with_levers_usd": "15.05",
+          "cost_per_use_usd": "0.0003135",
+          "revenue_per_use_usd": null,
+          "revenue_share": null,
+          "lower_bound": true,
+          "rate_ids": [
+            "rate-mid-in",
+            "rate-mid-out",
+            "rate-mid-cache-read",
+            "rate-mid-cache-write"
+          ],
+          "warnings": [
+            "Rates are not verified.",
+            "Tokens estimated (4/3 words rule), not measured.",
+            "Estimated output tokens exclude any hidden reasoning tokens; cost is a lower bound."
+          ]
+        },
+        {
+          "feature_id": "A2_next_target_and_feedback",
+          "stage": "Launch",
+          "active_users": 500,
+          "model_id": "sample/mid-tier-placeholder",
+          "tier": "mid_tier",
+          "calls_per_month": "480000",
+          "cost_per_call_usd": "0.000285",
+          "token_basis": "estimated",
+          "lines": [
+            {
+              "name": "input",
+              "monthly_usd": "7.20",
+              "billed": true,
+              "note": ""
+            },
+            {
+              "name": "output",
+              "monthly_usd": "129.60",
+              "billed": true,
+              "note": ""
+            },
+            {
+              "name": "reasoning",
+              "monthly_usd": null,
+              "billed": false,
+              "note": "unknown"
+            },
+            {
+              "name": "retries",
+              "monthly_usd": "13.68",
+              "billed": true,
+              "note": "retry_rate 0.1 (assumed)"
+            }
+          ],
+          "gross_monthly_usd": "150.48",
+          "levers": [
+            {
+              "lever": "prompt_caching",
+              "applies": false,
+              "reason": "static prefix 0 tokens is below provider minimum 1024",
+              "monthly_delta_usd": null,
+              "label": "projected (production setup)"
+            },
+            {
+              "lever": "batch_api",
+              "applies": false,
+              "reason": "feature is interactive",
+              "monthly_delta_usd": null,
+              "label": "projected (production setup)"
+            },
+            {
+              "lever": "output_cap",
+              "applies": false,
+              "reason": "no critic finding that output exceeds what the rubric needs",
+              "monthly_delta_usd": null,
+              "label": null
+            },
+            {
+              "lever": "long_context_cliff",
+              "applies": false,
+              "reason": "no provider threshold recorded",
+              "monthly_delta_usd": null,
+              "label": null
+            }
+          ],
+          "monthly_with_levers_usd": "150.48",
+          "cost_per_use_usd": "0.0003135",
+          "revenue_per_use_usd": null,
+          "revenue_share": null,
+          "lower_bound": true,
+          "rate_ids": [
+            "rate-mid-in",
+            "rate-mid-out",
+            "rate-mid-cache-read",
+            "rate-mid-cache-write"
+          ],
+          "warnings": [
+            "Rates are not verified.",
+            "Tokens estimated (4/3 words rule), not measured.",
+            "Estimated output tokens exclude any hidden reasoning tokens; cost is a lower bound."
+          ]
+        },
+        {
+          "feature_id": "A2_next_target_and_feedback",
+          "stage": "Traction",
+          "active_users": 5000,
+          "model_id": "sample/mid-tier-placeholder",
+          "tier": "mid_tier",
+          "calls_per_month": "4800000",
+          "cost_per_call_usd": "0.000285",
+          "token_basis": "estimated",
+          "lines": [
+            {
+              "name": "input",
+              "monthly_usd": "72.00",
+              "billed": true,
+              "note": ""
+            },
+            {
+              "name": "output",
+              "monthly_usd": "1296.00",
+              "billed": true,
+              "note": ""
+            },
+            {
+              "name": "reasoning",
+              "monthly_usd": null,
+              "billed": false,
+              "note": "unknown"
+            },
+            {
+              "name": "retries",
+              "monthly_usd": "136.80",
+              "billed": true,
+              "note": "retry_rate 0.1 (assumed)"
+            }
+          ],
+          "gross_monthly_usd": "1504.80",
+          "levers": [
+            {
+              "lever": "prompt_caching",
+              "applies": false,
+              "reason": "static prefix 0 tokens is below provider minimum 1024",
+              "monthly_delta_usd": null,
+              "label": "projected (production setup)"
+            },
+            {
+              "lever": "batch_api",
+              "applies": false,
+              "reason": "feature is interactive",
+              "monthly_delta_usd": null,
+              "label": "projected (production setup)"
+            },
+            {
+              "lever": "output_cap",
+              "applies": false,
+              "reason": "no critic finding that output exceeds what the rubric needs",
+              "monthly_delta_usd": null,
+              "label": null
+            },
+            {
+              "lever": "long_context_cliff",
+              "applies": false,
+              "reason": "no provider threshold recorded",
+              "monthly_delta_usd": null,
+              "label": null
+            }
+          ],
+          "monthly_with_levers_usd": "1504.80",
+          "cost_per_use_usd": "0.0003135",
+          "revenue_per_use_usd": null,
+          "revenue_share": null,
+          "lower_bound": true,
+          "rate_ids": [
+            "rate-mid-in",
+            "rate-mid-out",
+            "rate-mid-cache-read",
+            "rate-mid-cache-write"
+          ],
+          "warnings": [
+            "Rates are not verified.",
+            "Tokens estimated (4/3 words rule), not measured.",
+            "Estimated output tokens exclude any hidden reasoning tokens; cost is a lower bound."
+          ]
+        },
+        {
+          "feature_id": "A2_next_target_and_feedback",
+          "stage": "Scale",
+          "active_users": 50000,
+          "model_id": "sample/mid-tier-placeholder",
+          "tier": "mid_tier",
+          "calls_per_month": "48000000",
+          "cost_per_call_usd": "0.000285",
+          "token_basis": "estimated",
+          "lines": [
+            {
+              "name": "input",
+              "monthly_usd": "720.00",
+              "billed": true,
+              "note": ""
+            },
+            {
+              "name": "output",
+              "monthly_usd": "12960.00",
+              "billed": true,
+              "note": ""
+            },
+            {
+              "name": "reasoning",
+              "monthly_usd": null,
+              "billed": false,
+              "note": "unknown"
+            },
+            {
+              "name": "retries",
+              "monthly_usd": "1368.00",
+              "billed": true,
+              "note": "retry_rate 0.1 (assumed)"
+            }
+          ],
+          "gross_monthly_usd": "15048.00",
+          "levers": [
+            {
+              "lever": "prompt_caching",
+              "applies": false,
+              "reason": "static prefix 0 tokens is below provider minimum 1024",
+              "monthly_delta_usd": null,
+              "label": "projected (production setup)"
+            },
+            {
+              "lever": "batch_api",
+              "applies": false,
+              "reason": "feature is interactive",
+              "monthly_delta_usd": null,
+              "label": "projected (production setup)"
+            },
+            {
+              "lever": "output_cap",
+              "applies": false,
+              "reason": "no critic finding that output exceeds what the rubric needs",
+              "monthly_delta_usd": null,
+              "label": null
+            },
+            {
+              "lever": "long_context_cliff",
+              "applies": false,
+              "reason": "no provider threshold recorded",
+              "monthly_delta_usd": null,
+              "label": null
+            }
+          ],
+          "monthly_with_levers_usd": "15048.00",
+          "cost_per_use_usd": "0.0003135",
+          "revenue_per_use_usd": null,
+          "revenue_share": null,
+          "lower_bound": true,
+          "rate_ids": [
+            "rate-mid-in",
+            "rate-mid-out",
+            "rate-mid-cache-read",
+            "rate-mid-cache-write"
+          ],
+          "warnings": [
+            "Rates are not verified.",
+            "Tokens estimated (4/3 words rule), not measured.",
+            "Estimated output tokens exclude any hidden reasoning tokens; cost is a lower bound."
+          ]
+        },
+        {
+          "feature_id": "A2_next_target_and_feedback",
+          "stage": "Prototype",
+          "active_users": 50,
+          "model_id": "sample/open-source-placeholder",
+          "tier": "open_source",
+          "calls_per_month": "48000",
+          "cost_per_call_usd": "0.0000354",
+          "token_basis": "estimated",
+          "lines": [
+            {
+              "name": "input",
+              "monthly_usd": "0.14",
+              "billed": true,
+              "note": ""
+            },
+            {
+              "name": "output",
+              "monthly_usd": "1.56",
+              "billed": true,
+              "note": ""
+            },
+            {
+              "name": "reasoning",
+              "monthly_usd": null,
+              "billed": false,
+              "note": "unknown"
+            },
+            {
+              "name": "retries",
+              "monthly_usd": "0.17",
+              "billed": true,
+              "note": "retry_rate 0.1 (assumed)"
+            }
+          ],
+          "gross_monthly_usd": "1.87",
           "levers": [
             {
               "lever": "prompt_caching",
@@ -1976,7 +1814,169 @@
               "label": null
             }
           ],
-          "monthly_with_levers_usd": "46.73",
+          "monthly_with_levers_usd": "1.87",
+          "cost_per_use_usd": "0.00003894",
+          "revenue_per_use_usd": null,
+          "revenue_share": null,
+          "lower_bound": true,
+          "rate_ids": [
+            "rate-os-in",
+            "rate-os-out"
+          ],
+          "warnings": [
+            "Rates are not verified.",
+            "Tokens estimated (4/3 words rule), not measured.",
+            "Estimated output tokens exclude any hidden reasoning tokens; cost is a lower bound."
+          ]
+        },
+        {
+          "feature_id": "A2_next_target_and_feedback",
+          "stage": "Launch",
+          "active_users": 500,
+          "model_id": "sample/open-source-placeholder",
+          "tier": "open_source",
+          "calls_per_month": "480000",
+          "cost_per_call_usd": "0.0000354",
+          "token_basis": "estimated",
+          "lines": [
+            {
+              "name": "input",
+              "monthly_usd": "1.44",
+              "billed": true,
+              "note": ""
+            },
+            {
+              "name": "output",
+              "monthly_usd": "15.55",
+              "billed": true,
+              "note": ""
+            },
+            {
+              "name": "reasoning",
+              "monthly_usd": null,
+              "billed": false,
+              "note": "unknown"
+            },
+            {
+              "name": "retries",
+              "monthly_usd": "1.70",
+              "billed": true,
+              "note": "retry_rate 0.1 (assumed)"
+            }
+          ],
+          "gross_monthly_usd": "18.69",
+          "levers": [
+            {
+              "lever": "prompt_caching",
+              "applies": false,
+              "reason": "provider cache minimum or TTL unknown",
+              "monthly_delta_usd": null,
+              "label": "projected (production setup)"
+            },
+            {
+              "lever": "batch_api",
+              "applies": false,
+              "reason": "feature is interactive",
+              "monthly_delta_usd": null,
+              "label": "projected (production setup)"
+            },
+            {
+              "lever": "output_cap",
+              "applies": false,
+              "reason": "no critic finding that output exceeds what the rubric needs",
+              "monthly_delta_usd": null,
+              "label": null
+            },
+            {
+              "lever": "long_context_cliff",
+              "applies": false,
+              "reason": "no provider threshold recorded",
+              "monthly_delta_usd": null,
+              "label": null
+            }
+          ],
+          "monthly_with_levers_usd": "18.69",
+          "cost_per_use_usd": "0.00003894",
+          "revenue_per_use_usd": null,
+          "revenue_share": null,
+          "lower_bound": true,
+          "rate_ids": [
+            "rate-os-in",
+            "rate-os-out"
+          ],
+          "warnings": [
+            "Rates are not verified.",
+            "Tokens estimated (4/3 words rule), not measured.",
+            "Estimated output tokens exclude any hidden reasoning tokens; cost is a lower bound."
+          ]
+        },
+        {
+          "feature_id": "A2_next_target_and_feedback",
+          "stage": "Traction",
+          "active_users": 5000,
+          "model_id": "sample/open-source-placeholder",
+          "tier": "open_source",
+          "calls_per_month": "4800000",
+          "cost_per_call_usd": "0.0000354",
+          "token_basis": "estimated",
+          "lines": [
+            {
+              "name": "input",
+              "monthly_usd": "14.40",
+              "billed": true,
+              "note": ""
+            },
+            {
+              "name": "output",
+              "monthly_usd": "155.52",
+              "billed": true,
+              "note": ""
+            },
+            {
+              "name": "reasoning",
+              "monthly_usd": null,
+              "billed": false,
+              "note": "unknown"
+            },
+            {
+              "name": "retries",
+              "monthly_usd": "16.99",
+              "billed": true,
+              "note": "retry_rate 0.1 (assumed)"
+            }
+          ],
+          "gross_monthly_usd": "186.91",
+          "levers": [
+            {
+              "lever": "prompt_caching",
+              "applies": false,
+              "reason": "provider cache minimum or TTL unknown",
+              "monthly_delta_usd": null,
+              "label": "projected (production setup)"
+            },
+            {
+              "lever": "batch_api",
+              "applies": false,
+              "reason": "feature is interactive",
+              "monthly_delta_usd": null,
+              "label": "projected (production setup)"
+            },
+            {
+              "lever": "output_cap",
+              "applies": false,
+              "reason": "no critic finding that output exceeds what the rubric needs",
+              "monthly_delta_usd": null,
+              "label": null
+            },
+            {
+              "lever": "long_context_cliff",
+              "applies": false,
+              "reason": "no provider threshold recorded",
+              "monthly_delta_usd": null,
+              "label": null
+            }
+          ],
+          "monthly_with_levers_usd": "186.91",
           "cost_per_use_usd": "0.00003894",
           "revenue_per_use_usd": null,
           "revenue_share": null,
@@ -1997,19 +1997,19 @@
           "active_users": 50000,
           "model_id": "sample/open-source-placeholder",
           "tier": "open_source",
-          "calls_per_month": "12000000",
+          "calls_per_month": "48000000",
           "cost_per_call_usd": "0.0000354",
           "token_basis": "estimated",
           "lines": [
             {
               "name": "input",
-              "monthly_usd": "36.00",
+              "monthly_usd": "144.00",
               "billed": true,
               "note": ""
             },
             {
               "name": "output",
-              "monthly_usd": "388.80",
+              "monthly_usd": "1555.20",
               "billed": true,
               "note": ""
             },
@@ -2021,12 +2021,12 @@
             },
             {
               "name": "retries",
-              "monthly_usd": "42.48",
+              "monthly_usd": "169.92",
               "billed": true,
               "note": "retry_rate 0.1 (assumed)"
             }
           ],
-          "gross_monthly_usd": "467.28",
+          "gross_monthly_usd": "1869.12",
           "levers": [
             {
               "lever": "prompt_caching",
@@ -2057,7 +2057,7 @@
               "label": null
             }
           ],
-          "monthly_with_levers_usd": "467.28",
+          "monthly_with_levers_usd": "1869.12",
           "cost_per_use_usd": "0.00003894",
           "revenue_per_use_usd": null,
           "revenue_share": null,
@@ -2083,11 +2083,11 @@
           "from_model": "sample/frontier-placeholder",
           "to_model": "sample/mid-tier-placeholder",
           "to_tier": "mid_tier",
-          "monthly_difference_usd": "150.48",
+          "monthly_difference_usd": "601.92",
           "quality_to": null,
           "quality_from": null,
           "quality_qualified": false,
-          "statement": "From Launch (500 users), A2_next_target_and_feedback on sample/mid-tier-placeholder is projected to cost ~$150.48/month less (estimated tokens), but this is not a switch point: quality not measured. Both costs are lower bounds."
+          "statement": "From Launch (500 users), A2_next_target_and_feedback on sample/mid-tier-placeholder is projected to cost ~$601.92/month less (estimated tokens), but this is not a switch point: quality not measured. Both costs are lower bounds."
         },
         {
           "feature_id": "A2_next_target_and_feedback",
@@ -2096,11 +2096,11 @@
           "from_model": "sample/frontier-placeholder",
           "to_model": "sample/open-source-placeholder",
           "to_tier": "open_source",
-          "monthly_difference_usd": "183.43",
+          "monthly_difference_usd": "733.71",
           "quality_to": null,
           "quality_from": null,
           "quality_qualified": false,
-          "statement": "From Launch (500 users), A2_next_target_and_feedback on sample/open-source-placeholder is projected to cost ~$183.43/month less (estimated tokens), but this is not a switch point: quality not measured. Both costs are lower bounds."
+          "statement": "From Launch (500 users), A2_next_target_and_feedback on sample/open-source-placeholder is projected to cost ~$733.71/month less (estimated tokens), but this is not a switch point: quality not measured. Both costs are lower bounds."
         }
       ],
       "risks": [],
@@ -2139,13 +2139,389 @@
           "active_users": 50,
           "model_id": "sample/frontier-placeholder",
           "tier": "frontier",
-          "calls_per_month": "12000",
+          "calls_per_month": "48000",
           "cost_per_call_usd": "0.004830",
           "token_basis": "estimated",
           "lines": [
             {
               "name": "input",
-              "monthly_usd": "0.36",
+              "monthly_usd": "1.44",
+              "billed": true,
+              "note": ""
+            },
+            {
+              "name": "output",
+              "monthly_usd": "0.00",
+              "billed": true,
+              "note": ""
+            },
+            {
+              "name": "reasoning",
+              "monthly_usd": null,
+              "billed": false,
+              "note": "unknown"
+            },
+            {
+              "name": "audio_output",
+              "monthly_usd": "230.40",
+              "billed": true,
+              "note": "60.00 audio tokens per call"
+            },
+            {
+              "name": "retries",
+              "monthly_usd": "23.18",
+              "billed": true,
+              "note": "retry_rate 0.1 (assumed)"
+            }
+          ],
+          "gross_monthly_usd": "255.02",
+          "levers": [
+            {
+              "lever": "prompt_caching",
+              "applies": false,
+              "reason": "static prefix 0 tokens is below provider minimum 1024",
+              "monthly_delta_usd": null,
+              "label": "projected (production setup)"
+            },
+            {
+              "lever": "batch_api",
+              "applies": false,
+              "reason": "feature is interactive",
+              "monthly_delta_usd": null,
+              "label": "projected (production setup)"
+            },
+            {
+              "lever": "output_cap",
+              "applies": false,
+              "reason": "no critic finding that output exceeds what the rubric needs",
+              "monthly_delta_usd": null,
+              "label": null
+            },
+            {
+              "lever": "long_context_cliff",
+              "applies": false,
+              "reason": "input 6 <= threshold 200000",
+              "monthly_delta_usd": null,
+              "label": null
+            }
+          ],
+          "monthly_with_levers_usd": "255.02",
+          "cost_per_use_usd": "0.005313",
+          "revenue_per_use_usd": null,
+          "revenue_share": null,
+          "lower_bound": true,
+          "rate_ids": [
+            "rate-fr-in",
+            "rate-fr-out",
+            "rate-fr-cache-read",
+            "rate-fr-cache-write",
+            "rate-fr-lc-in",
+            "rate-fr-lc-out",
+            "rate-fr-audio-out",
+            "audio-conv-frontier"
+          ],
+          "warnings": [
+            "Rates are not verified.",
+            "Tokens estimated (4/3 words rule), not measured.",
+            "audio_out tokens estimated from per-second conversion (unverified), not measured.",
+            "Estimated output tokens exclude any hidden reasoning tokens; cost is a lower bound."
+          ]
+        },
+        {
+          "feature_id": "A3_speak_target",
+          "stage": "Launch",
+          "active_users": 500,
+          "model_id": "sample/frontier-placeholder",
+          "tier": "frontier",
+          "calls_per_month": "480000",
+          "cost_per_call_usd": "0.004830",
+          "token_basis": "estimated",
+          "lines": [
+            {
+              "name": "input",
+              "monthly_usd": "14.40",
+              "billed": true,
+              "note": ""
+            },
+            {
+              "name": "output",
+              "monthly_usd": "0.00",
+              "billed": true,
+              "note": ""
+            },
+            {
+              "name": "reasoning",
+              "monthly_usd": null,
+              "billed": false,
+              "note": "unknown"
+            },
+            {
+              "name": "audio_output",
+              "monthly_usd": "2304.00",
+              "billed": true,
+              "note": "60.00 audio tokens per call"
+            },
+            {
+              "name": "retries",
+              "monthly_usd": "231.84",
+              "billed": true,
+              "note": "retry_rate 0.1 (assumed)"
+            }
+          ],
+          "gross_monthly_usd": "2550.24",
+          "levers": [
+            {
+              "lever": "prompt_caching",
+              "applies": false,
+              "reason": "static prefix 0 tokens is below provider minimum 1024",
+              "monthly_delta_usd": null,
+              "label": "projected (production setup)"
+            },
+            {
+              "lever": "batch_api",
+              "applies": false,
+              "reason": "feature is interactive",
+              "monthly_delta_usd": null,
+              "label": "projected (production setup)"
+            },
+            {
+              "lever": "output_cap",
+              "applies": false,
+              "reason": "no critic finding that output exceeds what the rubric needs",
+              "monthly_delta_usd": null,
+              "label": null
+            },
+            {
+              "lever": "long_context_cliff",
+              "applies": false,
+              "reason": "input 6 <= threshold 200000",
+              "monthly_delta_usd": null,
+              "label": null
+            }
+          ],
+          "monthly_with_levers_usd": "2550.24",
+          "cost_per_use_usd": "0.005313",
+          "revenue_per_use_usd": null,
+          "revenue_share": null,
+          "lower_bound": true,
+          "rate_ids": [
+            "rate-fr-in",
+            "rate-fr-out",
+            "rate-fr-cache-read",
+            "rate-fr-cache-write",
+            "rate-fr-lc-in",
+            "rate-fr-lc-out",
+            "rate-fr-audio-out",
+            "audio-conv-frontier"
+          ],
+          "warnings": [
+            "Rates are not verified.",
+            "Tokens estimated (4/3 words rule), not measured.",
+            "audio_out tokens estimated from per-second conversion (unverified), not measured.",
+            "Estimated output tokens exclude any hidden reasoning tokens; cost is a lower bound."
+          ]
+        },
+        {
+          "feature_id": "A3_speak_target",
+          "stage": "Traction",
+          "active_users": 5000,
+          "model_id": "sample/frontier-placeholder",
+          "tier": "frontier",
+          "calls_per_month": "4800000",
+          "cost_per_call_usd": "0.004830",
+          "token_basis": "estimated",
+          "lines": [
+            {
+              "name": "input",
+              "monthly_usd": "144.00",
+              "billed": true,
+              "note": ""
+            },
+            {
+              "name": "output",
+              "monthly_usd": "0.00",
+              "billed": true,
+              "note": ""
+            },
+            {
+              "name": "reasoning",
+              "monthly_usd": null,
+              "billed": false,
+              "note": "unknown"
+            },
+            {
+              "name": "audio_output",
+              "monthly_usd": "23040.00",
+              "billed": true,
+              "note": "60.00 audio tokens per call"
+            },
+            {
+              "name": "retries",
+              "monthly_usd": "2318.40",
+              "billed": true,
+              "note": "retry_rate 0.1 (assumed)"
+            }
+          ],
+          "gross_monthly_usd": "25502.40",
+          "levers": [
+            {
+              "lever": "prompt_caching",
+              "applies": false,
+              "reason": "static prefix 0 tokens is below provider minimum 1024",
+              "monthly_delta_usd": null,
+              "label": "projected (production setup)"
+            },
+            {
+              "lever": "batch_api",
+              "applies": false,
+              "reason": "feature is interactive",
+              "monthly_delta_usd": null,
+              "label": "projected (production setup)"
+            },
+            {
+              "lever": "output_cap",
+              "applies": false,
+              "reason": "no critic finding that output exceeds what the rubric needs",
+              "monthly_delta_usd": null,
+              "label": null
+            },
+            {
+              "lever": "long_context_cliff",
+              "applies": false,
+              "reason": "input 6 <= threshold 200000",
+              "monthly_delta_usd": null,
+              "label": null
+            }
+          ],
+          "monthly_with_levers_usd": "25502.40",
+          "cost_per_use_usd": "0.005313",
+          "revenue_per_use_usd": null,
+          "revenue_share": null,
+          "lower_bound": true,
+          "rate_ids": [
+            "rate-fr-in",
+            "rate-fr-out",
+            "rate-fr-cache-read",
+            "rate-fr-cache-write",
+            "rate-fr-lc-in",
+            "rate-fr-lc-out",
+            "rate-fr-audio-out",
+            "audio-conv-frontier"
+          ],
+          "warnings": [
+            "Rates are not verified.",
+            "Tokens estimated (4/3 words rule), not measured.",
+            "audio_out tokens estimated from per-second conversion (unverified), not measured.",
+            "Estimated output tokens exclude any hidden reasoning tokens; cost is a lower bound."
+          ]
+        },
+        {
+          "feature_id": "A3_speak_target",
+          "stage": "Scale",
+          "active_users": 50000,
+          "model_id": "sample/frontier-placeholder",
+          "tier": "frontier",
+          "calls_per_month": "48000000",
+          "cost_per_call_usd": "0.004830",
+          "token_basis": "estimated",
+          "lines": [
+            {
+              "name": "input",
+              "monthly_usd": "1440.00",
+              "billed": true,
+              "note": ""
+            },
+            {
+              "name": "output",
+              "monthly_usd": "0.00",
+              "billed": true,
+              "note": ""
+            },
+            {
+              "name": "reasoning",
+              "monthly_usd": null,
+              "billed": false,
+              "note": "unknown"
+            },
+            {
+              "name": "audio_output",
+              "monthly_usd": "230400.00",
+              "billed": true,
+              "note": "60.00 audio tokens per call"
+            },
+            {
+              "name": "retries",
+              "monthly_usd": "23184.00",
+              "billed": true,
+              "note": "retry_rate 0.1 (assumed)"
+            }
+          ],
+          "gross_monthly_usd": "255024.00",
+          "levers": [
+            {
+              "lever": "prompt_caching",
+              "applies": false,
+              "reason": "static prefix 0 tokens is below provider minimum 1024",
+              "monthly_delta_usd": null,
+              "label": "projected (production setup)"
+            },
+            {
+              "lever": "batch_api",
+              "applies": false,
+              "reason": "feature is interactive",
+              "monthly_delta_usd": null,
+              "label": "projected (production setup)"
+            },
+            {
+              "lever": "output_cap",
+              "applies": false,
+              "reason": "no critic finding that output exceeds what the rubric needs",
+              "monthly_delta_usd": null,
+              "label": null
+            },
+            {
+              "lever": "long_context_cliff",
+              "applies": false,
+              "reason": "input 6 <= threshold 200000",
+              "monthly_delta_usd": null,
+              "label": null
+            }
+          ],
+          "monthly_with_levers_usd": "255024.00",
+          "cost_per_use_usd": "0.005313",
+          "revenue_per_use_usd": null,
+          "revenue_share": null,
+          "lower_bound": true,
+          "rate_ids": [
+            "rate-fr-in",
+            "rate-fr-out",
+            "rate-fr-cache-read",
+            "rate-fr-cache-write",
+            "rate-fr-lc-in",
+            "rate-fr-lc-out",
+            "rate-fr-audio-out",
+            "audio-conv-frontier"
+          ],
+          "warnings": [
+            "Rates are not verified.",
+            "Tokens estimated (4/3 words rule), not measured.",
+            "audio_out tokens estimated from per-second conversion (unverified), not measured.",
+            "Estimated output tokens exclude any hidden reasoning tokens; cost is a lower bound."
+          ]
+        },
+        {
+          "feature_id": "A3_speak_target",
+          "stage": "Prototype",
+          "active_users": 50,
+          "model_id": "sample/mid-tier-placeholder",
+          "tier": "mid_tier",
+          "calls_per_month": "48000",
+          "cost_per_call_usd": "0.001206",
+          "token_basis": "estimated",
+          "lines": [
+            {
+              "name": "input",
+              "monthly_usd": "0.29",
               "billed": true,
               "note": ""
             },
@@ -2169,12 +2545,12 @@
             },
             {
               "name": "retries",
-              "monthly_usd": "5.80",
+              "monthly_usd": "5.79",
               "billed": true,
               "note": "retry_rate 0.1 (assumed)"
             }
           ],
-          "gross_monthly_usd": "63.76",
+          "gross_monthly_usd": "63.68",
           "levers": [
             {
               "lever": "prompt_caching",
@@ -2200,25 +2576,23 @@
             {
               "lever": "long_context_cliff",
               "applies": false,
-              "reason": "input 6 <= threshold 200000",
+              "reason": "no provider threshold recorded",
               "monthly_delta_usd": null,
               "label": null
             }
           ],
-          "monthly_with_levers_usd": "63.76",
-          "cost_per_use_usd": "0.005313",
+          "monthly_with_levers_usd": "63.68",
+          "cost_per_use_usd": "0.0013266",
           "revenue_per_use_usd": null,
           "revenue_share": null,
           "lower_bound": true,
           "rate_ids": [
-            "rate-fr-in",
-            "rate-fr-out",
-            "rate-fr-cache-read",
-            "rate-fr-cache-write",
-            "rate-fr-lc-in",
-            "rate-fr-lc-out",
-            "rate-fr-audio-out",
-            "audio-conv-frontier"
+            "rate-mid-in",
+            "rate-mid-out",
+            "rate-mid-cache-read",
+            "rate-mid-cache-write",
+            "rate-mid-audio-out",
+            "audio-conv-mid-tier"
           ],
           "warnings": [
             "Rates are not verified.",
@@ -2231,15 +2605,15 @@
           "feature_id": "A3_speak_target",
           "stage": "Launch",
           "active_users": 500,
-          "model_id": "sample/frontier-placeholder",
-          "tier": "frontier",
-          "calls_per_month": "120000",
-          "cost_per_call_usd": "0.004830",
+          "model_id": "sample/mid-tier-placeholder",
+          "tier": "mid_tier",
+          "calls_per_month": "480000",
+          "cost_per_call_usd": "0.001206",
           "token_basis": "estimated",
           "lines": [
             {
               "name": "input",
-              "monthly_usd": "3.60",
+              "monthly_usd": "2.88",
               "billed": true,
               "note": ""
             },
@@ -2263,12 +2637,12 @@
             },
             {
               "name": "retries",
-              "monthly_usd": "57.96",
+              "monthly_usd": "57.89",
               "billed": true,
               "note": "retry_rate 0.1 (assumed)"
             }
           ],
-          "gross_monthly_usd": "637.56",
+          "gross_monthly_usd": "636.77",
           "levers": [
             {
               "lever": "prompt_caching",
@@ -2294,25 +2668,23 @@
             {
               "lever": "long_context_cliff",
               "applies": false,
-              "reason": "input 6 <= threshold 200000",
+              "reason": "no provider threshold recorded",
               "monthly_delta_usd": null,
               "label": null
             }
           ],
-          "monthly_with_levers_usd": "637.56",
-          "cost_per_use_usd": "0.005313",
+          "monthly_with_levers_usd": "636.77",
+          "cost_per_use_usd": "0.0013266",
           "revenue_per_use_usd": null,
           "revenue_share": null,
           "lower_bound": true,
           "rate_ids": [
-            "rate-fr-in",
-            "rate-fr-out",
-            "rate-fr-cache-read",
-            "rate-fr-cache-write",
-            "rate-fr-lc-in",
-            "rate-fr-lc-out",
-            "rate-fr-audio-out",
-            "audio-conv-frontier"
+            "rate-mid-in",
+            "rate-mid-out",
+            "rate-mid-cache-read",
+            "rate-mid-cache-write",
+            "rate-mid-audio-out",
+            "audio-conv-mid-tier"
           ],
           "warnings": [
             "Rates are not verified.",
@@ -2325,15 +2697,15 @@
           "feature_id": "A3_speak_target",
           "stage": "Traction",
           "active_users": 5000,
-          "model_id": "sample/frontier-placeholder",
-          "tier": "frontier",
-          "calls_per_month": "1200000",
-          "cost_per_call_usd": "0.004830",
+          "model_id": "sample/mid-tier-placeholder",
+          "tier": "mid_tier",
+          "calls_per_month": "4800000",
+          "cost_per_call_usd": "0.001206",
           "token_basis": "estimated",
           "lines": [
             {
               "name": "input",
-              "monthly_usd": "36.00",
+              "monthly_usd": "28.80",
               "billed": true,
               "note": ""
             },
@@ -2357,12 +2729,12 @@
             },
             {
               "name": "retries",
-              "monthly_usd": "579.60",
+              "monthly_usd": "578.88",
               "billed": true,
               "note": "retry_rate 0.1 (assumed)"
             }
           ],
-          "gross_monthly_usd": "6375.60",
+          "gross_monthly_usd": "6367.68",
           "levers": [
             {
               "lever": "prompt_caching",
@@ -2388,25 +2760,23 @@
             {
               "lever": "long_context_cliff",
               "applies": false,
-              "reason": "input 6 <= threshold 200000",
+              "reason": "no provider threshold recorded",
               "monthly_delta_usd": null,
               "label": null
             }
           ],
-          "monthly_with_levers_usd": "6375.60",
-          "cost_per_use_usd": "0.005313",
+          "monthly_with_levers_usd": "6367.68",
+          "cost_per_use_usd": "0.0013266",
           "revenue_per_use_usd": null,
           "revenue_share": null,
           "lower_bound": true,
           "rate_ids": [
-            "rate-fr-in",
-            "rate-fr-out",
-            "rate-fr-cache-read",
-            "rate-fr-cache-write",
-            "rate-fr-lc-in",
-            "rate-fr-lc-out",
-            "rate-fr-audio-out",
-            "audio-conv-frontier"
+            "rate-mid-in",
+            "rate-mid-out",
+            "rate-mid-cache-read",
+            "rate-mid-cache-write",
+            "rate-mid-audio-out",
+            "audio-conv-mid-tier"
           ],
           "warnings": [
             "Rates are not verified.",
@@ -2419,15 +2789,15 @@
           "feature_id": "A3_speak_target",
           "stage": "Scale",
           "active_users": 50000,
-          "model_id": "sample/frontier-placeholder",
-          "tier": "frontier",
-          "calls_per_month": "12000000",
-          "cost_per_call_usd": "0.004830",
+          "model_id": "sample/mid-tier-placeholder",
+          "tier": "mid_tier",
+          "calls_per_month": "48000000",
+          "cost_per_call_usd": "0.001206",
           "token_basis": "estimated",
           "lines": [
             {
               "name": "input",
-              "monthly_usd": "360.00",
+              "monthly_usd": "288.00",
               "billed": true,
               "note": ""
             },
@@ -2451,106 +2821,12 @@
             },
             {
               "name": "retries",
-              "monthly_usd": "5796.00",
+              "monthly_usd": "5788.80",
               "billed": true,
               "note": "retry_rate 0.1 (assumed)"
             }
           ],
-          "gross_monthly_usd": "63756.00",
-          "levers": [
-            {
-              "lever": "prompt_caching",
-              "applies": false,
-              "reason": "static prefix 0 tokens is below provider minimum 1024",
-              "monthly_delta_usd": null,
-              "label": "projected (production setup)"
-            },
-            {
-              "lever": "batch_api",
-              "applies": false,
-              "reason": "feature is interactive",
-              "monthly_delta_usd": null,
-              "label": "projected (production setup)"
-            },
-            {
-              "lever": "output_cap",
-              "applies": false,
-              "reason": "no critic finding that output exceeds what the rubric needs",
-              "monthly_delta_usd": null,
-              "label": null
-            },
-            {
-              "lever": "long_context_cliff",
-              "applies": false,
-              "reason": "input 6 <= threshold 200000",
-              "monthly_delta_usd": null,
-              "label": null
-            }
-          ],
-          "monthly_with_levers_usd": "63756.00",
-          "cost_per_use_usd": "0.005313",
-          "revenue_per_use_usd": null,
-          "revenue_share": null,
-          "lower_bound": true,
-          "rate_ids": [
-            "rate-fr-in",
-            "rate-fr-out",
-            "rate-fr-cache-read",
-            "rate-fr-cache-write",
-            "rate-fr-lc-in",
-            "rate-fr-lc-out",
-            "rate-fr-audio-out",
-            "audio-conv-frontier"
-          ],
-          "warnings": [
-            "Rates are not verified.",
-            "Tokens estimated (4/3 words rule), not measured.",
-            "audio_out tokens estimated from per-second conversion (unverified), not measured.",
-            "Estimated output tokens exclude any hidden reasoning tokens; cost is a lower bound."
-          ]
-        },
-        {
-          "feature_id": "A3_speak_target",
-          "stage": "Prototype",
-          "active_users": 50,
-          "model_id": "sample/mid-tier-placeholder",
-          "tier": "mid_tier",
-          "calls_per_month": "12000",
-          "cost_per_call_usd": "0.001206",
-          "token_basis": "estimated",
-          "lines": [
-            {
-              "name": "input",
-              "monthly_usd": "0.07",
-              "billed": true,
-              "note": ""
-            },
-            {
-              "name": "output",
-              "monthly_usd": "0.00",
-              "billed": true,
-              "note": ""
-            },
-            {
-              "name": "reasoning",
-              "monthly_usd": null,
-              "billed": false,
-              "note": "unknown"
-            },
-            {
-              "name": "audio_output",
-              "monthly_usd": "14.40",
-              "billed": true,
-              "note": "60.00 audio tokens per call"
-            },
-            {
-              "name": "retries",
-              "monthly_usd": "1.45",
-              "billed": true,
-              "note": "retry_rate 0.1 (assumed)"
-            }
-          ],
-          "gross_monthly_usd": "15.92",
+          "gross_monthly_usd": "63676.80",
           "levers": [
             {
               "lever": "prompt_caching",
@@ -2581,283 +2857,7 @@
               "label": null
             }
           ],
-          "monthly_with_levers_usd": "15.92",
-          "cost_per_use_usd": "0.0013266",
-          "revenue_per_use_usd": null,
-          "revenue_share": null,
-          "lower_bound": true,
-          "rate_ids": [
-            "rate-mid-in",
-            "rate-mid-out",
-            "rate-mid-cache-read",
-            "rate-mid-cache-write",
-            "rate-mid-audio-out",
-            "audio-conv-mid-tier"
-          ],
-          "warnings": [
-            "Rates are not verified.",
-            "Tokens estimated (4/3 words rule), not measured.",
-            "audio_out tokens estimated from per-second conversion (unverified), not measured.",
-            "Estimated output tokens exclude any hidden reasoning tokens; cost is a lower bound."
-          ]
-        },
-        {
-          "feature_id": "A3_speak_target",
-          "stage": "Launch",
-          "active_users": 500,
-          "model_id": "sample/mid-tier-placeholder",
-          "tier": "mid_tier",
-          "calls_per_month": "120000",
-          "cost_per_call_usd": "0.001206",
-          "token_basis": "estimated",
-          "lines": [
-            {
-              "name": "input",
-              "monthly_usd": "0.72",
-              "billed": true,
-              "note": ""
-            },
-            {
-              "name": "output",
-              "monthly_usd": "0.00",
-              "billed": true,
-              "note": ""
-            },
-            {
-              "name": "reasoning",
-              "monthly_usd": null,
-              "billed": false,
-              "note": "unknown"
-            },
-            {
-              "name": "audio_output",
-              "monthly_usd": "144.00",
-              "billed": true,
-              "note": "60.00 audio tokens per call"
-            },
-            {
-              "name": "retries",
-              "monthly_usd": "14.47",
-              "billed": true,
-              "note": "retry_rate 0.1 (assumed)"
-            }
-          ],
-          "gross_monthly_usd": "159.19",
-          "levers": [
-            {
-              "lever": "prompt_caching",
-              "applies": false,
-              "reason": "static prefix 0 tokens is below provider minimum 1024",
-              "monthly_delta_usd": null,
-              "label": "projected (production setup)"
-            },
-            {
-              "lever": "batch_api",
-              "applies": false,
-              "reason": "feature is interactive",
-              "monthly_delta_usd": null,
-              "label": "projected (production setup)"
-            },
-            {
-              "lever": "output_cap",
-              "applies": false,
-              "reason": "no critic finding that output exceeds what the rubric needs",
-              "monthly_delta_usd": null,
-              "label": null
-            },
-            {
-              "lever": "long_context_cliff",
-              "applies": false,
-              "reason": "no provider threshold recorded",
-              "monthly_delta_usd": null,
-              "label": null
-            }
-          ],
-          "monthly_with_levers_usd": "159.19",
-          "cost_per_use_usd": "0.0013266",
-          "revenue_per_use_usd": null,
-          "revenue_share": null,
-          "lower_bound": true,
-          "rate_ids": [
-            "rate-mid-in",
-            "rate-mid-out",
-            "rate-mid-cache-read",
-            "rate-mid-cache-write",
-            "rate-mid-audio-out",
-            "audio-conv-mid-tier"
-          ],
-          "warnings": [
-            "Rates are not verified.",
-            "Tokens estimated (4/3 words rule), not measured.",
-            "audio_out tokens estimated from per-second conversion (unverified), not measured.",
-            "Estimated output tokens exclude any hidden reasoning tokens; cost is a lower bound."
-          ]
-        },
-        {
-          "feature_id": "A3_speak_target",
-          "stage": "Traction",
-          "active_users": 5000,
-          "model_id": "sample/mid-tier-placeholder",
-          "tier": "mid_tier",
-          "calls_per_month": "1200000",
-          "cost_per_call_usd": "0.001206",
-          "token_basis": "estimated",
-          "lines": [
-            {
-              "name": "input",
-              "monthly_usd": "7.20",
-              "billed": true,
-              "note": ""
-            },
-            {
-              "name": "output",
-              "monthly_usd": "0.00",
-              "billed": true,
-              "note": ""
-            },
-            {
-              "name": "reasoning",
-              "monthly_usd": null,
-              "billed": false,
-              "note": "unknown"
-            },
-            {
-              "name": "audio_output",
-              "monthly_usd": "1440.00",
-              "billed": true,
-              "note": "60.00 audio tokens per call"
-            },
-            {
-              "name": "retries",
-              "monthly_usd": "144.72",
-              "billed": true,
-              "note": "retry_rate 0.1 (assumed)"
-            }
-          ],
-          "gross_monthly_usd": "1591.92",
-          "levers": [
-            {
-              "lever": "prompt_caching",
-              "applies": false,
-              "reason": "static prefix 0 tokens is below provider minimum 1024",
-              "monthly_delta_usd": null,
-              "label": "projected (production setup)"
-            },
-            {
-              "lever": "batch_api",
-              "applies": false,
-              "reason": "feature is interactive",
-              "monthly_delta_usd": null,
-              "label": "projected (production setup)"
-            },
-            {
-              "lever": "output_cap",
-              "applies": false,
-              "reason": "no critic finding that output exceeds what the rubric needs",
-              "monthly_delta_usd": null,
-              "label": null
-            },
-            {
-              "lever": "long_context_cliff",
-              "applies": false,
-              "reason": "no provider threshold recorded",
-              "monthly_delta_usd": null,
-              "label": null
-            }
-          ],
-          "monthly_with_levers_usd": "1591.92",
-          "cost_per_use_usd": "0.0013266",
-          "revenue_per_use_usd": null,
-          "revenue_share": null,
-          "lower_bound": true,
-          "rate_ids": [
-            "rate-mid-in",
-            "rate-mid-out",
-            "rate-mid-cache-read",
-            "rate-mid-cache-write",
-            "rate-mid-audio-out",
-            "audio-conv-mid-tier"
-          ],
-          "warnings": [
-            "Rates are not verified.",
-            "Tokens estimated (4/3 words rule), not measured.",
-            "audio_out tokens estimated from per-second conversion (unverified), not measured.",
-            "Estimated output tokens exclude any hidden reasoning tokens; cost is a lower bound."
-          ]
-        },
-        {
-          "feature_id": "A3_speak_target",
-          "stage": "Scale",
-          "active_users": 50000,
-          "model_id": "sample/mid-tier-placeholder",
-          "tier": "mid_tier",
-          "calls_per_month": "12000000",
-          "cost_per_call_usd": "0.001206",
-          "token_basis": "estimated",
-          "lines": [
-            {
-              "name": "input",
-              "monthly_usd": "72.00",
-              "billed": true,
-              "note": ""
-            },
-            {
-              "name": "output",
-              "monthly_usd": "0.00",
-              "billed": true,
-              "note": ""
-            },
-            {
-              "name": "reasoning",
-              "monthly_usd": null,
-              "billed": false,
-              "note": "unknown"
-            },
-            {
-              "name": "audio_output",
-              "monthly_usd": "14400.00",
-              "billed": true,
-              "note": "60.00 audio tokens per call"
-            },
-            {
-              "name": "retries",
-              "monthly_usd": "1447.20",
-              "billed": true,
-              "note": "retry_rate 0.1 (assumed)"
-            }
-          ],
-          "gross_monthly_usd": "15919.20",
-          "levers": [
-            {
-              "lever": "prompt_caching",
-              "applies": false,
-              "reason": "static prefix 0 tokens is below provider minimum 1024",
-              "monthly_delta_usd": null,
-              "label": "projected (production setup)"
-            },
-            {
-              "lever": "batch_api",
-              "applies": false,
-              "reason": "feature is interactive",
-              "monthly_delta_usd": null,
-              "label": "projected (production setup)"
-            },
-            {
-              "lever": "output_cap",
-              "applies": false,
-              "reason": "no critic finding that output exceeds what the rubric needs",
-              "monthly_delta_usd": null,
-              "label": null
-            },
-            {
-              "lever": "long_context_cliff",
-              "applies": false,
-              "reason": "no provider threshold recorded",
-              "monthly_delta_usd": null,
-              "label": null
-            }
-          ],
-          "monthly_with_levers_usd": "15919.20",
+          "monthly_with_levers_usd": "63676.80",
           "cost_per_use_usd": "0.0013266",
           "revenue_per_use_usd": null,
           "revenue_share": null,
@@ -2883,7 +2883,7 @@
           "active_users": 50,
           "model_id": "sample/open-source-placeholder",
           "tier": "open_source",
-          "calls_per_month": "12000",
+          "calls_per_month": "48000",
           "cost_per_call_usd": null,
           "token_basis": "estimated",
           "lines": [],
@@ -2910,7 +2910,7 @@
           "active_users": 500,
           "model_id": "sample/open-source-placeholder",
           "tier": "open_source",
-          "calls_per_month": "120000",
+          "calls_per_month": "480000",
           "cost_per_call_usd": null,
           "token_basis": "estimated",
           "lines": [],
@@ -2937,7 +2937,7 @@
           "active_users": 5000,
           "model_id": "sample/open-source-placeholder",
           "tier": "open_source",
-          "calls_per_month": "1200000",
+          "calls_per_month": "4800000",
           "cost_per_call_usd": null,
           "token_basis": "estimated",
           "lines": [],
@@ -2964,7 +2964,7 @@
           "active_users": 50000,
           "model_id": "sample/open-source-placeholder",
           "tier": "open_source",
-          "calls_per_month": "12000000",
+          "calls_per_month": "48000000",
           "cost_per_call_usd": null,
           "token_basis": "estimated",
           "lines": [],
@@ -2991,16 +2991,16 @@
       "pending_switch_points": [
         {
           "feature_id": "A3_speak_target",
-          "stage": "Launch",
-          "active_users": 500,
+          "stage": "Prototype",
+          "active_users": 50,
           "from_model": "sample/frontier-placeholder",
           "to_model": "sample/mid-tier-placeholder",
           "to_tier": "mid_tier",
-          "monthly_difference_usd": "478.37",
+          "monthly_difference_usd": "191.35",
           "quality_to": null,
           "quality_from": null,
           "quality_qualified": false,
-          "statement": "From Launch (500 users), A3_speak_target on sample/mid-tier-placeholder is projected to cost ~$478.37/month less (estimated tokens), but this is not a switch point: quality not measured. Both costs are lower bounds."
+          "statement": "From Prototype (50 users), A3_speak_target on sample/mid-tier-placeholder is projected to cost ~$191.35/month less (estimated tokens), but this is not a switch point: quality not measured. Both costs are lower bounds."
         }
       ],
       "risks": [],
