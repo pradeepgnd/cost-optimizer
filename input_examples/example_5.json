@@ -1,0 +1,87 @@
+{
+ "schema_version": "1.0",
+ "project_id": "proj-idea-b-agent-micropayments",
+ "run_id": "example-5",
+ "brief": {
+  "brief_id": "brief-idea-b-agent-micropayments",
+  "brief_version": "1",
+  "product_concept": "A payment system that lets AI agents pay other AI agents for services in microtransactions, settled in cryptocurrency. Source: docs/founder_ideas_examples.md, Idea B.",
+  "target_user": "Developers of AI agents that buy or sell services (data lookups, model calls, tool use)",
+  "features_v1": [],
+  "constraints": {"status": "unknown"},
+  "quality_needs": [
+   "Parsed quotes match the request exactly (service, quantity, max price)",
+   "No invented terms",
+   "Anomaly explanations cite the triggering signals",
+   "Summaries never state facts not in the transaction record"
+  ],
+  "alternatives_considered": [],
+  "usage": {"active_users": null, "status": "unknown"},
+  "ai_features": [
+   {
+    "feature_id": "B1_parse_request_to_quote",
+    "description": "Parse an agent's service request into a structured quote (text to JSON), once per transaction. Revenue per use = $0.02 average transaction value x 1% gateway take rate, both assumed.",
+    "example_input": "Need 200 geocoding lookups, pay ≤ $0.40 total",
+    "mode": "interactive",
+    "modality": ["text"],
+    "uses_per_user_month": "10000",
+    "calls_per_use": "1",
+    "expected_output_words": 30,
+    "revenue_per_use": "0.0002",
+    "rubric_checks": [
+     {"check_id": "quote_matches_request", "description": "parsed quote matches the request exactly (service, quantity, max price)", "critical": true},
+     {"check_id": "no_invented_terms", "description": "no invented terms", "critical": true}
+    ],
+    "field_status": {"uses_per_user_month": "assumed", "calls_per_use": "assumed", "expected_output_words": "assumed",
+                     "revenue_per_use": "assumed", "static_prefix_tokens": "unknown"}
+   },
+   {
+    "feature_id": "B2_explain_flagged_transaction",
+    "description": "Explain a flagged transaction (1% of transactions)",
+    "example_input": "Transaction record + anomaly signals",
+    "mode": "background",
+    "modality": ["text"],
+    "uses_per_user_month": "100",
+    "calls_per_use": "1",
+    "expected_output_words": 120,
+    "rubric_checks": [
+     {"check_id": "cites_triggering_signals", "description": "explanation cites the triggering signals", "critical": true},
+     {"check_id": "no_invented_terms", "description": "no invented terms", "critical": true}
+    ],
+    "field_status": {"uses_per_user_month": "assumed", "calls_per_use": "assumed", "expected_output_words": "assumed",
+                     "static_prefix_tokens": "unknown"}
+   },
+   {
+    "feature_id": "B3_dispute_or_receipt_summary",
+    "description": "Dispute or receipt summary, on demand (0.1% of transactions)",
+    "example_input": "Transaction thread",
+    "mode": "interactive",
+    "modality": ["text"],
+    "uses_per_user_month": "10",
+    "calls_per_use": "1",
+    "expected_output_words": 150,
+    "rubric_checks": [
+     {"check_id": "facts_only_from_record", "description": "never states facts not in the transaction record", "critical": true}
+    ],
+    "field_status": {"uses_per_user_month": "assumed", "calls_per_use": "assumed", "expected_output_words": "assumed",
+                     "static_prefix_tokens": "unknown"}
+   }
+  ],
+  "growth_stages": [
+   {"name": "Prototype", "active_users": 50, "status": "assumed"},
+   {"name": "Launch", "active_users": 500, "status": "assumed"},
+   {"name": "Traction", "active_users": 5000, "status": "assumed"},
+   {"name": "Scale", "active_users": 50000, "status": "assumed"}
+  ],
+  "field_status": {
+   "product_concept": "assumed",
+   "features_v1": "unknown",
+   "constraints": "unknown",
+   "ai_features": "assumed",
+   "growth_stages": "assumed",
+   "alternatives_considered": "unknown"
+  }
+ },
+ "evaluation_approved": true,
+ "max_spend_usd": "5.00"
+}

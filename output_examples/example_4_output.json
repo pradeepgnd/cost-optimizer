@@ -1,0 +1,364 @@
+{
+  "run_id": "example-4",
+  "project_id": "proj-idea-a-speech-building",
+  "execution_mode": "sample",
+  "status": "needs_input",
+  "recommended_config": null,
+  "alternate_config": null,
+  "reasons": [],
+  "build_ledgers": [
+    {
+      "approach_id": "app-builder-credits",
+      "base_build_cost": {
+        "low": null,
+        "base": null,
+        "high": null,
+        "currency": "USD",
+        "unit": "USD",
+        "warnings": [
+          "No build features listed; build cost unknown, not zero."
+        ]
+      },
+      "rework_multiplier": {
+        "low": "1.3",
+        "base": "1.8",
+        "high": "2.5",
+        "currency": "USD",
+        "unit": "x",
+        "warnings": [
+          "Rework multiplier is assumed; no project-specific evidence."
+        ]
+      },
+      "expected_build_cost": {
+        "low": null,
+        "base": null,
+        "high": null,
+        "currency": "USD",
+        "unit": "USD",
+        "warnings": [
+          "No build features listed; build cost unknown, not zero.",
+          "Rework multiplier is assumed; no project-specific evidence."
+        ]
+      },
+      "founder_time_hours": null,
+      "checkpoints": [],
+      "rate_ids": [],
+      "not_executed_disclaimer": "Approach-level estimate from verified rates and a bounded task plan. No build was executed on this platform."
+    },
+    {
+      "approach_id": "replit-agent",
+      "base_build_cost": {
+        "low": null,
+        "base": null,
+        "high": null,
+        "currency": "USD",
+        "unit": "USD",
+        "warnings": [
+          "No build features listed; build cost unknown, not zero.",
+          "Seat fee 25.00/month not included in per-task base; add per month of build."
+        ]
+      },
+      "rework_multiplier": {
+        "low": "1.3",
+        "base": "1.8",
+        "high": "2.5",
+        "currency": "USD",
+        "unit": "x",
+        "warnings": [
+          "Rework multiplier is assumed; no project-specific evidence."
+        ]
+      },
+      "expected_build_cost": {
+        "low": null,
+        "base": null,
+        "high": null,
+        "currency": "USD",
+        "unit": "USD",
+        "warnings": [
+          "No build features listed; build cost unknown, not zero.",
+          "Seat fee 25.00/month not included in per-task base; add per month of build.",
+          "Rework multiplier is assumed; no project-specific evidence."
+        ]
+      },
+      "founder_time_hours": null,
+      "checkpoints": [],
+      "rate_ids": [
+        "rate-replit-seat"
+      ],
+      "not_executed_disclaimer": "Approach-level estimate from verified rates and a bounded task plan. No build was executed on this platform."
+    },
+    {
+      "approach_id": "ide-agent-own-hosting",
+      "base_build_cost": {
+        "low": null,
+        "base": null,
+        "high": null,
+        "currency": "USD",
+        "unit": "USD",
+        "warnings": [
+          "No build features listed; build cost unknown, not zero.",
+          "Seat fee 20.00/month not included in per-task base; add per month of build."
+        ]
+      },
+      "rework_multiplier": {
+        "low": "1.3",
+        "base": "1.8",
+        "high": "2.5",
+        "currency": "USD",
+        "unit": "x",
+        "warnings": [
+          "Rework multiplier is assumed; no project-specific evidence."
+        ]
+      },
+      "expected_build_cost": {
+        "low": null,
+        "base": null,
+        "high": null,
+        "currency": "USD",
+        "unit": "USD",
+        "warnings": [
+          "No build features listed; build cost unknown, not zero.",
+          "Seat fee 20.00/month not included in per-task base; add per month of build.",
+          "Rework multiplier is assumed; no project-specific evidence."
+        ]
+      },
+      "founder_time_hours": null,
+      "checkpoints": [],
+      "rate_ids": [
+        "rate-ide-seat"
+      ],
+      "not_executed_disclaimer": "Approach-level estimate from verified rates and a bounded task plan. No build was executed on this platform."
+    },
+    {
+      "approach_id": "api-only-custom",
+      "base_build_cost": {
+        "low": null,
+        "base": null,
+        "high": null,
+        "currency": "USD",
+        "unit": "USD",
+        "warnings": [
+          "No build features listed; build cost unknown, not zero."
+        ]
+      },
+      "rework_multiplier": {
+        "low": "1.3",
+        "base": "1.8",
+        "high": "2.5",
+        "currency": "USD",
+        "unit": "x",
+        "warnings": [
+          "Rework multiplier is assumed; no project-specific evidence."
+        ]
+      },
+      "expected_build_cost": {
+        "low": null,
+        "base": null,
+        "high": null,
+        "currency": "USD",
+        "unit": "USD",
+        "warnings": [
+          "No build features listed; build cost unknown, not zero.",
+          "Rework multiplier is assumed; no project-specific evidence."
+        ]
+      },
+      "founder_time_hours": null,
+      "checkpoints": [],
+      "rate_ids": [],
+      "not_executed_disclaimer": "Approach-level estimate from verified rates and a bounded task plan. No build was executed on this platform."
+    }
+  ],
+  "operating_ledger": {
+    "monthly_cash_cost": {
+      "low": null,
+      "base": null,
+      "high": null,
+      "currency": "USD",
+      "unit": "USD",
+      "warnings": [
+        "Usage assumptions missing; cost-only report not possible."
+      ]
+    },
+    "per_workflow_cost": {
+      "low": null,
+      "base": null,
+      "high": null,
+      "currency": "USD",
+      "unit": "USD",
+      "warnings": []
+    },
+    "revenue": null,
+    "contribution": null,
+    "margin": null,
+    "rate_ids": [
+      "rate-fr-in",
+      "rate-fr-out"
+    ],
+    "cost_only": true
+  },
+  "development_results": [],
+  "holdout_results": [],
+  "critiques": [],
+  "revisions": [],
+  "evidence_refs": [
+    {
+      "source_set": "pricing_snapshots",
+      "record_id": "approach-builder",
+      "version": "sample-2",
+      "origin_url": null,
+      "verified_at": null,
+      "status": "unverified"
+    },
+    {
+      "source_set": "pricing_snapshots",
+      "record_id": "approach-replit",
+      "version": "sample-2",
+      "origin_url": null,
+      "verified_at": null,
+      "status": "unverified"
+    },
+    {
+      "source_set": "pricing_snapshots",
+      "record_id": "approach-ide",
+      "version": "sample-2",
+      "origin_url": null,
+      "verified_at": null,
+      "status": "unverified"
+    },
+    {
+      "source_set": "pricing_snapshots",
+      "record_id": "approach-api",
+      "version": "sample-2",
+      "origin_url": null,
+      "verified_at": null,
+      "status": "unverified"
+    }
+  ],
+  "memory_ids": [],
+  "evidence_gaps": [
+    {
+      "field": "product_concept",
+      "status": "assumed",
+      "note": "see founder brief provenance"
+    },
+    {
+      "field": "features_v1",
+      "status": "unknown",
+      "note": "see founder brief provenance"
+    },
+    {
+      "field": "constraints",
+      "status": "unknown",
+      "note": "see founder brief provenance"
+    },
+    {
+      "field": "ai_features",
+      "status": "assumed",
+      "note": "see founder brief provenance"
+    },
+    {
+      "field": "growth_stages",
+      "status": "assumed",
+      "note": "see founder brief provenance"
+    },
+    {
+      "field": "budget_ceiling",
+      "status": "unknown",
+      "note": "see founder brief provenance"
+    },
+    {
+      "field": "price",
+      "status": "unknown",
+      "note": "see founder brief provenance"
+    },
+    {
+      "field": "alternatives_considered",
+      "status": "unknown",
+      "note": "see founder brief provenance"
+    },
+    {
+      "field": "usage",
+      "status": "unknown",
+      "note": "operating ledger is cost-only"
+    }
+  ],
+  "risks": [
+    {
+      "description": "Emergent-style AI app-builder (credit-metered): 1 of 1 rates unknown or unverified; its build range is not decision-grade.",
+      "cause_class": "pricing_unverified",
+      "severity": "high",
+      "triggered_by": [
+        "rate-builder-credit"
+      ]
+    },
+    {
+      "description": "Replit Agent (managed app-builder with hosting): 2 of 2 rates unknown or unverified; its build range is not decision-grade.",
+      "cause_class": "pricing_unverified",
+      "severity": "high",
+      "triggered_by": [
+        "rate-replit-credit",
+        "rate-replit-seat"
+      ]
+    },
+    {
+      "description": "Rework multiplier 1.3–2.5x is assumed, not measured; expected build cost moves with it.",
+      "cause_class": "rework",
+      "severity": "medium",
+      "triggered_by": [
+        "build_ledgers.rework_multiplier"
+      ]
+    },
+    {
+      "description": "Constraint devops_capacity is assumed; results that depend on it may change once stated.",
+      "cause_class": "requirements_gap",
+      "severity": "high",
+      "triggered_by": [
+        "constraints.devops_capacity"
+      ]
+    },
+    {
+      "description": "Constraint cash_budget_usd is unknown; results that depend on it may change once stated.",
+      "cause_class": "requirements_gap",
+      "severity": "high",
+      "triggered_by": [
+        "constraints.cash_budget_usd"
+      ]
+    },
+    {
+      "description": "Constraint time_budget_weeks is unknown; results that depend on it may change once stated.",
+      "cause_class": "requirements_gap",
+      "severity": "medium",
+      "triggered_by": [
+        "constraints.time_budget_weeks"
+      ]
+    },
+    {
+      "description": "Constraint technical_skill is assumed; results that depend on it may change once stated.",
+      "cause_class": "requirements_gap",
+      "severity": "medium",
+      "triggered_by": [
+        "constraints.technical_skill"
+      ]
+    },
+    {
+      "description": "Constraint team_size is assumed; results that depend on it may change once stated.",
+      "cause_class": "requirements_gap",
+      "severity": "medium",
+      "triggered_by": [
+        "constraints.team_size"
+      ]
+    }
+  ],
+  "limitations": [
+    "SAMPLE/OFFLINE: rule-based policies, no live inference, no live Nemotron critique, no sponsor proof.",
+    "H-MEM unavailable: H-MEM bridge not pinned/verified for offline use; sample readiness fails rather than substituting a dictionary. See app/engines/hmem/README.md.",
+    "devops_capacity is assumed, and it decides which approaches are eligible",
+    "Approach-level alternatives compared on cited rates; no build executed on any platform."
+  ],
+  "questions": [
+    "What DevOps work can the founder take on? none: 2 eligible (app-builder-credits, replit-agent); basic: 3 eligible (app-builder-credits, replit-agent, ide-agent-own-hosting); full: 4 eligible (app-builder-credits, replit-agent, ide-agent-own-hosting, api-only-custom)."
+  ],
+  "spend_usd": "0",
+  "trace_path": "logs\\trace-example-4.jsonl",
+  "disclaimer": "Economics are modeled estimates from entered assumptions and cited rates. They are not financial advice. See evidence_gaps and limitations."
+}
