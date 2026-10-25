@@ -41,7 +41,7 @@
    {
     "feature_id": "B2_explain_flagged_transaction",
     "description": "Explain a flagged transaction (1% of transactions)",
-    "example_input": "Transaction record + anomaly signals",
+    "example_input": "SYNTHETIC transaction record for testing. Fictional agents, IDs and amounts.\ntx_id: tx_SYN_7f3a91\ntimestamp_utc: 2026-10-24T03:14:07Z\npayer_agent: agt_SYN_buyer_0412 (registered 2026-08-02; 30-day median payment $0.021; 30-day volume 9,840 transactions)\npayee_agent: agt_SYN_seller_9c77 (registered 2026-10-24T01:05:00Z)\nservice: geocoding lookup; quantity 15; quoted unit price $0.020\namount: $0.300 USDC on a layer-2 network; gateway fee $0.003\nsettlement: confirmed in 4 s\nanomaly_signals:\n1. amount_vs_median: $0.300 is 14.3x the payer's 30-day median payment ($0.021).\n2. new_payee: the payee registered 2 h 9 min before this transaction and has no prior transactions with any payer.\n3. velocity: 37 payments from this payer to this payee in the 90 s before this transaction; the payer's usual peak is 6 payments per minute across all payees.\nrisk_score: 0.87 (hold threshold 0.75); status: held for review",
     "mode": "background",
     "modality": ["text"],
     "uses_per_user_month": "100",
@@ -57,12 +57,12 @@
    {
     "feature_id": "B3_dispute_or_receipt_summary",
     "description": "Dispute or receipt summary, on demand (0.1% of transactions)",
-    "example_input": "Transaction thread",
+    "example_input": "SYNTHETIC dispute thread for testing. Fictional agents, IDs and amounts.\ntx_id: tx_SYN_52c0de; buyer paid $0.40 USDC for 200 geocoding lookups (quote: max $0.40 total, $0.002 per lookup).\n[2026-10-24T09:12:03Z] agt_SYN_buyer_0412: 23 of 200 lookups returned error GEO_404. Requesting a refund for 23 lookups ($0.046).\n[09:12:41Z] agt_SYN_seller_9c77: 15 of the 23 had malformed input (missing postcode), which our terms exclude. 8 failed on our side; we can refund those 8 ($0.016).\n[09:13:20Z] agt_SYN_buyer_0412: All inputs were validated against your published schema v2, where postcode is optional.\n[09:14:02Z] agt_SYN_seller_9c77: Confirmed, schema v2 marks postcode optional. We will refund all 23 lookups.\n[09:14:30Z] agt_SYN_buyer_0412: Accepted. Please reference tx_SYN_52c0de.\n[09:15:11Z] gateway: refund of $0.046 USDC issued, ref rf_SYN_0019; dispute closed.",
     "mode": "interactive",
     "modality": ["text"],
     "uses_per_user_month": "10",
     "calls_per_use": "1",
-    "expected_output_words": 150,
+    "expected_output_words": 80,
     "rubric_checks": [
      {"check_id": "facts_only_from_record", "description": "never states facts not in the transaction record", "kind": "human_review", "critical": true}
     ],
