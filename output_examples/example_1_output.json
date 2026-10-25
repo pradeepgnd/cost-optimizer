@@ -244,7 +244,7 @@
           "milestone": "after F3 (25% of planned work)",
           "cumulative_spend": {
             "low": "40.38",
-            "base": "55.90",
+            "base": "55.91",
             "high": "77.65",
             "currency": "USD",
             "unit": "USD",
@@ -276,7 +276,7 @@
           "milestone": "after F6 (75% of planned work)",
           "cumulative_spend": {
             "low": "97.46",
-            "base": "134.94",
+            "base": "134.95",
             "high": "187.43",
             "currency": "USD",
             "unit": "USD",
@@ -430,7 +430,7 @@
         "input_tokens": 0,
         "output_tokens": 0
       },
-      "elapsed_s": 0.0002,
+      "elapsed_s": 0.0003,
       "requested_model": null,
       "resolved_model": null,
       "execution_kind": "rule_policy",
@@ -805,7 +805,7 @@
   ],
   "revisions": [
     {
-      "revision_id": "f93f795f",
+      "revision_id": "adb4011c",
       "config_id": "cfg-a",
       "from_version": 1,
       "to_version": 2,

@@ -1,6 +1,7 @@
 from decimal import Decimal
 from app.contracts import *
-from app.economics import detect_switch_points, estimate_feature_tokens, estimate_tokens, stage_cost_row, stage_cost_table
+from app.economics import (build_ledger, cost_per_call, detect_switch_points, estimate_feature_tokens, estimate_tokens,
+                           operating_ledger, stage_cost_row, stage_cost_table)
 
 def _src(i): return SourceRef(source_set="pricing_snapshots", record_id=i, version="t")
 def _r(cat, usd): return Rate(category=cat, unit="1M tokens", usd_per_unit=None if usd is None else Decimal(usd),
@@ -51,10 +52,49 @@ def test_stage_math_calls_cost_per_call_and_retries_line():
     row = stage_cost_row(_feature(uses="10", calls="2"), _model(), STAGE, _tok())
     assert row.calls_per_month == Decimal("2000")                  # 100 users × 10 uses × 2 calls
     lines = {l.name: l.monthly_usd for l in row.lines}
-    assert lines == {"input": Decimal("20.00"), "output": Decimal("20.00"), "reasoning": Decimal("4.00"), "retries": Decimal("4.40")}
-    assert row.gross_monthly_usd == Decimal("48.40")
-    assert row.cost_per_call_usd == Decimal("0.024200")
-    assert row.monthly_with_levers_usd == Decimal("48.40") and not row.lower_bound
+    # reasoning (100 of the 500 output tokens) is a breakdown, not a second charge
+    assert lines == {"input": Decimal("20.00"), "output": Decimal("20.00"), "reasoning": Decimal("4.00"), "retries": Decimal("4.00")}
+    assert row.gross_monthly_usd == Decimal("44.00")
+    assert row.cost_per_call_usd == Decimal("0.020000")         # cost_call excludes retries, per the 07 formula
+    assert row.monthly_with_levers_usd == Decimal("44.00") and not row.lower_bound
+
+def test_per_call_cost_keeps_full_precision():
+    t = TokenUsage(input_tokens=1500, output_tokens=600, basis="measured", method="api usage")
+    exact = Decimal("0.00156")                                     # 1500×0.40/1M + 600×1.60/1M
+    assert cost_per_call(t, Decimal("0.40"), Decimal("1.60")) == exact
+    m = _model(p_in="0.40", p_out="1.60")
+    row = stage_cost_row(_feature(), m, STAGE, t)
+    assert row.cost_per_call_usd == exact and row.cost_per_call_usd != Decimal("0.00")
+    assert row.cost_per_call_usd.as_tuple().exponent <= -6        # shown with at least 6 decimal places
+    assert row.gross_monthly_usd == Decimal("1.72")                 # 1,000 calls × 0.00156 × 1.1 = 1.716, rounded once
+    u = UsageAssumptions(active_users=1, workflows_per_user_month=Decimal("1"), calls_per_workflow=Decimal("1"))
+    led = operating_ledger(m, u, Decimal("1500"), Decimal("600"), extra_attempt_rate=Decimal("0"))
+    assert led.per_workflow_cost.base == exact
+
+def test_rounding_happens_once_at_display():
+    # base 5,000 tokens × $1/M = $0.005; rounding it first would give 0.01 × 1.8 = 0.02, exact is 0.009 -> 0.01
+    a = ApproachProfile(approach_id="t", name="t", tokens_per_task_class={"S": Decimal("5000")},
+        rates=[_r(RateCategory.input_tokens, "1"), _r(RateCategory.output_tokens, "1")], source=_src("a"))
+    assert build_ledger(a, [FeatureItem(feature_id="f", title="t", size_class="S")]).expected_build_cost.base == Decimal("0.01")
+
+def test_output_tokens_billed_once_reasoning_is_breakdown():
+    with_r = stage_cost_row(_feature(), _model(), STAGE, _tok(o=500, reasoning=300))
+    without = stage_cost_row(_feature(), _model(), STAGE, _tok(o=500, reasoning=None))
+    assert with_r.gross_monthly_usd == without.gross_monthly_usd == Decimal("22.00")   # 1,000 calls × $0.02 × 1.1
+    reasoning = next(l for l in with_r.lines if l.name == "reasoning")
+    assert reasoning.monthly_usd == Decimal("6.00") and not reasoning.billed
+    billed = sum(l.monthly_usd for l in with_r.lines if l.billed)
+    assert billed == with_r.gross_monthly_usd
+    assert not without.lower_bound                                 # measured output already includes reasoning
+    import pytest
+    with pytest.raises(ValueError):
+        _tok(o=500, reasoning=600)
+
+def test_caching_and_batch_labeled_projected():
+    row = stage_cost_row(_feature(mode="background"), _model(), STAGE, _tok())
+    labels = {l.lever: l.label for l in row.levers}
+    assert labels["prompt_caching"] == labels["batch_api"] == "projected (production setup)"
+    assert labels["output_cap"] is None and labels["long_context_cliff"] is None
 
 def test_unknown_usage_or_rate_stays_unknown():
     f = _feature().model_copy(update={"uses_per_user_month": None})
@@ -113,8 +153,8 @@ def test_output_cap_needs_critic_finding_and_measured_rerun():
 def test_long_context_cliff_is_a_whole_request_surcharge_warning():
     row = stage_cost_row(_feature(uses="10", calls="2"), _model(), STAGE, _tok(i=150000))
     lc = _lever(row, "long_context_cliff")
-    # 2,200 calls × ((20−10)×150,000 + (30−20)×600) / 1M
-    assert lc.applies and lc.monthly_delta_usd == Decimal("3313.20") and "WARNING" in lc.reason
+    # 2,200 calls × ((20−10)×150,000 + (30−20)×500) / 1M; the 500 output tokens already include reasoning
+    assert lc.applies and lc.monthly_delta_usd == Decimal("3311.00") and "WARNING" in lc.reason
     assert not _lever(stage_cost_row(_feature(), _model(), STAGE, _tok(i=1000)), "long_context_cliff").applies
     norate = stage_cost_row(_feature(), _model(lc_in=None), STAGE, _tok(i=150000))
     assert _lever(norate, "long_context_cliff").applies and _lever(norate, "long_context_cliff").monthly_delta_usd is None
@@ -173,7 +213,7 @@ def test_audio_input_priced_from_per_second_conversion_and_labeled_estimated():
     lines = {l.name: l.monthly_usd for l in row.lines}
     assert lines["audio_input"] == Decimal("24.00")              # 1,000 calls × 60 s × 10 tok/s × $40/M
     assert "audio_output" not in lines
-    assert row.gross_monthly_usd == Decimal("50.60")             # (10 + 10 + 2 + 24) × 1.1
+    assert row.gross_monthly_usd == Decimal("48.40")             # (10 + 10 + 24) × 1.1
     assert row.token_basis == "estimated" and any("per-second conversion" in w for w in row.warnings)
     assert "audio-conv" in row.rate_ids
 

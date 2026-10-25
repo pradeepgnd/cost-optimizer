@@ -229,7 +229,7 @@
         {
           "milestone": "after C1 (25% of planned work)",
           "cumulative_spend": {
-            "low": "5.69",
+            "low": "5.68",
             "base": "7.87",
             "high": "10.93",
             "currency": "USD",
@@ -245,7 +245,7 @@
         {
           "milestone": "after C1 (50% of planned work)",
           "cumulative_spend": {
-            "low": "5.69",
+            "low": "5.68",
             "base": "7.87",
             "high": "10.93",
             "currency": "USD",

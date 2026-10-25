@@ -17,7 +17,9 @@ from app.contracts import (
 )
 
 CENT = Decimal("0.01")
-MICRO = Decimal("0.000001")
+MICRO = Decimal("0.000001")                   # per-call display: at least 6 decimal places
+DISPLAY_FINE = Decimal("1E-10")                # per-call display ceiling for non-terminating quotients
+PROJECTED = "projected (production setup)"     # caching and batch are not measured in our runs (07 §5.1)
 M = Decimal("1000000")
 MONTH_MINUTES = Decimal("730") * 60            # 730 hours per month
 DEFAULT_RETRY_RATE = Decimal("0.1")            # assumed, labeled on the retries line
@@ -34,20 +36,9 @@ def _q(x: Optional[Decimal]) -> Optional[Decimal]:
     return None if x is None else x.quantize(CENT, rounding=ROUND_HALF_UP)
 
 
-def _scale(s: Scenario, k: Decimal) -> Scenario:
-    return Scenario(
-        low=_q(None if s.low is None else s.low * k),
-        base=_q(None if s.base is None else s.base * k),
-        high=_q(None if s.high is None else s.high * k),
-        unit=s.unit, warnings=list(s.warnings),
-    )
-
-
-def _mul(a: Scenario, b: Scenario) -> Scenario:
-    def m(x, y):
-        return None if x is None or y is None else _q(x * y)
-    return Scenario(low=m(a.low, b.low), base=m(a.base, b.base), high=m(a.high, b.high),
-                    unit=a.unit, warnings=list(dict.fromkeys(a.warnings + b.warnings)))
+def _display(exact: dict[str, Optional[Decimal]], k: Decimal = Decimal("1"), **kw) -> Scenario:
+    """Round an exact low/base/high triple (optionally scaled) to cents, only at the point of display."""
+    return Scenario(**{s: _q(None if v is None else v * k) for s, v in exact.items()}, **kw)
 
 
 def _rate(profile, category: RateCategory):
@@ -108,11 +99,12 @@ def build_ledger(approach: ApproachProfile, features: list[FeatureItem],
     base_s = Scenario(low=_q(base), base=_q(base), high=_q(base), unit=unit, warnings=warnings)
     rework_s = Scenario(low=rework["low"], base=rework["base"], high=rework["high"], unit="x",
                         warnings=["Rework multiplier is assumed; no project-specific evidence."])
-    expected = _mul(base_s, rework_s)
+    exact = {s: None if base is None else base * rework[s] for s in ("low", "base", "high")}
+    expected = _display(exact, unit=unit, warnings=list(dict.fromkeys(base_s.warnings + rework_s.warnings)))
 
     # Checkpoints at 25/50/75% of planned feature units (by size), cumulative expected spend
     checkpoints: list[Checkpoint] = []
-    if units_total > 0 and expected.base is not None:
+    if units_total > 0 and base is not None:
         cum = Decimal("0")
         thresholds = [Decimal("0.25"), Decimal("0.5"), Decimal("0.75")]
         marks = 0
@@ -122,7 +114,7 @@ def build_ledger(approach: ApproachProfile, features: list[FeatureItem],
             while marks < len(thresholds) and frac >= thresholds[marks]:
                 checkpoints.append(Checkpoint(
                     milestone=f"after {f.feature_id} ({int(thresholds[marks]*100)}% of planned work)",
-                    cumulative_spend=_scale(expected, frac),
+                    cumulative_spend=_display(exact, frac, unit=expected.unit, warnings=list(expected.warnings)),
                     gate_question="Is a usable slice live, and is spend inside the base scenario? If not, stop and reassess approach.",
                 ))
                 marks += 1
@@ -156,21 +148,22 @@ def operating_ledger(model: ModelProfile, usage: UsageAssumptions,
             per_workflow_cost=Scenario(low=None, base=None, high=None), rate_ids=rate_ids, cost_only=True,
         )
 
-    per_call = (tokens_in_per_call * rin.usd_per_unit + tokens_out_per_call * rout.usd_per_unit) / Decimal("1000000")
+    # Exact Decimal throughout; per-workflow keeps >= 6 decimal places, monthly figures round to cents for display.
+    per_call = (tokens_in_per_call * rin.usd_per_unit + tokens_out_per_call * rout.usd_per_unit) / M
     per_workflow = per_call * usage.calls_per_workflow * (Decimal("1") + extra_attempt_rate)
     base_calls = Decimal(usage.active_users) * usage.workflows_per_user_month
-    costs = [_q(per_workflow * base_calls * m + other_monthly_cash) for m in volume_multipliers]
-    monthly = Scenario(low=costs[0], base=costs[1], high=costs[2], warnings=warnings)
-    pw = Scenario(low=_q(per_workflow), base=_q(per_workflow), high=_q(per_workflow))
+    costs = [per_workflow * base_calls * m + other_monthly_cash for m in volume_multipliers]
+    monthly = Scenario(low=_q(costs[0]), base=_q(costs[1]), high=_q(costs[2]), warnings=warnings)
+    pw = Scenario(low=_per_call(per_workflow), base=_per_call(per_workflow), high=_per_call(per_workflow))
 
     revenue = contribution = margin = None
     cost_only = usage.paying_fraction is None or usage.subscription_price_usd is None
     if not cost_only:
-        revs = [_q(Decimal(usage.active_users) * m * usage.paying_fraction * usage.subscription_price_usd) for m in volume_multipliers]
-        revenue = Scenario(low=revs[0], base=revs[1], high=revs[2])
-        contribs = [_q(r - c) for r, c in zip(revs, costs)]
-        contribution = Scenario(low=contribs[0], base=contribs[1], high=contribs[2])
-        margins = [None if r == 0 else (c / r).quantize(Decimal("0.0001")) for r, c in zip(revs, contribs)]
+        revs = [Decimal(usage.active_users) * m * usage.paying_fraction * usage.subscription_price_usd for m in volume_multipliers]
+        revenue = Scenario(low=_q(revs[0]), base=_q(revs[1]), high=_q(revs[2]))
+        contribs = [r - c for r, c in zip(revs, costs)]
+        contribution = Scenario(low=_q(contribs[0]), base=_q(contribs[1]), high=_q(contribs[2]))
+        margins = [None if r == 0 else (c / r).quantize(Decimal("0.0001"), rounding=ROUND_HALF_UP) for r, c in zip(revs, contribs)]
         margin = Scenario(low=margins[0], base=margins[1], high=margins[2], unit="ratio",
                           warnings=["Margin undefined when revenue is zero."] if any(m is None for m in margins) else [])
     else:
@@ -205,74 +198,92 @@ def _sum_known(xs) -> Decimal:
     return sum((x for x in xs if x is not None), Decimal("0"))
 
 
-def _caching(feature, model, tokens, calls_eff, rates) -> LeverLine:
+def _per_call(x: Optional[Decimal]) -> Optional[Decimal]:
+    """Display form of a per-call or per-use cost: at least 6 decimal places, never rounded to cents."""
+    if x is None:
+        return None
+    return x.quantize(MICRO) if x.as_tuple().exponent >= -6 else x.quantize(DISPLAY_FINE, rounding=ROUND_HALF_UP)
+
+
+def cost_per_call(tokens: TokenUsage, p_in: Decimal, p_out: Decimal) -> Decimal:
+    """Exact text cost of one call. Output tokens already include reasoning tokens, so reasoning is not added."""
+    return (tokens.input_tokens * p_in + tokens.output_tokens * p_out) / M
+
+
+# Each lever returns (display line, exact delta). Exact deltas feed totals; only the line is rounded.
+
+def _lever(lever, reason, delta=None, applies=True):
+    return LeverLine(lever=lever, applies=applies, reason=reason, monthly_delta_usd=_q(delta),
+                     label=PROJECTED if lever in ("prompt_caching", "batch_api") else None), (delta if applies else None)
+
+
+def _caching(feature, model, tokens, calls_eff, rates):
     t = model.terms
     prefix = min(feature.static_prefix_tokens, tokens.input_tokens)
     p_in, p_read, p_write = rates["in"], _usd(rates["read"]), _usd(rates["write"])
+    no = lambda why: _lever("prompt_caching", why, applies=False)
     if t.cache_min_prefix_tokens is None or t.cache_ttl_minutes is None:
-        return LeverLine(lever="prompt_caching", applies=False, reason="provider cache minimum or TTL unknown")
+        return no("provider cache minimum or TTL unknown")
     if prefix < t.cache_min_prefix_tokens:
-        return LeverLine(lever="prompt_caching", applies=False,
-                         reason=f"static prefix {prefix} tokens is below provider minimum {t.cache_min_prefix_tokens}")
+        return no(f"static prefix {prefix} tokens is below provider minimum {t.cache_min_prefix_tokens}")
     windows = MONTH_MINUTES / t.cache_ttl_minutes
     if calls_eff <= windows:
-        return LeverLine(lever="prompt_caching", applies=False,
-                         reason=f"{_q(calls_eff)} calls/month do not repeat within the {t.cache_ttl_minutes}-minute TTL on average")
+        return no(f"{_q(calls_eff)} calls/month do not repeat within the {t.cache_ttl_minutes}-minute TTL on average")
     if p_read is None or p_write is None:
-        return LeverLine(lever="prompt_caching", applies=False, reason="eligible, but cache read or write rate unknown")
+        return no("eligible, but cache read or write rate unknown")
     writes = windows                      # one write per TTL window with traffic, spread uniformly
     reads = calls_eff - writes
     delta = Decimal(prefix) * (writes * p_write + reads * p_read - calls_eff * p_in) / M
     if delta >= 0:
-        return LeverLine(lever="prompt_caching", applies=False, reason="eligible, but write premium exceeds read discount at this volume")
-    return LeverLine(lever="prompt_caching", applies=True, monthly_delta_usd=_q(delta),
-                     reason=f"{prefix}-token prefix: ~{_q(writes)} writes at write rate, ~{_q(reads)} reads at cache-read rate")
+        return no("eligible, but write premium exceeds read discount at this volume")
+    return _lever("prompt_caching", f"{prefix}-token prefix: ~{_q(writes)} writes at write rate, "
+                                    f"~{_q(reads)} reads at cache-read rate", delta)
 
 
-def _batch(feature, model, base_cost, caching_delta) -> LeverLine:
+def _batch(feature, model, base_cost, caching_delta):
     t = model.terms
+    no = lambda why: _lever("batch_api", why, applies=False)
     if feature.mode != "background":
-        return LeverLine(lever="batch_api", applies=False, reason="feature is interactive")
+        return no("feature is interactive")
     if t.batch_available is not True:
-        return LeverLine(lever="batch_api", applies=False,
-                         reason="provider offers no batch API" if t.batch_available is False else "provider batch availability unknown")
+        return no("provider offers no batch API" if t.batch_available is False else "provider batch availability unknown")
     if t.batch_discount is None:
-        return LeverLine(lever="batch_api", applies=False, reason="batch discount unknown")
-    delta = -t.batch_discount * (base_cost + caching_delta)
-    return LeverLine(lever="batch_api", applies=True, monthly_delta_usd=_q(delta),
-                     reason=f"background feature; {int(t.batch_discount * 100)}% off input and output (after caching)")
+        return no("batch discount unknown")
+    return _lever("batch_api", f"background feature; {int(t.batch_discount * 100)}% off input and output (after caching)",
+                  -t.batch_discount * (base_cost + caching_delta))
 
 
-def _output_cap(feature, model, tokens, calls_eff, p_out, cap: Optional[OutputCapRerun]) -> LeverLine:
+def _output_cap(feature, model, tokens, calls_eff, p_out, cap: Optional[OutputCapRerun]):
+    no = lambda why: _lever("output_cap", why, applies=False)
     if cap is None or not cap.critic_flagged:
-        return LeverLine(lever="output_cap", applies=False, reason="no critic finding that output exceeds what the rubric needs")
+        return no("no critic finding that output exceeds what the rubric needs")
     if cap.rerun.basis != "measured":
-        return LeverLine(lever="output_cap", applies=False, reason="capped re-run not measured")
+        return no("capped re-run not measured")
     if cap.rerun.output_tokens >= tokens.output_tokens:
-        return LeverLine(lever="output_cap", applies=False, reason="capped re-run was not shorter")
-    delta = calls_eff * Decimal(cap.rerun.output_tokens - tokens.output_tokens) * p_out / M
-    return LeverLine(lever="output_cap", applies=True, monthly_delta_usd=_q(delta),
-                     reason=f"measured re-run with cap: {cap.rerun.output_tokens} vs {tokens.output_tokens} output tokens")
+        return no("capped re-run was not shorter")
+    return _lever("output_cap", f"measured re-run with cap: {cap.rerun.output_tokens} vs {tokens.output_tokens} output tokens",
+                  calls_eff * Decimal(cap.rerun.output_tokens - tokens.output_tokens) * p_out / M)
 
 
-def _long_context(model, tokens, calls_eff, rates) -> LeverLine:
+def _long_context(model, tokens, calls_eff, rates):
     thr = model.terms.long_context_threshold_tokens
     if thr is None or tokens.input_tokens <= thr:
-        return LeverLine(lever="long_context_cliff", applies=False,
-                         reason="no provider threshold recorded" if thr is None else f"input {tokens.input_tokens} <= threshold {thr}")
+        return _lever("long_context_cliff", "no provider threshold recorded" if thr is None
+                      else f"input {tokens.input_tokens} <= threshold {thr}", applies=False)
     lc_in, lc_out = _usd(rates["lc_in"]), _usd(rates["lc_out"])
     warn = f"WARNING: {tokens.basis} input {tokens.input_tokens} tokens exceeds {thr}; surcharge applies to the whole request"
     if lc_in is None or lc_out is None:
-        return LeverLine(lever="long_context_cliff", applies=True, reason=warn + "; long-context rate unknown")
-    out_tok = tokens.output_tokens + (tokens.reasoning_tokens or 0)
-    delta = calls_eff * ((lc_in - rates["in"]) * tokens.input_tokens + (lc_out - rates["out"]) * out_tok) / M
-    return LeverLine(lever="long_context_cliff", applies=True, monthly_delta_usd=_q(delta), reason=warn)
+        return _lever("long_context_cliff", warn + "; long-context rate unknown")
+    # output tokens already include reasoning tokens
+    return _lever("long_context_cliff", warn, calls_eff * ((lc_in - rates["in"]) * tokens.input_tokens
+                                                          + (lc_out - rates["out"]) * tokens.output_tokens) / M)
 
 
 def stage_cost_row(feature: FeatureProfile, model: ModelProfile, stage: Stage, tokens: Optional[TokenUsage],
                    retry_rate: Decimal = DEFAULT_RETRY_RATE, output_cap: Optional[OutputCapRerun] = None) -> StageCostRow:
-    """calls = users × uses × calls_per_use; cost_call = (in·p_in + out·p_out + reasoning·p_out)/1e6;
-    retries shown as their own line; levers applied only when eligible, each as its own line."""
+    """calls = users × uses × calls_per_use; cost_call = (in·p_in + out·p_out)/1e6, where output already includes
+    reasoning; retries shown as their own line; levers applied only when eligible, each as its own line.
+    Full Decimal precision throughout; values are rounded only when placed on the row."""
     r = {"in": _rate(model, RateCategory.input_tokens), "out": _rate(model, RateCategory.output_tokens),
          "read": _rate(model, RateCategory.cached_input_tokens), "write": _rate(model, RateCategory.cache_write_tokens),
          "lc_in": _rate(model, RateCategory.long_context_input_tokens), "lc_out": _rate(model, RateCategory.long_context_output_tokens)}
@@ -311,17 +322,20 @@ def stage_cost_row(feature: FeatureProfile, model: ModelProfile, stage: Stage, t
         return StageCostRow(**row, calls_per_month=calls, cost_per_call_usd=None, lines=[], gross_monthly_usd=None,
                             levers=[], monthly_with_levers_usd=None, warnings=warnings + [f"Cost unknown, not zero: {'; '.join(unknown)}."])
 
+    call = cost_per_call(tokens, p_in, p_out) + sum((n * _usd(r[d]) / M for d, n in audio_tokens.items()), Decimal("0"))
     cin = calls * tokens.input_tokens * p_in / M
     cout = calls * tokens.output_tokens * p_out / M
     creason = None if tokens.reasoning_tokens is None else calls * tokens.reasoning_tokens * p_out / M
     caudio = {d: calls * n * _usd(r[d]) / M for d, n in audio_tokens.items()}
-    lower_bound = creason is None
+    # Word-based estimates cannot see hidden reasoning; measured output tokens already include it.
+    lower_bound = tokens.basis == "estimated"
     if lower_bound:
-        warnings.append("Reasoning tokens unknown; cost excludes them and is a lower bound.")
-    base = _sum_known([cin, cout, creason, *caudio.values()])
+        warnings.append("Estimated output tokens exclude any hidden reasoning tokens; cost is a lower bound.")
+    base = calls * call
     retries = base * retry_rate
     lines = [CostLine(name="input", monthly_usd=_q(cin)), CostLine(name="output", monthly_usd=_q(cout)),
-             CostLine(name="reasoning", monthly_usd=_q(creason), note="unknown" if creason is None else "")]
+             CostLine(name="reasoning", monthly_usd=_q(creason), billed=False,
+                      note="unknown" if creason is None else "breakdown of output; already billed as output, not added")]
     lines += [CostLine(name=AUDIO_LINE[d], monthly_usd=_q(c), note=f"{_q(audio_tokens[d])} audio tokens per call")
               for d, c in caudio.items()]
     lines.append(CostLine(name="retries", monthly_usd=_q(retries), note=f"retry_rate {retry_rate} (assumed)"))
@@ -329,30 +343,41 @@ def stage_cost_row(feature: FeatureProfile, model: ModelProfile, stage: Stage, t
     calls_eff = calls * (1 + retry_rate)
 
     p = {"in": p_in, "out": p_out, **{k: r[k] for k in ("read", "write", "lc_in", "lc_out")}}
-    caching = _caching(feature, model, tokens, calls_eff, p)
-    cdelta = caching.monthly_delta_usd if caching.applies else Decimal("0")
-    levers = [caching, _batch(feature, model, gross, cdelta),
-              _output_cap(feature, model, tokens, calls_eff, p_out, output_cap), _long_context(model, tokens, calls_eff, p)]
-    for lv in levers:
+    caching, cdelta = _caching(feature, model, tokens, calls_eff, p)
+    pairs = [(caching, cdelta), _batch(feature, model, gross, cdelta or Decimal("0")),
+             _output_cap(feature, model, tokens, calls_eff, p_out, output_cap), _long_context(model, tokens, calls_eff, p)]
+    for lv, _ in pairs:
         if lv.applies and lv.monthly_delta_usd is None:
             lower_bound = True
             warnings.append(f"{lv.lever} applies but its amount is unknown.")
-    with_levers = gross + _sum_known(lv.monthly_delta_usd for lv in levers if lv.applies)
+    with_levers = gross + _sum_known(d for _, d in pairs)
 
     uses = Decimal(stage.active_users) * feature.uses_per_user_month
-    per_use = (with_levers / uses).quantize(MICRO) if uses else None
+    per_use = with_levers / uses if uses else None
     share = None
     if per_use is not None and feature.revenue_per_use is not None:
         if feature.revenue_per_use > 0:
-            share = (per_use / feature.revenue_per_use).quantize(Decimal("0.0001"))
+            share = per_use / feature.revenue_per_use
+            if share > 1 >= share.quantize(Decimal("0.0001"), rounding=ROUND_HALF_UP):
+                warnings.append("Revenue share is just above 100%; the rounded figure hides it.")
         else:
             warnings.append("revenue_per_use is not positive; revenue share undefined.")
         if share is not None and lower_bound and share <= 1:
             warnings.append("Revenue share is a lower bound; unknown cost components are excluded.")
 
-    return StageCostRow(**row, calls_per_month=calls, cost_per_call_usd=(gross / calls).quantize(MICRO) if calls else None,
-                        lines=lines, gross_monthly_usd=_q(gross), levers=levers, monthly_with_levers_usd=_q(with_levers),
-                        cost_per_use_usd=per_use, revenue_share=share, lower_bound=lower_bound, warnings=warnings)
+    out = StageCostRow(**row, calls_per_month=calls, cost_per_call_usd=_per_call(call), lines=lines,
+                       gross_monthly_usd=_q(gross), levers=[lv for lv, _ in pairs], monthly_with_levers_usd=_q(with_levers),
+                       cost_per_use_usd=_per_call(per_use),
+                       revenue_share=None if share is None else share.quantize(Decimal("0.0001"), rounding=ROUND_HALF_UP),
+                       lower_bound=lower_bound, warnings=warnings)
+    out._exact_with_levers, out._exact_share = with_levers, share
+    return out
+
+
+def _exact(row: StageCostRow, name: str):
+    """Exact value kept on the row for downstream rules; falls back to the display value for rows built elsewhere."""
+    v = getattr(row, f"_exact_{name}")
+    return v if v is not None else getattr(row, {"with_levers": "monthly_with_levers_usd", "share": "revenue_share"}[name])
 
 
 def _audio_tokens_per_call(feature, model, tokens, direction) -> tuple[Optional[Decimal], Optional[str]]:
@@ -372,13 +397,13 @@ def revenue_share_risks(feature: FeatureProfile, rows: list[StageCostRow]) -> li
     """High-severity risk when AI cost per use exceeds revenue per use, one per candidate model."""
     risks: list[Risk] = []
     for model_id in dict.fromkeys(r.model_id for r in rows):
-        over = [r for r in rows if r.model_id == model_id and r.revenue_share is not None and r.revenue_share > 1]
+        over = [r for r in rows if r.model_id == model_id and _exact(r, "share") is not None and _exact(r, "share") > 1]
         if not over:
             continue
-        worst = max(over, key=lambda r: r.revenue_share)
+        worst = max(over, key=lambda r: _exact(r, "share"))
         risks.append(Risk(
             description=f"{feature.feature_id} on {model_id}: AI cost per use ${worst.cost_per_use_usd} is "
-                        f"{(worst.revenue_share * 100).quantize(Decimal('1'))}% of revenue per use ${feature.revenue_per_use} "
+                        f"{(_exact(worst, 'share') * 100).quantize(Decimal('1'), rounding=ROUND_HALF_UP)}% of revenue per use ${feature.revenue_per_use} "
                         f"at {', '.join(r.stage for r in over)}; each use loses money before any other cost.",
             cause_class=RiskCause.unit_economics, severity="high",
             triggered_by=[f"ai_features:{feature.feature_id}.revenue_per_use", *worst.rate_ids]))
@@ -423,11 +448,12 @@ def detect_switch_points(feature: FeatureProfile, stages: list[Stage], rows: lis
             passes, why = False, "frontier quality not measured on the same checks"
         for s in sorted(stages, key=lambda s: s.active_users):
             a, b = by.get((frontier.model_id, s.name)), by.get((m.model_id, s.name))
-            if a is None or b is None or a.monthly_with_levers_usd is None or b.monthly_with_levers_usd is None:
+            if a is None or b is None or _exact(a, "with_levers") is None or _exact(b, "with_levers") is None:
                 continue
-            diff = a.monthly_with_levers_usd - b.monthly_with_levers_usd
-            if diff < threshold_usd:
+            exact_diff = _exact(a, "with_levers") - _exact(b, "with_levers")
+            if exact_diff < threshold_usd:
                 continue
+            diff = _q(exact_diff)
             caveat = " Both costs are lower bounds." if (a.lower_bound or b.lower_bound) else ""
             basis = "estimated" if "estimated" in (a.token_basis, b.token_basis) else "measured"
             if passes:

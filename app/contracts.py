@@ -9,7 +9,7 @@ from decimal import Decimal
 from enum import Enum
 from typing import Literal, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, PrivateAttr, model_validator
 
 
 # ---------------------------------------------------------------- provenance
@@ -178,14 +178,21 @@ def default_stages() -> list[Stage]:
 
 
 class TokenUsage(BaseModel):
-    """Per-call tokens. measured == from API usage fields only; estimated == 4/3 rule on words."""
+    """Per-call tokens. measured == from API usage fields only; estimated == 4/3 rule on words.
+    output_tokens is the completion count and already INCLUDES reasoning_tokens (OpenAI-compatible usage)."""
     input_tokens: int
     output_tokens: int
-    reasoning_tokens: Optional[int] = None   # None == unknown; never coerced to zero
+    reasoning_tokens: Optional[int] = None   # breakdown of output_tokens; None == unknown, never coerced to zero
     audio_input_tokens: Optional[int] = None    # measured only; None -> estimated from seconds if the feature has audio
     audio_output_tokens: Optional[int] = None
     basis: Literal["measured", "estimated"]
     method: str
+
+    @model_validator(mode="after")
+    def _reasoning_within_output(self):
+        if self.reasoning_tokens is not None and self.reasoning_tokens > self.output_tokens:
+            raise ValueError("reasoning_tokens is part of output_tokens and cannot exceed it")
+        return self
 
 
 class RubricResult(BaseModel):
@@ -339,6 +346,7 @@ class OperatingLedger(BaseModel):
 class CostLine(BaseModel):
     name: Literal["input", "output", "reasoning", "audio_input", "audio_output", "retries"]
     monthly_usd: Optional[Decimal]
+    billed: bool = True              # False == breakdown only (reasoning is inside output); never added to the bill
     note: str = ""
 
 
@@ -348,6 +356,7 @@ class LeverLine(BaseModel):
     applies: bool
     reason: str
     monthly_delta_usd: Optional[Decimal] = None   # negative == saving, positive == surcharge
+    label: Optional[str] = None                   # "projected (production setup)" for caching and batch
 
 
 class StageCostRow(BaseModel):
@@ -369,6 +378,9 @@ class StageCostRow(BaseModel):
     lower_bound: bool = False        # True when an unknown component (e.g. reasoning tokens) is excluded
     rate_ids: list[str] = Field(default_factory=list)
     warnings: list[str] = Field(default_factory=list)
+    # Unrounded values for downstream rules (switch points, revenue risk); not serialized.
+    _exact_with_levers: Optional[Decimal] = PrivateAttr(default=None)
+    _exact_share: Optional[Decimal] = PrivateAttr(default=None)
 
 
 class SwitchPoint(BaseModel):

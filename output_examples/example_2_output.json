@@ -394,9 +394,9 @@
       "warnings": []
     },
     "per_workflow_cost": {
-      "low": "0.04",
-      "base": "0.04",
-      "high": "0.04",
+      "low": "0.037125",
+      "base": "0.037125",
+      "high": "0.037125",
       "currency": "USD",
       "unit": "USD",
       "warnings": []
@@ -449,7 +449,7 @@
         "input_tokens": 0,
         "output_tokens": 0
       },
-      "elapsed_s": 0.0003,
+      "elapsed_s": 0.001,
       "requested_model": null,
       "resolved_model": null,
       "execution_kind": "rule_policy",
@@ -519,7 +519,7 @@
         "input_tokens": 0,
         "output_tokens": 0
       },
-      "elapsed_s": 0.0,
+      "elapsed_s": 0.0001,
       "requested_model": null,
       "resolved_model": null,
       "execution_kind": "rule_policy",
@@ -824,7 +824,7 @@
   ],
   "revisions": [
     {
-      "revision_id": "73ca28eb",
+      "revision_id": "895ab0e5",
       "config_id": "cfg-a",
       "from_version": 1,
       "to_version": 2,
