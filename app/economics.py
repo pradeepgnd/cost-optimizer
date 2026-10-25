@@ -62,7 +62,9 @@ def build_ledger(approach: ApproachProfile, features: list[FeatureItem],
     units_total = sum((SIZE_MULTIPLIER[f.size_class] for f in features), Decimal("0"))
 
     base: Optional[Decimal] = None
-    if approach.credits_per_task_class is not None:
+    if not features:
+        warnings.append("No build features listed; build cost unknown, not zero.")
+    elif approach.credits_per_task_class is not None:
         credits = sum((approach.credits_per_task_class.get(f.size_class, Decimal("0")) for f in features), Decimal("0"))
         r = _rate(approach, RateCategory.credits)
         if r is not None:
@@ -202,7 +204,10 @@ def _per_call(x: Optional[Decimal]) -> Optional[Decimal]:
     """Display form of a per-call or per-use cost: at least 6 decimal places, never rounded to cents."""
     if x is None:
         return None
-    return x.quantize(MICRO) if x.as_tuple().exponent >= -6 else x.quantize(DISPLAY_FINE, rounding=ROUND_HALF_UP)
+    x = x.normalize()
+    if x.as_tuple().exponent >= -6:
+        return x.quantize(MICRO)
+    return x.quantize(DISPLAY_FINE, rounding=ROUND_HALF_UP).normalize()
 
 
 def cost_per_call(tokens: TokenUsage, p_in: Decimal, p_out: Decimal) -> Decimal:

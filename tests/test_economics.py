@@ -29,6 +29,12 @@ def test_checkpoints_cover_quarters():
     led = build_ledger(a, [FeatureItem(feature_id=f"f{i}", title="t", size_class="S") for i in range(4)])
     assert len(led.checkpoints) == 3
 
+def test_empty_build_plan_is_unknown_not_zero():
+    a = ApproachProfile(approach_id="b", name="b", credits_per_task_class={"S": Decimal("10")},
+        rates=[Rate(category=RateCategory.credits, unit="credit", usd_per_unit=Decimal("1"), status=EvidenceStatus.verified, source=_src("r"))], source=_src("a"))
+    led = build_ledger(a, [])
+    assert led.base_build_cost.base is None and led.expected_build_cost.base is None and led.checkpoints == []
+
 def test_operating_missing_usage_is_cost_only_not_zero():
     m = ModelProfile(model_id="m", provider_label="x", rates=[], source=_src("m"))
     led = operating_ledger(m, UsageAssumptions(), Decimal("1"), Decimal("1"))
