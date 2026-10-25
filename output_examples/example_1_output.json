@@ -6,14 +6,14 @@
   "recommended_config": {
     "config_id": "cfg-a",
     "approach_id": "app-builder-credits",
-    "model_id": "sample/model-a",
+    "model_id": "sample/frontier-placeholder",
     "workflow_settings": {},
     "config_version": 2
   },
   "alternate_config": {
     "config_id": "cfg-b",
     "approach_id": "replit-agent",
-    "model_id": "sample/model-b",
+    "model_id": "sample/mid-tier-placeholder",
     "workflow_settings": {},
     "config_version": 1
   },
@@ -407,8 +407,8 @@
     "contribution": null,
     "margin": null,
     "rate_ids": [
-      "rate-ma-in",
-      "rate-ma-out"
+      "rate-fr-in",
+      "rate-fr-out"
     ],
     "cost_only": true
   },
@@ -805,7 +805,7 @@
   ],
   "revisions": [
     {
-      "revision_id": "c8af22e6",
+      "revision_id": "f93f795f",
       "config_id": "cfg-a",
       "from_version": 1,
       "to_version": 2,

@@ -6,14 +6,14 @@
   "recommended_config": {
     "config_id": "cfg-a",
     "approach_id": "app-builder-credits",
-    "model_id": "sample/model-a",
+    "model_id": "sample/frontier-placeholder",
     "workflow_settings": {},
     "config_version": 2
   },
   "alternate_config": {
     "config_id": "cfg-b",
     "approach_id": "replit-agent",
-    "model_id": "sample/model-b",
+    "model_id": "sample/mid-tier-placeholder",
     "workflow_settings": {},
     "config_version": 1
   },
@@ -386,17 +386,17 @@
   ],
   "operating_ledger": {
     "monthly_cash_cost": {
-      "low": "2.06",
-      "base": "4.12",
-      "high": "41.18",
+      "low": "29.70",
+      "base": "59.40",
+      "high": "594.00",
       "currency": "USD",
       "unit": "USD",
       "warnings": []
     },
     "per_workflow_cost": {
-      "low": "0.00",
-      "base": "0.00",
-      "high": "0.00",
+      "low": "0.04",
+      "base": "0.04",
+      "high": "0.04",
       "currency": "USD",
       "unit": "USD",
       "warnings": []
@@ -410,24 +410,24 @@
       "warnings": []
     },
     "contribution": {
-      "low": "117.94",
-      "base": "235.88",
-      "high": "2358.82",
+      "low": "90.30",
+      "base": "180.60",
+      "high": "1806.00",
       "currency": "USD",
       "unit": "USD",
       "warnings": []
     },
     "margin": {
-      "low": "0.9828",
-      "base": "0.9828",
-      "high": "0.9828",
+      "low": "0.7525",
+      "base": "0.7525",
+      "high": "0.7525",
       "currency": "USD",
       "unit": "ratio",
       "warnings": []
     },
     "rate_ids": [
-      "rate-ma-in",
-      "rate-ma-out"
+      "rate-fr-in",
+      "rate-fr-out"
     ],
     "cost_only": false
   },
@@ -449,7 +449,7 @@
         "input_tokens": 0,
         "output_tokens": 0
       },
-      "elapsed_s": 0.0002,
+      "elapsed_s": 0.0003,
       "requested_model": null,
       "resolved_model": null,
       "execution_kind": "rule_policy",
@@ -824,7 +824,7 @@
   ],
   "revisions": [
     {
-      "revision_id": "3fcea7d0",
+      "revision_id": "73ca28eb",
       "config_id": "cfg-a",
       "from_version": 1,
       "to_version": 2,

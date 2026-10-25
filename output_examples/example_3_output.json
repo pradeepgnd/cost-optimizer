@@ -393,8 +393,8 @@
     "contribution": null,
     "margin": null,
     "rate_ids": [
-      "rate-ma-in",
-      "rate-ma-out"
+      "rate-fr-in",
+      "rate-fr-out"
     ],
     "cost_only": true
   },
