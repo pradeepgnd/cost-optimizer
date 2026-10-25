@@ -7,13 +7,16 @@ def _r(cat, usd): return Rate(category=cat, unit="1M tokens", usd_per_unit=None 
                               status=EvidenceStatus.verified, source=_src(cat.value))
 
 def _model(mid="f", tier="frontier", p_in="10", p_out="20", read="1", write="12.5", lc_in="20", lc_out="30",
-           batch=True, threshold=100000):
+           batch=True, threshold=100000, audio_in="40", audio_out="80", audio=True):
     rates = [_r(RateCategory.input_tokens, p_in), _r(RateCategory.output_tokens, p_out)]
     for cat, v in ((RateCategory.cached_input_tokens, read), (RateCategory.cache_write_tokens, write),
-                   (RateCategory.long_context_input_tokens, lc_in), (RateCategory.long_context_output_tokens, lc_out)):
+                   (RateCategory.long_context_input_tokens, lc_in), (RateCategory.long_context_output_tokens, lc_out),
+                   (RateCategory.audio_input_tokens, audio_in), (RateCategory.audio_output_tokens, audio_out)):
         if v is not None:
             rates.append(_r(cat, v))
-    return ModelProfile(model_id=mid, provider_label="x", tier=tier, rates=rates, source=_src(mid),
+    conv = AudioConversion(input_tokens_per_second=Decimal("10"), output_tokens_per_second=Decimal("20"),
+                           source=_src("audio-conv")) if audio else None
+    return ModelProfile(model_id=mid, provider_label="x", tier=tier, rates=rates, source=_src(mid), audio=conv,
                         terms=ModelPricingTerms(cache_min_prefix_tokens=1024, cache_ttl_minutes=Decimal("5"),
                                                 batch_available=batch, batch_discount=Decimal("0.5"),
                                                 long_context_threshold_tokens=threshold))
@@ -157,3 +160,63 @@ def test_rule_policy_or_missing_quality_is_not_switch_evidence():
 def test_no_frontier_means_no_switch_points():
     q, p, w = detect_switch_points(_feature(), default_stages(), [], [MODELS[1]])
     assert q == [] and p == [] and "No frontier" in w[0]
+
+
+# ---------------------------------------------------------------- audio
+
+def _audio(modality, seconds="60", calls="1"):
+    return _feature(calls=calls).model_copy(update={"modality": modality,
+                                                    "audio_seconds_per_use": None if seconds is None else Decimal(seconds)})
+
+def test_audio_input_priced_from_per_second_conversion_and_labeled_estimated():
+    row = stage_cost_row(_audio(["text", "audio_in"]), _model(), STAGE, _tok())
+    lines = {l.name: l.monthly_usd for l in row.lines}
+    assert lines["audio_input"] == Decimal("24.00")              # 1,000 calls × 60 s × 10 tok/s × $40/M
+    assert "audio_output" not in lines
+    assert row.gross_monthly_usd == Decimal("50.60")             # (10 + 10 + 2 + 24) × 1.1
+    assert row.token_basis == "estimated" and any("per-second conversion" in w for w in row.warnings)
+    assert "audio-conv" in row.rate_ids
+
+def test_audio_output_and_seconds_split_across_calls_per_use():
+    out = stage_cost_row(_audio(["text", "audio_out"]), _model(), STAGE, _tok())
+    assert {l.name: l.monthly_usd for l in out.lines}["audio_output"] == Decimal("96.00")   # 60 s × 20 tok/s × $80/M
+    split = stage_cost_row(_audio(["text", "audio_in"], calls="2"), _model(), STAGE, _tok())
+    assert {l.name: l.monthly_usd for l in split.lines}["audio_input"] == Decimal("24.00")  # 2,000 calls × 30 s
+
+def test_measured_audio_tokens_override_the_conversion():
+    t = _tok().model_copy(update={"audio_input_tokens": 100})
+    row = stage_cost_row(_audio(["text", "audio_in"]), _model(), STAGE, t)
+    assert {l.name: l.monthly_usd for l in row.lines}["audio_input"] == Decimal("4.00")
+    assert row.token_basis == "measured"
+
+def test_audio_cost_unknown_without_conversion_seconds_or_rate():
+    for row in (stage_cost_row(_audio(["text", "audio_in"]), _model(audio=False), STAGE, _tok()),
+                stage_cost_row(_audio(["text", "audio_in"], seconds=None), _model(), STAGE, _tok()),
+                stage_cost_row(_audio(["text", "audio_out"]), _model(audio_out=None), STAGE, _tok())):
+        assert row.gross_monthly_usd is None and any("not zero" in w for w in row.warnings)
+
+def test_text_only_feature_has_no_audio_lines():
+    row = stage_cost_row(_feature(), _model(), STAGE, _tok())
+    assert not {"audio_input", "audio_output"} & {l.name for l in row.lines}
+
+
+# ---------------------------------------------------------------- revenue share
+
+def _rev(usd): return _feature().model_copy(update={"revenue_per_use": Decimal(usd)})
+
+def test_revenue_share_reported_per_use():
+    row = stage_cost_row(_rev("0.05"), _model(), STAGE, _tok(reasoning=0))
+    assert row.cost_per_use_usd == Decimal("0.022000")           # (1000×10 + 500×20)/1M × 1.1
+    assert row.revenue_per_use_usd == Decimal("0.05") and row.revenue_share == Decimal("0.4400")
+
+def test_high_risk_when_ai_cost_exceeds_revenue_per_use():
+    t = stage_cost_table(_rev("0.01"), [_model()], {"f": _tok(reasoning=0)})
+    assert len(t.risks) == 1
+    r = t.risks[0]
+    assert r.severity == "high" and r.cause_class == RiskCause.unit_economics and "220%" in r.description
+    assert "ai_features:plan.revenue_per_use" in r.triggered_by
+
+def test_no_revenue_risk_below_100_percent_or_without_revenue():
+    assert stage_cost_table(_rev("0.05"), [_model()], {"f": _tok(reasoning=0)}).risks == []
+    t = stage_cost_table(_feature(), [_model()], {"f": _tok(reasoning=0)})
+    assert t.risks == [] and all(r.revenue_share is None for r in t.rows)

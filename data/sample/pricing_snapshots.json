@@ -39,17 +39,25 @@
        {"category": "cached_input_tokens", "unit": "1M tokens", "usd_per_unit": "0.50", "status": "unverified", "source": {"source_set": "pricing_snapshots", "record_id": "rate-fr-cache-read", "version": "sample-3", "status": "unverified"}},
        {"category": "cache_write_tokens", "unit": "1M tokens", "usd_per_unit": "6.25", "status": "unverified", "source": {"source_set": "pricing_snapshots", "record_id": "rate-fr-cache-write", "version": "sample-3", "status": "unverified"}},
        {"category": "long_context_input_tokens", "unit": "1M tokens", "usd_per_unit": "10.00", "status": "unverified", "source": {"source_set": "pricing_snapshots", "record_id": "rate-fr-lc-in", "version": "sample-3", "status": "unverified"}},
-       {"category": "long_context_output_tokens", "unit": "1M tokens", "usd_per_unit": "37.50", "status": "unverified", "source": {"source_set": "pricing_snapshots", "record_id": "rate-fr-lc-out", "version": "sample-3", "status": "unverified"}}],
+       {"category": "long_context_output_tokens", "unit": "1M tokens", "usd_per_unit": "37.50", "status": "unverified", "source": {"source_set": "pricing_snapshots", "record_id": "rate-fr-lc-out", "version": "sample-3", "status": "unverified"}},
+       {"category": "audio_input_tokens", "unit": "1M tokens", "usd_per_unit": "40.00", "status": "unverified", "source": {"source_set": "pricing_snapshots", "record_id": "rate-fr-audio-in", "version": "sample-4", "status": "unverified"}},
+       {"category": "audio_output_tokens", "unit": "1M tokens", "usd_per_unit": "80.00", "status": "unverified", "source": {"source_set": "pricing_snapshots", "record_id": "rate-fr-audio-out", "version": "sample-4", "status": "unverified"}}],
      "terms": {"cache_min_prefix_tokens": 1024, "cache_ttl_minutes": "5", "batch_available": true, "batch_discount": "0.5",
                "long_context_threshold_tokens": 200000, "status": "unverified"},
+     "audio": {"input_tokens_per_second": "10", "output_tokens_per_second": "20", "basis": "estimated", "status": "unverified",
+               "source": {"source_set": "pricing_snapshots", "record_id": "audio-conv-frontier", "version": "sample-4", "status": "unverified"}},
      "source": {"source_set": "pricing_snapshots", "record_id": "model-frontier", "version": "sample-3", "status": "unverified"}},
     {"model_id": "sample/mid-tier-placeholder", "provider_label": "sample", "tier": "mid_tier", "rates": [
        {"category": "input_tokens", "unit": "1M tokens", "usd_per_unit": "1.00", "status": "unverified", "source": {"source_set": "pricing_snapshots", "record_id": "rate-mid-in", "version": "sample-3", "status": "unverified"}},
        {"category": "output_tokens", "unit": "1M tokens", "usd_per_unit": "5.00", "status": "unverified", "source": {"source_set": "pricing_snapshots", "record_id": "rate-mid-out", "version": "sample-3", "status": "unverified"}},
        {"category": "cached_input_tokens", "unit": "1M tokens", "usd_per_unit": "0.10", "status": "unverified", "source": {"source_set": "pricing_snapshots", "record_id": "rate-mid-cache-read", "version": "sample-3", "status": "unverified"}},
-       {"category": "cache_write_tokens", "unit": "1M tokens", "usd_per_unit": "1.25", "status": "unverified", "source": {"source_set": "pricing_snapshots", "record_id": "rate-mid-cache-write", "version": "sample-3", "status": "unverified"}}],
+       {"category": "cache_write_tokens", "unit": "1M tokens", "usd_per_unit": "1.25", "status": "unverified", "source": {"source_set": "pricing_snapshots", "record_id": "rate-mid-cache-write", "version": "sample-3", "status": "unverified"}},
+       {"category": "audio_input_tokens", "unit": "1M tokens", "usd_per_unit": "10.00", "status": "unverified", "source": {"source_set": "pricing_snapshots", "record_id": "rate-mid-audio-in", "version": "sample-4", "status": "unverified"}},
+       {"category": "audio_output_tokens", "unit": "1M tokens", "usd_per_unit": "20.00", "status": "unverified", "source": {"source_set": "pricing_snapshots", "record_id": "rate-mid-audio-out", "version": "sample-4", "status": "unverified"}}],
      "terms": {"cache_min_prefix_tokens": 1024, "cache_ttl_minutes": "5", "batch_available": true, "batch_discount": "0.5",
                "long_context_threshold_tokens": null, "status": "unverified"},
+     "audio": {"input_tokens_per_second": "10", "output_tokens_per_second": "20", "basis": "estimated", "status": "unverified",
+               "source": {"source_set": "pricing_snapshots", "record_id": "audio-conv-mid-tier", "version": "sample-4", "status": "unverified"}},
      "source": {"source_set": "pricing_snapshots", "record_id": "model-mid-tier", "version": "sample-3", "status": "unverified"}},
     {"model_id": "sample/open-source-placeholder", "provider_label": "sample", "tier": "open_source", "rates": [
        {"category": "input_tokens", "unit": "1M tokens", "usd_per_unit": "0.20", "status": "unverified", "source": {"source_set": "pricing_snapshots", "record_id": "rate-os-in", "version": "sample-3", "status": "unverified"}},
@@ -58,5 +66,5 @@
                "long_context_threshold_tokens": null, "status": "unknown"},
      "source": {"source_set": "pricing_snapshots", "record_id": "model-open-source", "version": "sample-3", "status": "unverified"}}
   ],
-  "models_note": "PLACEHOLDER: all three candidate model rates and terms are unverified illustrative values, not any provider's published price. Replace with dated, URL-cited snapshots; real route IDs are pinned from Nightshift GET /v1/models."
+  "models_note": "PLACEHOLDER: all three candidate model rates, terms and audio per-second conversions are unverified illustrative values, not any provider's published price. Audio conversions are estimates; the open-source placeholder has no audio pricing, so its audio cost stays unknown. Replace with dated, URL-cited snapshots; real route IDs are pinned from Nightshift GET /v1/models."
 }

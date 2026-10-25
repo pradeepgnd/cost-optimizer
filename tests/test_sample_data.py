@@ -20,6 +20,12 @@ def test_three_candidate_models_by_tier_all_unverified_placeholders():
     assert all(r.status == EvidenceStatus.unverified for m in models for r in m.rates)
     assert all(m.source.status == EvidenceStatus.unverified for m in models)
 
+def test_sample_audio_conversions_are_estimated_and_unverified():
+    models = SampleDataLayer().read_models()
+    priced = [m for m in models if m.audio is not None]
+    assert [m.tier for m in priced] == ["frontier", "mid_tier"]
+    assert all(m.audio.basis == "estimated" and m.audio.status == EvidenceStatus.unverified for m in priced)
+
 def test_sample_stage_table_is_estimated_and_never_claims_a_switch():
     from decimal import Decimal
     from app.contracts import FeatureProfile, RubricCheck

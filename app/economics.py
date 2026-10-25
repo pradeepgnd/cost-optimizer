@@ -12,8 +12,8 @@ from typing import Optional
 
 from app.contracts import (
     ApproachProfile, BuildLedger, Checkpoint, CostLine, EvidenceStatus, FeatureItem, FeatureProfile, LeverLine,
-    ModelProfile, OperatingLedger, OutputCapRerun, RateCategory, RubricResult, Scenario, Stage, StageCostRow,
-    StageCostTable, SwitchPoint, TokenUsage, UsageAssumptions, default_stages,
+    ModelProfile, OperatingLedger, OutputCapRerun, RateCategory, Risk, RiskCause, RubricResult, Scenario, Stage,
+    StageCostRow, StageCostTable, SwitchPoint, TokenUsage, UsageAssumptions, default_stages,
 )
 
 CENT = Decimal("0.01")
@@ -22,6 +22,10 @@ M = Decimal("1000000")
 MONTH_MINUTES = Decimal("730") * 60            # 730 hours per month
 DEFAULT_RETRY_RATE = Decimal("0.1")            # assumed, labeled on the retries line
 DEFAULT_SWITCH_THRESHOLD = Decimal("100")      # USD/month, founder-editable
+AUDIO_RATE = {"audio_in": RateCategory.audio_input_tokens, "audio_out": RateCategory.audio_output_tokens}
+AUDIO_FIELD = {"audio_in": "audio_input_tokens", "audio_out": "audio_output_tokens"}
+AUDIO_TPS = {"audio_in": "input_tokens_per_second", "audio_out": "output_tokens_per_second"}
+AUDIO_LINE = {"audio_in": "audio_input", "audio_out": "audio_output"}
 DEFAULT_REWORK = {"low": Decimal("1.3"), "base": Decimal("1.8"), "high": Decimal("2.5")}
 SIZE_MULTIPLIER = {"S": Decimal("1"), "M": Decimal("2.5"), "L": Decimal("6"), "XL": Decimal("12")}
 
@@ -272,9 +276,14 @@ def stage_cost_row(feature: FeatureProfile, model: ModelProfile, stage: Stage, t
     r = {"in": _rate(model, RateCategory.input_tokens), "out": _rate(model, RateCategory.output_tokens),
          "read": _rate(model, RateCategory.cached_input_tokens), "write": _rate(model, RateCategory.cache_write_tokens),
          "lc_in": _rate(model, RateCategory.long_context_input_tokens), "lc_out": _rate(model, RateCategory.long_context_output_tokens)}
+    audio_dirs = [d for d in ("audio_in", "audio_out") if d in feature.modality]
+    r.update({d: _rate(model, AUDIO_RATE[d]) for d in audio_dirs})
     rate_ids = [x.source.record_id for x in r.values() if x is not None]
+    if audio_dirs and model.audio is not None and model.audio.source is not None:
+        rate_ids.append(model.audio.source.record_id)
     row = dict(feature_id=feature.feature_id, stage=stage.name, active_users=stage.active_users, model_id=model.model_id,
-               tier=model.tier, rate_ids=rate_ids, token_basis=tokens.basis if tokens else "estimated")
+               tier=model.tier, rate_ids=rate_ids, token_basis=tokens.basis if tokens else "estimated",
+               revenue_per_use_usd=feature.revenue_per_use)
     warnings: list[str] = []
     if any(x is not None and x.status != EvidenceStatus.verified for x in r.values()):
         warnings.append("Rates are not verified.")
@@ -286,6 +295,18 @@ def stage_cost_row(feature: FeatureProfile, model: ModelProfile, stage: Stage, t
     p_in, p_out = _usd(r["in"]), _usd(r["out"])
     unknown = [why for cond, why in ((calls is None, "uses_per_user_month unknown"), (tokens is None, "tokens unknown"),
                                      (p_in is None or p_out is None, "input or output rate unknown")) if cond]
+    audio_tokens: dict[str, Decimal] = {}
+    for d in audio_dirs:
+        n, why = _audio_tokens_per_call(feature, model, tokens, d)
+        if why:
+            unknown.append(why)
+        elif _usd(r[d]) is None:
+            unknown.append(f"{d} rate unknown")
+        else:
+            audio_tokens[d] = n
+            if tokens is None or getattr(tokens, AUDIO_FIELD[d]) is None:
+                row["token_basis"] = "estimated"
+                warnings.append(f"{d} tokens estimated from per-second conversion ({model.audio.status.value}), not measured.")
     if unknown:
         return StageCostRow(**row, calls_per_month=calls, cost_per_call_usd=None, lines=[], gross_monthly_usd=None,
                             levers=[], monthly_with_levers_usd=None, warnings=warnings + [f"Cost unknown, not zero: {'; '.join(unknown)}."])
@@ -293,14 +314,17 @@ def stage_cost_row(feature: FeatureProfile, model: ModelProfile, stage: Stage, t
     cin = calls * tokens.input_tokens * p_in / M
     cout = calls * tokens.output_tokens * p_out / M
     creason = None if tokens.reasoning_tokens is None else calls * tokens.reasoning_tokens * p_out / M
+    caudio = {d: calls * n * _usd(r[d]) / M for d, n in audio_tokens.items()}
     lower_bound = creason is None
     if lower_bound:
         warnings.append("Reasoning tokens unknown; cost excludes them and is a lower bound.")
-    base = _sum_known([cin, cout, creason])
+    base = _sum_known([cin, cout, creason, *caudio.values()])
     retries = base * retry_rate
     lines = [CostLine(name="input", monthly_usd=_q(cin)), CostLine(name="output", monthly_usd=_q(cout)),
-             CostLine(name="reasoning", monthly_usd=_q(creason), note="unknown" if creason is None else ""),
-             CostLine(name="retries", monthly_usd=_q(retries), note=f"retry_rate {retry_rate} (assumed)")]
+             CostLine(name="reasoning", monthly_usd=_q(creason), note="unknown" if creason is None else "")]
+    lines += [CostLine(name=AUDIO_LINE[d], monthly_usd=_q(c), note=f"{_q(audio_tokens[d])} audio tokens per call")
+              for d, c in caudio.items()]
+    lines.append(CostLine(name="retries", monthly_usd=_q(retries), note=f"retry_rate {retry_rate} (assumed)"))
     gross = base + retries
     calls_eff = calls * (1 + retry_rate)
 
@@ -315,9 +339,50 @@ def stage_cost_row(feature: FeatureProfile, model: ModelProfile, stage: Stage, t
             warnings.append(f"{lv.lever} applies but its amount is unknown.")
     with_levers = gross + _sum_known(lv.monthly_delta_usd for lv in levers if lv.applies)
 
+    uses = Decimal(stage.active_users) * feature.uses_per_user_month
+    per_use = (with_levers / uses).quantize(MICRO) if uses else None
+    share = None
+    if per_use is not None and feature.revenue_per_use is not None:
+        if feature.revenue_per_use > 0:
+            share = (per_use / feature.revenue_per_use).quantize(Decimal("0.0001"))
+        else:
+            warnings.append("revenue_per_use is not positive; revenue share undefined.")
+        if share is not None and lower_bound and share <= 1:
+            warnings.append("Revenue share is a lower bound; unknown cost components are excluded.")
+
     return StageCostRow(**row, calls_per_month=calls, cost_per_call_usd=(gross / calls).quantize(MICRO) if calls else None,
                         lines=lines, gross_monthly_usd=_q(gross), levers=levers, monthly_with_levers_usd=_q(with_levers),
-                        lower_bound=lower_bound, warnings=warnings)
+                        cost_per_use_usd=per_use, revenue_share=share, lower_bound=lower_bound, warnings=warnings)
+
+
+def _audio_tokens_per_call(feature, model, tokens, direction) -> tuple[Optional[Decimal], Optional[str]]:
+    """Measured audio tokens when the usage fields carry them; otherwise seconds × per-second conversion."""
+    measured = None if tokens is None else getattr(tokens, AUDIO_FIELD[direction])
+    if measured is not None:
+        return Decimal(measured), None
+    if feature.audio_seconds_per_use is None:
+        return None, "audio_seconds_per_use unknown"
+    tps = None if model.audio is None else getattr(model.audio, AUDIO_TPS[direction])
+    if tps is None:
+        return None, f"{direction} per-second conversion unknown"
+    return feature.audio_seconds_per_use / feature.calls_per_use * tps, None
+
+
+def revenue_share_risks(feature: FeatureProfile, rows: list[StageCostRow]) -> list[Risk]:
+    """High-severity risk when AI cost per use exceeds revenue per use, one per candidate model."""
+    risks: list[Risk] = []
+    for model_id in dict.fromkeys(r.model_id for r in rows):
+        over = [r for r in rows if r.model_id == model_id and r.revenue_share is not None and r.revenue_share > 1]
+        if not over:
+            continue
+        worst = max(over, key=lambda r: r.revenue_share)
+        risks.append(Risk(
+            description=f"{feature.feature_id} on {model_id}: AI cost per use ${worst.cost_per_use_usd} is "
+                        f"{(worst.revenue_share * 100).quantize(Decimal('1'))}% of revenue per use ${feature.revenue_per_use} "
+                        f"at {', '.join(r.stage for r in over)}; each use loses money before any other cost.",
+            cause_class=RiskCause.unit_economics, severity="high",
+            triggered_by=[f"ai_features:{feature.feature_id}.revenue_per_use", *worst.rate_ids]))
+    return risks
 
 
 def _quality(feature: FeatureProfile, result: Optional[RubricResult]) -> tuple[Optional[str], bool, str]:
@@ -397,4 +462,5 @@ def stage_cost_table(feature: FeatureProfile, models: list[ModelProfile],
     if any(s.status != EvidenceStatus.verified for s in stages):
         warnings.append("Active users per stage are assumed and editable.")
     return StageCostTable(feature_id=feature.feature_id, stages=stages, rows=rows, threshold_usd=threshold_usd,
-                          switch_points=qualified, pending_switch_points=pending, warnings=warnings)
+                          switch_points=qualified, pending_switch_points=pending,
+                          risks=revenue_share_risks(feature, rows), warnings=warnings)

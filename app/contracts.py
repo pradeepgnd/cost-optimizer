@@ -68,6 +68,8 @@ class FounderBrief(BaseModel):
     quality_needs: list[str] = Field(default_factory=list)
     alternatives_considered: list[str] = Field(default_factory=list)
     usage: UsageAssumptions = Field(default_factory=UsageAssumptions)
+    ai_features: list[FeatureProfile] = Field(default_factory=list)          # 07 §2; not yet read by the controller
+    growth_stages: list[Stage] = Field(default_factory=lambda: default_stages())
     field_status: dict[str, EvidenceStatus] = Field(default_factory=dict)
     source: Optional[SourceRef] = None
 
@@ -82,6 +84,8 @@ class RateCategory(str, Enum):
     cache_write_tokens = "cache_write_tokens"                 # cached_input_tokens is the cache-read rate
     long_context_input_tokens = "long_context_input_tokens"   # whole-request rate above the threshold
     long_context_output_tokens = "long_context_output_tokens"
+    audio_input_tokens = "audio_input_tokens"
+    audio_output_tokens = "audio_output_tokens"
     credits = "credits"
     seat_month = "seat_month"
     hosting_month = "hosting_month"
@@ -117,12 +121,22 @@ class ModelPricingTerms(BaseModel):
     status: EvidenceStatus = EvidenceStatus.unknown
 
 
+class AudioConversion(BaseModel):
+    """Seconds of audio to billed audio tokens. Always an estimate until measured from API usage fields."""
+    input_tokens_per_second: Optional[Decimal] = None
+    output_tokens_per_second: Optional[Decimal] = None
+    basis: Literal["estimated"] = "estimated"
+    status: EvidenceStatus = EvidenceStatus.unverified
+    source: Optional[SourceRef] = None
+
+
 class ModelProfile(BaseModel):
     model_id: str                    # as exposed by Nightshift GET /v1/models
     provider_label: str              # e.g. "nvidia" — informational
     tier: Optional[Literal["frontier", "mid_tier", "open_source"]] = None
     rates: list[Rate]
     terms: ModelPricingTerms = Field(default_factory=ModelPricingTerms)
+    audio: Optional[AudioConversion] = None   # None == audio not priced for this model; stays unknown
     source: SourceRef
 
 
@@ -140,6 +154,9 @@ class FeatureProfile(BaseModel):
     description: str
     example_input: str
     mode: Literal["interactive", "background"]
+    modality: list[Literal["text", "audio_in", "audio_out"]] = Field(default_factory=lambda: ["text"])
+    audio_seconds_per_use: Optional[Decimal] = None   # applied to each audio direction in modality
+    revenue_per_use: Optional[Decimal] = None          # present -> AI cost per use as a share of revenue per use
     uses_per_user_month: Optional[Decimal] = None
     calls_per_use: Decimal = Decimal("1")
     static_prefix_tokens: int = 0    # instructions repeated on every call; part of the input
@@ -165,6 +182,8 @@ class TokenUsage(BaseModel):
     input_tokens: int
     output_tokens: int
     reasoning_tokens: Optional[int] = None   # None == unknown; never coerced to zero
+    audio_input_tokens: Optional[int] = None    # measured only; None -> estimated from seconds if the feature has audio
+    audio_output_tokens: Optional[int] = None
     basis: Literal["measured", "estimated"]
     method: str
 
@@ -318,7 +337,7 @@ class OperatingLedger(BaseModel):
 
 
 class CostLine(BaseModel):
-    name: Literal["input", "output", "reasoning", "retries"]
+    name: Literal["input", "output", "reasoning", "audio_input", "audio_output", "retries"]
     monthly_usd: Optional[Decimal]
     note: str = ""
 
@@ -344,6 +363,9 @@ class StageCostRow(BaseModel):
     gross_monthly_usd: Optional[Decimal]
     levers: list[LeverLine]
     monthly_with_levers_usd: Optional[Decimal]
+    cost_per_use_usd: Optional[Decimal] = None
+    revenue_per_use_usd: Optional[Decimal] = None
+    revenue_share: Optional[Decimal] = None   # AI cost per use / revenue per use; None when revenue absent
     lower_bound: bool = False        # True when an unknown component (e.g. reasoning tokens) is excluded
     rate_ids: list[str] = Field(default_factory=list)
     warnings: list[str] = Field(default_factory=list)
@@ -370,6 +392,7 @@ class StageCostTable(BaseModel):
     threshold_usd: Decimal
     switch_points: list[SwitchPoint] = Field(default_factory=list)          # cost and quality rule both met
     pending_switch_points: list[SwitchPoint] = Field(default_factory=list)  # cost met, quality not shown
+    risks: list[Risk] = Field(default_factory=list)
     warnings: list[str] = Field(default_factory=list)
 
 
@@ -411,6 +434,7 @@ class RiskCause(str, Enum):
     requirements_gap = "requirements_gap"
     scope_change = "scope_change"
     platform_limitation = "platform_limitation"
+    unit_economics = "unit_economics"
 
 
 class Risk(BaseModel):
@@ -456,3 +480,9 @@ class RunError(BaseModel):
     message: str
     recoverable: bool
     trace_path: Optional[str] = None
+
+
+# Resolve forward references to models defined further down this module.
+FounderBrief.model_rebuild()
+StageCostTable.model_rebuild()
+RunRequest.model_rebuild()
