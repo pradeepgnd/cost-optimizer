@@ -12,16 +12,16 @@ Owner: Narin · Drafted Oct 25, 2026 from two one-line ideas. Every number below
 
 | # | AI feature | Modality | Example input | Mode | Uses / user / month (assumed) |
 |---|---|---|---|---|---|
-| A1 | Transcribe the child's attempt | audio in → text | ~5 s utterance | interactive | 240 (12 sessions × 20 attempts) |
-| A2 | Choose the next target sentence and give feedback | text → text | "Level 2. Target: 'I want red ball.' Child said: 'want ball.'" | interactive | 240 |
-| A3 | Speak the target sentence aloud | text → audio out | ~3 s of speech | interactive | 240 |
-| A4 | Weekly progress summary for parent/therapist | text → text | One week of session logs (de-identified) | **background** (batch-eligible) | 4 |
+| A1 | Transcribe the child's attempt | audio in → text | ~5 s utterance | interactive | 960 (daily-style practice: 12 sessions a week, 48 a month × 20 attempts) |
+| A2 | Choose the next target sentence and give feedback | text → text | "Level 2. Target: 'I want red ball.' Child said: 'want ball.'" | interactive | 960 |
+| A3 | Speak the target sentence aloud | text → audio out | ~3 s of speech | interactive | 960 |
+| A4 | Weekly progress summary for parent/therapist | text → text | One week of session logs (de-identified). Example: a synthetic 12-session week, no names or ages, in `input_examples/example_1.json` | **background** (batch-eligible) | 4 |
 
 **Assumed growth:** 50 → 500 → 5,000 → 50,000 families. **AI budget ceiling:** unknown. **Price:** unknown (cost-only report).
 
 **What this idea tests in the tool**
 - **Audio economics.** A1 and A3 are priced per second of audio. That's the session's modality method, automated. Audio components are *estimated* from published per-second conversions. Only A2 and A4 are *measured* through Nightshift. The pack says which is which.
-- **Cost driver.** At 240 uses per child per month, the per-attempt loop dominates. The tool should show whether A2 can move to Nemotron without failing the rubric, and when.
+- **Cost driver.** At 960 uses per child per month, the per-attempt loop dominates. The tool should show whether A2 can move to Nemotron without failing the rubric, and when.
 - **Non-cost stack alternative.** On-device or self-hosted open-source speech recognition keeps a child's voice off third-party servers. The tool should list it as a privacy-driven stack option, not only a cost option.
 - **Risks the tool should flag (not legal advice):** children's voice data and parental consent (e.g. COPPA in the US); health-adjacent use if therapists are involved; the app supports therapy and does not replace it.
 
@@ -36,8 +36,8 @@ Owner: Narin · Drafted Oct 25, 2026 from two one-line ideas. Every number below
 | # | AI feature | Modality | Example input | Mode | Uses (assumed) |
 |---|---|---|---|---|---|
 | B1 | Parse an agent's service request into a structured quote | text → JSON | "Need 200 geocoding lookups, pay ≤ $0.40 total" | interactive, **per transaction** | 10,000 transactions per active agent per month |
-| B2 | Explain a flagged transaction | text → text | Transaction record + anomaly signals | background | 1% of transactions |
-| B3 | Dispute or receipt summary | text → text | Transaction thread | on demand | 0.1% of transactions |
+| B2 | Explain a flagged transaction | text → text | Transaction record + anomaly signals. Example: a synthetic held transaction with three signals in `input_examples/example_2.json` | background | 1% of transactions |
+| B3 | Dispute or receipt summary | text → text | Transaction thread. Example: a synthetic six-message dispute in `input_examples/example_2.json` | on demand | 0.1% of transactions |
 
 **Assumed growth:** 50 → 500 → 5,000 → 50,000 active agents. **Average transaction value (assumed):** $0.02. **Gateway take rate (assumed):** 1%, i.e. $0.0002 revenue per transaction.
 
