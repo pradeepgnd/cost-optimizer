@@ -4,12 +4,18 @@ before it is trusted. It fails visibly when config is absent."""
 from __future__ import annotations
 
 import os
+import hashlib
+import json
+from pathlib import Path
 import time
 import uuid
 
 import httpx
 
 from app.adapters.base import DataLayer, require_env as _env
+from app.adapters.validation import sql_rows, validate_select_one
+
+ADAPTER_REVISION = hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
 
 
 class ZetarisDataLayer(DataLayer):
@@ -35,15 +41,36 @@ class ZetarisDataLayer(DataLayer):
     def _run_sql(self, sql: str, limit: int = 50) -> dict:
         qid = str(uuid.uuid4())
         headers = {"Authorization": f"Bearer {self.key}", "X-Org-ID": self.org,
-                   "X-Request-ID": str(uuid.uuid4()), "Content-Type": "application/json"}
+                   "X-Request-ID": qid, "Content-Type": "application/json"}
         body = {"queryId": qid, "sql": sql, "limit": limit}   # confirm field names against installed schema
-        t0 = time.time()
-        r = self.client.post(f"{self.base}/sql-editor/sqls/run", headers=headers, json=body)
-        r.raise_for_status()
-        data = r.json()
-        if self.trace:
-            self.trace.event("Analyst", "zetaris_query", query_id=qid,
-                             input_summary=sql[:200], output_summary=f"HTTP {r.status_code}, {len(str(data))} bytes, {round(time.time()-t0,2)}s")
+        config_ref = hashlib.sha256(json.dumps({"base": self.base, "org": self.org, "limit": limit,
+                                                "source": self.src, "sql": sql}, sort_keys=True).encode()).hexdigest()
+        context = {"adapter_revision": ADAPTER_REVISION, "configuration_ref": config_ref}
+
+        def event(action, status, **kwargs):
+            if self.trace:
+                self.trace.event("Analyst", action, status=status, query_id=qid, operation_id=qid,
+                                 input_summary=sql, execution_kind="live_data", **kwargs)
+
+        event("zetaris_query_attempt", "pending", extra=context)
+        t0 = time.monotonic()
+        response = None
+        try:
+            response = self.client.post(f"{self.base}/sql-editor/sqls/run", headers=headers, json=body)
+            response.raise_for_status()
+            data = response.json()
+            sql_rows(data)
+            if sql.strip().upper() == "SELECT 1":
+                validate_select_one(data)
+        except Exception as error:
+            event("zetaris_query", "error", output_summary=f"{type(error).__name__}: {error}",
+                  route_id=response.headers.get("x-request-id") if response is not None else None,
+                  extra={**context, "elapsed_s": round(time.monotonic() - t0, 3),
+                         "http_status": response.status_code if response is not None else None})
+            raise
+        event("zetaris_query", "success", output_summary=f"HTTP {response.status_code}; {len(sql_rows(data))} rows",
+              route_id=response.headers.get("x-request-id"),
+              extra={**context, "elapsed_s": round(time.monotonic() - t0, 3), "http_status": response.status_code})
         return data
 
     # The row->model mapping below depends on how Isioma registers the sources; finalize after first real query.

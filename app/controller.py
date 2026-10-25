@@ -7,7 +7,7 @@ deterministic rubric checks and human review decide pass/fail; the Critic only f
 action; at most one validated repair; then the stage cost tables and the model stack.
 
 Hard limits per approved run: 1 Planner call, 1 Critic call, ≤1 revision (repair) call;
-candidate generations ≤ 30; ≤ 2 transport retries globally.
+≤30 total inference dispatches including retries; ≤2 pre-dispatch retries globally.
 
 Sealed-source rule (architecture §5): retrospective_actuals and holdout task rows are
 readable only in state >= frozen, and never by Planner/Analyst/Critic prompts.
@@ -15,9 +15,7 @@ readable only in state >= frozen, and never by Planner/Analyst/Critic prompts.
 from __future__ import annotations
 
 import json
-import sqlite3
 import uuid
-from dataclasses import dataclass, field
 from decimal import Decimal, ROUND_HALF_UP
 from typing import Optional
 
@@ -25,21 +23,19 @@ from app.adapters.base import DataLayer, Inference, Memory, SetupIncomplete
 from app.contracts import (
     ActionProposal, ActionType, BuildPanel, Critique, CritiqueFinding, DecisionPack, EvidenceGap, EvidenceStatus,
     FeatureProfile, FeatureRun, FeatureSample, ModelProfile, ModelStackEntry, Observation, OutputCapRerun,
-    RateCategory, Revision, Risk, RiskCause, RunRequest, RunState, ShortlistEntry, SourceRef, TokenUsage,
+    Revision, Risk, RiskCause, RunRequest, RunState, ShortlistEntry, SourceRef, TokenUsage,
 )
-from app.economics import (SIZE_MULTIPLIER, build_ledger, cost_per_call, estimate_feature_tokens,
+from app.economics import (SIZE_MULTIPLIER, build_ledger, estimate_feature_tokens,
                            recommend_model_stack, stage_cost_table)
 from app.rubric import evaluate, json_fields_requested, parse_json_object
 from app.trace import Trace
+from app.dispatch import (Budget, Checkpoints, Dispatcher, DuplicateRun, StopRun,
+                          MAX_DISPATCHES, MAX_OUTPUT_TOKENS, measured_usage)
 
-MAX_ROLE_CALLS = {"Planner": 1, "Critic": 1, "Revision": 1}
-MAX_CANDIDATE_GENERATIONS = 30
-MAX_TRANSPORT_RETRIES = 2
+MAX_CANDIDATE_GENERATIONS = MAX_DISPATCHES  # compatibility name; the cap now includes every role and retry
 SAMPLES_PER_PAIR = 2                      # 07 §7 call budget; 1 when 2 would not fit under the cap
 CANDIDATE_TIERS = ("frontier", "mid_tier", "open_source")
 AUTO_ROUTE = "meterless/auto"             # a router alias, never a candidate or a Critic route
-DEFAULT_RESERVATION = Decimal("0.05")     # per call, when rates or estimates are unknown
-RESERVATION_HEADROOM = Decimal("3")       # estimated per-call cost × 3, reconciled to the measured cost
 MAX_DOMAIN_RISKS = 8
 CRITIC_FINDING_KINDS = {"unsupported_claim", "token_gap", "output_too_long"}
 VERDICT_KEYS = {"pass", "passed", "passes", "fail", "failed", "verdict", "score", "grade", "approved"}
@@ -60,83 +56,10 @@ ALLOWLIST = {
 SEALED = {"retrospective_actuals", "dev_task_cases:holdout"}
 
 
-class DuplicateRun(Exception):
-    """A run_id that already exists is refused before any state change or dispatch."""
-
-
-class StopRun(Exception):
-    def __init__(self, state: RunState, reason: str, questions: Optional[list[str]] = None):
-        self.state, self.reason, self.questions = state, reason, questions or []
-
-
-@dataclass
-class Budget:
-    max_spend: Decimal
-    spent: Decimal = Decimal("0")
-    role_calls: dict = field(default_factory=lambda: {"Planner": 0, "Critic": 0, "Revision": 0})
-    candidate_generations: int = 0
-    transport_retries: int = 0
-
-    def reserve_role(self, role: str):
-        if self.role_calls[role] >= MAX_ROLE_CALLS[role]:
-            raise StopRun(RunState.partial, f"{role} call limit reached")
-        self.role_calls[role] += 1
-
-    def reserve_spend(self, est_cost: Decimal):
-        if self.spent + est_cost > self.max_spend:
-            raise StopRun(RunState.partial, f"spend reservation {self.spent + est_cost} exceeds max_spend {self.max_spend}")
-        self.spent += est_cost
-
-    def reserve_generation(self, est_cost: Decimal):
-        if self.candidate_generations >= MAX_CANDIDATE_GENERATIONS:
-            raise StopRun(RunState.partial, f"candidate generation cap ({MAX_CANDIDATE_GENERATIONS}) reached")
-        self.reserve_spend(est_cost)
-        self.candidate_generations += 1
-
-    def reconcile(self, reserved: Decimal, actual: Optional[Decimal]):
-        """Replace a reservation with the measured cost once known; an unknown cost keeps the reservation."""
-        if actual is not None:
-            self.spent += actual - reserved
-
-
-class Checkpoints:
-    """SQLite operational store: idempotency, per-call checkpoints. Not a data layer, not memory."""
-
-    def __init__(self, path: str = "runs.db"):
-        self.conn = sqlite3.connect(path)
-        self.conn.execute("CREATE TABLE IF NOT EXISTS runs (run_id TEXT PRIMARY KEY, state TEXT, pack TEXT)")
-        self.conn.execute("CREATE TABLE IF NOT EXISTS events (run_id TEXT, seq INTEGER, kind TEXT, payload TEXT)")
-        self.conn.commit()
-
-    def claim(self, run_id: str) -> bool:
-        try:
-            self.conn.execute("INSERT INTO runs (run_id, state) VALUES (?, ?)", (run_id, RunState.approved.value))
-            self.conn.commit()
-            return True
-        except sqlite3.IntegrityError:
-            return False
-
-    def set_state(self, run_id: str, state: RunState):
-        self.conn.execute("UPDATE runs SET state=? WHERE run_id=?", (state.value, run_id))
-        self.conn.commit()
-
-    def save_pack(self, run_id: str, pack: DecisionPack):
-        self.conn.execute("UPDATE runs SET pack=? WHERE run_id=?", (pack.model_dump_json(), run_id))
-        self.conn.commit()
-
-
 def _measured_usage(usage: dict) -> tuple[Optional[TokenUsage], Optional[str]]:
     """TokenUsage from OpenAI-compatible usage fields only; completion_tokens already includes reasoning."""
-    pt, ct = usage.get("prompt_tokens"), usage.get("completion_tokens")
-    if not isinstance(pt, int) or not isinstance(ct, int):
-        return None, "response carried no prompt_tokens/completion_tokens"
-    rt = (usage.get("completion_tokens_details") or {}).get("reasoning_tokens")
-    try:
-        return TokenUsage(input_tokens=Decimal(pt), output_tokens=Decimal(ct),
-                          reasoning_tokens=None if not isinstance(rt, int) else Decimal(rt),
-                          basis="measured", method="API usage fields"), None
-    except ValueError:
-        return None, "reasoning_tokens exceeds completion_tokens; confirm Nightshift usage semantics"
+    result = measured_usage(usage)
+    return result, None if result is not None else "invalid or missing API usage; confirm Nightshift usage semantics"
 
 
 def _mean_usage(usages: list[TokenUsage]) -> TokenUsage:
@@ -195,19 +118,10 @@ class Controller:
             raise StopRun(RunState.failed, "proposal attempted to change a founder constraint")
         return p
 
-    def _call(self, role: str, model: str, system: str, user: str, budget: Budget, max_tokens: Optional[int] = None):
-        """One Nightshift request with the global transport-retry budget. SetupIncomplete is never swallowed."""
-        while True:
-            try:
-                return self.inf.complete(role=role, model=model, system=system, user=user, max_tokens=max_tokens)
-            except SetupIncomplete:
-                raise
-            except Exception as e:  # transport or HTTP failure
-                if budget.transport_retries >= MAX_TRANSPORT_RETRIES:
-                    raise StopRun(RunState.partial, f"{role} request to {model} failed: {type(e).__name__}: {str(e)[:200]}")
-                budget.transport_retries += 1
-                self.trace.event(role, "transport_retry", status="error", retry_count=budget.transport_retries,
-                                 requested_model=model, output_summary=f"{type(e).__name__}: {str(e)[:200]}")
+    def _call(self, role: str, model: str, system: str, user: str, budget: Budget,
+              max_tokens: Optional[int] = None, logical_id: Optional[str] = None):
+        return self.dispatcher.call(logical_id=logical_id or role.lower(), role=role, model=model,
+                                    system=system, user=user, max_tokens=MAX_OUTPUT_TOKENS if max_tokens is None else max_tokens)
 
     # -------------------------------------------------------------- run
 
@@ -215,7 +129,9 @@ class Controller:
         self.run_id = req.run_id
         budget = Budget(max_spend=req.max_spend_usd)
         pack = DecisionPack(run_id=req.run_id, project_id=req.project_id, execution_mode=self.mode,
-                            status=RunState.approved, trace_path=str(self.trace.path))
+                            status=RunState.approved, trace_path=str(self.trace.path),
+                            monthly_ai_budget_usd=req.brief.monthly_ai_budget_usd,
+                            switch_threshold_usd=req.brief.switch_threshold_usd, sampling_profile=req.sampling_profile)
 
         if not self.ckpt.claim(req.run_id):
             raise DuplicateRun(f"run_id {req.run_id} already exists; idempotent refusal, no work dispatched")
@@ -244,6 +160,8 @@ class Controller:
                     if st != EvidenceStatus.verified:
                         self.gaps.append(EvidenceGap(field=f"ai_features:{f.feature_id}.{fld}", status=st,
                                                      note="founder estimate or default; editable"))
+            if brief.monthly_ai_budget_usd is not None:
+                self.limitations.append("Monthly AI budget ceiling is recorded; total monthly stack cost is not yet calculated, so budget fit is unknown.")
 
             # 2. Pricing evidence and candidates
             self._transition(RunState.investigating)
@@ -252,6 +170,7 @@ class Controller:
                 raise StopRun(RunState.needs_input, "pricing unavailable", ["Which models and approaches should be priced?"])
             approaches = self.data.read_approaches()
             models = self.data.read_models()
+            self.dispatcher = Dispatcher(self.inf, self.ckpt, req.run_id, budget, models, self.trace)
             self.evidence += [a.source for a in approaches] + [m.source for m in models]
             route_list = self.inf.list_models() if self.mode == "live" else []   # GET /v1/models is free
             candidates, pack.candidate_shortlist = self._candidates(models, set(route_list) if self.mode == "live" else None)
@@ -301,6 +220,14 @@ class Controller:
                               ["Approve the bounded feature evaluation and confirm max_spend_usd."])
 
             # 7. Planner: domain risks only, live only
+            pairs = sum(self._not_executable(f) is None for f in brief.ai_features) * len(candidates)
+            self.samples_per_pair = (2 if req.sampling_profile == "production" and pairs * 2 + 5 <= MAX_DISPATCHES else 1)
+            pack.selected_samples_per_pair = self.samples_per_pair if self.mode == "live" and pairs else 0
+            if self.mode == "live":
+                self.limitations.append(f"Sampling plan: {self.samples_per_pair} sample(s) per executable pair; "
+                                        f"{pairs * self.samples_per_pair + 5} maximum planned dispatch slots including Planner, Critic, one repair and two retries.")
+                self.dispatcher.validate_routes({self.planner_model or self.critic_model, self.critic_model,
+                                                 *(m.model_id for m in candidates)})
             pack.risks += self._domain_risks(brief, budget)
 
             # 8. Sampling
@@ -308,14 +235,12 @@ class Controller:
             self._sample(brief, candidates, runs, budget, req)
 
             # 9. Critic flags, one proposal; the controller validates it
-            budget.reserve_role("Critic")
             critique, target = self._critique(brief, runs, budget)
             pack.critiques.append(critique)
 
             # 10. At most one validated repair: a measured re-run with an output cap
             if target is not None:
                 self._transition(RunState.repair)
-                budget.reserve_role("Revision")
                 rev, rerun = self._repair(brief, candidates, runs, target, budget, req)
                 pack.revisions.append(rev)
                 repairs.append(rerun)
@@ -328,6 +253,8 @@ class Controller:
             self._transition(s.state)
             pack.status = s.state
             self.limitations.append(s.reason)
+            if s.evidence_field:
+                self.gaps.append(EvidenceGap(field=s.evidence_field, status=EvidenceStatus.unknown, note=s.reason))
             pack.questions = s.questions
             self.trace.event("Controller", "stop", status=s.state.value, output_summary=s.reason)
 
@@ -348,6 +275,10 @@ class Controller:
         pack.evidence_gaps = self.gaps
         pack.memory_ids = self.memory_ids
         pack.spend_usd = budget.spent
+        pack.reserved_spend_usd = budget.held
+        pack.dispatch_count = budget.dispatch_count
+        pack.transport_retries = budget.transport_retries
+        pack.operations = self.ckpt.operations(req.run_id)
         pack.limitations = list(dict.fromkeys(self.limitations))
         if self.mode == "sample":
             pack.limitations.insert(0, "SAMPLE/OFFLINE: no live inference; tokens estimated with the 4/3 rule; rubric "
@@ -474,12 +405,17 @@ class Controller:
         by_cap = {cap: [a.approach_id for a in approaches if self._devops_ok(a.requires_devops, cap)]
                   for cap in ("none", "basic", "full")}
         panel = BuildPanel(eligible_by_devops_capacity=by_cap)
+        if not brief.features_v1:
+            panel.reasons.append("No build scope provided; build costs are unknown, not zero.")
+            panel.questions.append("Build panel: optionally add build features and constraints to compare build approaches.")
         devops_status = self._constraint_status(c, "devops_capacity")
         if devops_status in (EvidenceStatus.assumed, EvidenceStatus.unknown) and len({tuple(v) for v in by_cap.values()}) > 1:
             panel.reasons.append(f"devops_capacity is {devops_status.value}, and it decides which approaches are eligible; "
                                  "no build ranking until it is stated.")
             panel.questions.append("Build panel: what DevOps work can the founder take on? " +
                                    "; ".join(f"{cap}: {len(ids)} eligible ({', '.join(ids) or 'none'})" for cap, ids in by_cap.items()) + ".")
+            return panel
+        if not brief.features_v1:
             return panel
         eligible = [a for a in approaches if self._devops_ok(a.requires_devops, c.devops_capacity)]
         if not eligible:
@@ -528,7 +464,7 @@ class Controller:
             return EvidenceStatus.unknown
         if name not in constraints.model_fields_set:
             return EvidenceStatus.assumed
-        return constraints.status
+        return constraints.field_status.get(name, constraints.status)
 
     def _risks(self, brief, approaches, ledgers) -> list[Risk]:
         """General signals only: rate status, compute-heavy scope, assumed rework, unstated constraints."""
@@ -577,8 +513,6 @@ class Controller:
             self.trace.event("Planner", "domain_risk_review", execution_kind="rule_policy",
                              output_summary="domain risk review requires live mode")
             return []
-        budget.reserve_role("Planner")
-        budget.reserve_spend(DEFAULT_RESERVATION)
         ids = [f.feature_id for f in brief.ai_features]
         user = json.dumps({"idea": brief.product_concept, "target_user": brief.target_user,
                            "features": [{"feature_id": f.feature_id, "description": f.description, "mode": f.mode,
@@ -621,30 +555,17 @@ class Controller:
             parts.append("Requirements: " + "; ".join(c.description for c in f.rubric_checks) + ".")
         return " ".join(parts)
 
-    @staticmethod
-    def _rates(m: ModelProfile):
-        r = {x.category: x.usd_per_unit for x in m.rates}
-        return r.get(RateCategory.input_tokens), r.get(RateCategory.output_tokens)
-
-    def _reservation(self, m: ModelProfile, est: Optional[TokenUsage]) -> Decimal:
-        p_in, p_out = self._rates(m)
-        if est is None or p_in is None or p_out is None:
-            return DEFAULT_RESERVATION
-        return cost_per_call(est, p_in, p_out) * RESERVATION_HEADROOM
-
     def _execute(self, f: FeatureProfile, m: ModelProfile, est, budget: Budget, ref: str,
                  max_tokens: Optional[int] = None) -> FeatureSample:
-        reserved = self._reservation(m, est)
-        budget.reserve_generation(reserved)
-        res = self._call("Analyst", m.model_id, self._prompt(f), f.example_input, budget, max_tokens=max_tokens)
+        role = "Revision" if ref.endswith("/repair") else "Analyst"
+        res = self._call(role, m.model_id, self._prompt(f), f.example_input, budget, max_tokens=max_tokens, logical_id=ref)
         usage, why = _measured_usage(res.get("usage") or {})
-        p_in, p_out = self._rates(m)
-        budget.reconcile(reserved, None if usage is None or p_in is None or p_out is None else cost_per_call(usage, p_in, p_out))
         if why:
             self.limitations.append(f"{f.feature_id} on {m.model_id}: {why}; its cost uses the estimate.")
         s = FeatureSample(output_ref=ref, output_text=res["text"], usage=usage, raw_usage=res.get("usage") or {},
                           latency_s=res.get("elapsed_s"), requested_model=res.get("requested_model"),
-                          resolved_model=res.get("resolved_model"), route_id=res.get("route_id"), max_tokens=max_tokens)
+                          resolved_model=res.get("resolved_model"), route_id=res.get("route_id"),
+                          max_tokens=MAX_OUTPUT_TOKENS if max_tokens is None else max_tokens)
         self.trace.event("Analyst", "run_feature", model=res.get("resolved_model"), requested_model=res.get("requested_model"),
                          route_id=res.get("route_id"), execution_kind=res["execution_kind"], input_summary=ref,
                          output_summary="usage unavailable" if usage is None else
@@ -674,15 +595,17 @@ class Controller:
                              output_summary=f"sample mode: {len(executable)} feature × candidate pairs not executed; "
                                             "no outputs produced; rubric checks not run")
             return
-        n = SAMPLES_PER_PAIR if len(executable) * SAMPLES_PER_PAIR + 1 <= MAX_CANDIDATE_GENERATIONS else 1
+        n = self.samples_per_pair
         if n < SAMPLES_PER_PAIR:
             self.limitations.append(f"{len(executable)} feature × candidate pairs: one sample each to fit the generation cap.")
         by_id = {m.model_id: m for m in candidates}
         for key in executable:
             f, m, run = features[key[0]], by_id[key[1]], runs[key]
-            samples = [self._execute(f, m, run.estimated, budget, f"{self.run_id}/{f.feature_id}/{m.model_id}/s{i + 1}")
-                       for i in range(n)]
-            self._finish_run(run, f, samples, req)
+            samples = []
+            for i in range(n):
+                samples.append(self._execute(f, m, run.estimated, budget, f"{self.run_id}/{f.feature_id}/{m.model_id}/s{i + 1}"))
+                # Preserve successful samples even when a later operation becomes unknown or exceeds the budget.
+                self._finish_run(run, f, list(samples), req)
 
     # ---------------------------------------------------------- Critic
 
@@ -696,7 +619,6 @@ class Controller:
                             controller_decision="no_change",
                             proposed_action=ActionProposal(action=ActionType.finalize, concise_reason=why,
                                                            expected_observation="none", proposed_by="rule_policy")), None
-        budget.reserve_spend(DEFAULT_RESERVATION)
         features = {f.feature_id: f for f in brief.ai_features}
         payload = [{"feature_id": r.feature_id, "model_id": r.model_id,
                     "rubric": [c.description for c in features[r.feature_id].rubric_checks],
@@ -803,7 +725,8 @@ class Controller:
             pair = [runs[(f.feature_id, m.model_id)] for m in candidates]
             tokens = {r.model_id: r.measured_mean for r in pair if r.measured_mean is not None}
             rubric = [r.rubric for r in pair if r.rubric is not None]
-            table = stage_cost_table(f, candidates, tokens, brief.growth_stages, rubric, output_caps=self.output_caps)
+            table = stage_cost_table(f, candidates, tokens, brief.growth_stages, rubric,
+                                     threshold_usd=brief.switch_threshold_usd, output_caps=self.output_caps)
             pack.stage_tables.append(table)
             pack.risks += table.risks
             if live_executed:   # features that could not run (audio) are reported as "no candidate passes", with why

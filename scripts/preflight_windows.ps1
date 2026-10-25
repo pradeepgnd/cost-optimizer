@@ -23,15 +23,29 @@ param(
   [string]$ZetarisApiKey = "",
   [string]$NightshiftUrl = "",
   [string]$NightshiftToken = "",
-  [string]$ReportPath = ".\preflight_report.md"
+  [string]$ReportPath = ".\preflight_report.md",
+  [string]$PythonExecutable = "python"
 )
 
 $ErrorActionPreference = "Continue"
 $results = New-Object System.Collections.Generic.List[object]
+$projectRoot = Split-Path $PSScriptRoot -Parent
 
 function Add-Check {
   param([string]$Area, [string]$Check, [string]$Status, [string]$Detail)
+  foreach ($secret in @($ZetarisApiKey, $NightshiftToken)) {
+    if ($secret) { $Detail = $Detail.Replace($secret, "...redacted") }
+  }
+  $Detail = $Detail -replace '(?i)Bearer\s+[^\s,;]+', '...redacted'
   $results.Add([pscustomobject]@{ Area = $Area; Check = $Check; Status = $Status; Detail = $Detail })
+}
+
+function Test-SelectOneBody {
+  param([string]$Body)
+  if (-not (Get-Command $PythonExecutable -ErrorAction SilentlyContinue)) { return $false }
+  $validator = 'import json,sys; sys.path.insert(0,sys.argv[1]); from app.adapters.validation import validate_select_one; validate_select_one(json.loads(sys.stdin.read()))'
+  $Body | & $PythonExecutable -c $validator $projectRoot 2>$null | Out-Null
+  return ($LASTEXITCODE -eq 0)
 }
 
 # Thresholds from the Participant Setup Guide / Technical Execution Guide
@@ -153,7 +167,11 @@ if ($ZetarisUrl) {
     $body = @{ queryId = [guid]::NewGuid().ToString(); sql = "SELECT 1"; limit = 1 } | ConvertTo-Json
     try {
       $r = Invoke-WebRequest -Uri "$base/sql-editor/sqls/run" -Method POST -Headers $headers -Body $body -TimeoutSec 30 -UseBasicParsing -ErrorAction Stop
-      Add-Check "Zetaris" "SELECT 1 via REST" "PASS" "HTTP $($r.StatusCode); body length $($r.Content.Length). Save the raw body (redact nothing; it contains no secrets) as docs/zetaris_select1_response.json for the adapter author."
+      if (Test-SelectOneBody $r.Content) {
+        Add-Check "Zetaris" "SELECT 1 via REST" "PASS" "Validated exactly one cell with value 1; HTTP $($r.StatusCode)."
+      } else {
+        Add-Check "Zetaris" "SELECT 1 via REST" "FAIL" "SQL result validation failed. Check the installed response mapping and configured Python environment. HTTP success alone is insufficient."
+      }
     } catch {
       Add-Check "Zetaris" "SELECT 1 via REST" "FAIL" "$($_.Exception.Message). Check the installed API reference: body field names (queryId/sql/source/limit) follow the installed schema."
     }
@@ -169,10 +187,14 @@ if ($NightshiftUrl) {
     $h = @{ Authorization = "Bearer $NightshiftToken"; "meterless-app" = "llm-cost-intelligence-preflight"; "meterless-scope" = "user" }
     try {
       $r = Invoke-WebRequest -Uri "$nbase/models" -Method GET -Headers $h -TimeoutSec 20 -UseBasicParsing -ErrorAction Stop
-      $models = ($r.Content | ConvertFrom-Json).data | ForEach-Object { $_.id }
+      if (-not (Get-Command $PythonExecutable -ErrorAction SilentlyContinue)) { throw "Configured Python executable is unavailable." }
+      $validator = 'import json,sys; sys.path.insert(0,sys.argv[1]); from app.adapters.validation import parse_model_discovery; print(json.dumps(parse_model_discovery(json.loads(sys.stdin.read()))))'
+      $validated = $r.Content | & $PythonExecutable -c $validator $projectRoot 2>$null
+      if ($LASTEXITCODE -ne 0) { throw "Model discovery validation failed; check response structure and configured Python environment." }
+      $models = @($validated | ConvertFrom-Json)
       $nemo = $models | Where-Object { $_ -match "nemotron" }
       Add-Check "Nightshift" "GET /v1/models" "PASS" "$($models.Count) routes: $($models -join ', ')"
-      Add-Check "Nightshift" "Nemotron route visible" ($(if ($nemo) {"PASS"} else {"WARN"})) ($(if ($nemo) {$nemo -join ', '} else {"none; configure NVIDIA in Providers and a Nemotron lane. meterless/auto is not a Nemotron ID."}))
+      Add-Check "Nightshift" "Nemotron route visible (discovery only)" ($(if ($nemo) {"PASS"} else {"WARN"})) ($(if ($nemo) {($nemo -join ', ') + "; working-feature identity remains unverified"} else {"none; configure NVIDIA in Providers and a Nemotron lane. meterless/auto is not a Nemotron ID."}))
     } catch {
       Add-Check "Nightshift" "GET /v1/models" "FAIL" "$($_.Exception.Message) at $nbase (is the desktop runtime running? token from Console?)"
     }
@@ -182,12 +204,15 @@ if ($NightshiftUrl) {
 # Report
 $fails = ($results | Where-Object Status -eq "FAIL").Count
 $warns = ($results | Where-Object Status -eq "WARN").Count
-$verdict = if ($fails -eq 0 -and $warns -eq 0) { "READY" } elseif ($fails -eq 0) { "READY WITH WARNINGS" } else { "NOT READY" }
+$skips = ($results | Where-Object Status -eq "SKIP").Count
+$unknowns = ($results | Where-Object Status -eq "UNKNOWN").Count
+$verdict = if ($fails -gt 0) { "NOT READY" } elseif ($skips -gt 0 -or $unknowns -gt 0) { "INCOMPLETE" } elseif ($warns -gt 0) { "PREFLIGHT CHECKS PASS WITH WARNINGS" } else { "PREFLIGHT CHECKS PASS" }
 
 $md = @()
 $md += "# Integration machine preflight"
 $md += ""
-$md += "Machine: $env:COMPUTERNAME | Run: $(Get-Date -Format 'yyyy-MM-dd HH:mm zzz') | Verdict: **$verdict** ($fails FAIL, $warns WARN)"
+$md += "Machine: $env:COMPUTERNAME | Run: $(Get-Date -Format 'yyyy-MM-dd HH:mm zzz') | Verdict: **$verdict** ($fails FAIL, $warns WARN, $skips SKIP, $unknowns UNKNOWN)"
+$md += "Machine/connectivity checks only. End-to-end sponsor readiness remains unverified; use the Python smoke diagnostic for request evidence."
 $md += ""
 $md += "| Area | Check | Status | Detail |"
 $md += "|---|---|---|---|"
@@ -200,3 +225,5 @@ $md -join "`n" | Set-Content -Path $ReportPath -Encoding UTF8
 $results | Format-Table -AutoSize -Wrap
 Write-Host ""
 Write-Host "Verdict: $verdict  ->  report written to $ReportPath"
+if ($fails -gt 0 -or $skips -gt 0 -or $unknowns -gt 0) { exit 1 }
+exit 0

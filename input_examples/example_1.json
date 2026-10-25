@@ -1,5 +1,5 @@
 {
- "schema_version": "1.0",
+ "schema_version": "1.1",
  "project_id": "proj-idea-a-speech-building",
  "run_id": "example-1",
  "brief": {
@@ -86,6 +86,8 @@
                      "static_prefix_tokens": "unknown"}
    }
   ],
+  "monthly_ai_budget_usd": null,
+  "switch_threshold_usd": "100",
   "growth_stages": [
    {"name": "Prototype", "active_users": 50, "status": "assumed"},
    {"name": "Launch", "active_users": 500, "status": "assumed"},

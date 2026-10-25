@@ -24,14 +24,29 @@ PIN = HERE / "PINNED_REVISION"
 _LOCK = threading.Lock()
 
 
+def bridge_selftest() -> dict:
+    """Parse the real bridge protocol; formatting or a substring cannot turn failure into success."""
+    missing = [path.name for path in (BRIDGE, PIN, HERE / "reference") if not path.exists()]
+    if missing:
+        raise SetupIncomplete(f"H-MEM bridge not installed: missing {', '.join(missing)}")
+    revision = PIN.read_text().strip()
+    if not revision:
+        raise ValueError("H-MEM pinned revision is empty")
+    out = subprocess.run(["node", str(BRIDGE), "--selftest"], capture_output=True, text=True, timeout=20)
+    if out.returncode != 0:
+        raise ValueError(f"H-MEM self-test exit {out.returncode}: {out.stderr[:200]}")
+    result = json.loads(out.stdout)
+    if not isinstance(result, dict) or result.get("status") != "ok":
+        raise ValueError("H-MEM self-test JSON status is not ok")
+    return result
+
+
 def offline_bridge_available() -> bool:
-    """True only when the pinned reference is present and its offline self-test passes."""
-    if not (BRIDGE.exists() and PIN.exists() and (HERE / "reference").exists()):
-        return False
+    """Self-test availability only; persistence/isolation/offline delegation require M07 evidence."""
     try:
-        out = subprocess.run(["node", str(BRIDGE), "--selftest"], capture_output=True, text=True, timeout=20)
-        return out.returncode == 0 and '"status": "ok"' in out.stdout.replace("'", '"')
-    except (OSError, subprocess.TimeoutExpired):
+        bridge_selftest()
+        return True
+    except (OSError, ValueError, SetupIncomplete, subprocess.TimeoutExpired):
         return False
 
 

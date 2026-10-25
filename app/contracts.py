@@ -7,9 +7,27 @@ from __future__ import annotations
 
 from decimal import Decimal
 from enum import Enum
-from typing import Literal, Optional
+from typing import Annotated, Literal, Optional
 
-from pydantic import BaseModel, Field, PrivateAttr, computed_field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, PrivateAttr, StringConstraints, computed_field, model_validator
+
+
+NonBlank = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
+NonNegativeDecimal = Annotated[Decimal, Field(ge=0, allow_inf_nan=False)]
+PositiveDecimal = Annotated[Decimal, Field(gt=0, allow_inf_nan=False)]
+Fraction = Annotated[Decimal, Field(ge=0, le=1, allow_inf_nan=False)]
+NonNegativeInt = Annotated[int, Field(ge=0, strict=True)]
+PositiveInt = Annotated[int, Field(gt=0, strict=True)]
+
+
+class PublicInput(BaseModel):
+    """Reject misspelled/unsupported founder controls instead of discarding them."""
+    model_config = ConfigDict(extra="forbid")
+
+
+def require_unique(values: list[str], label: str) -> None:
+    if len(set(values)) != len(values):
+        raise ValueError(f"{label} must be unique")
 
 
 # ---------------------------------------------------------------- provenance
@@ -33,45 +51,82 @@ class SourceRef(BaseModel):
 
 # -------------------------------------------------------------- founder brief
 
-class BuildConstraints(BaseModel):
-    cash_budget_usd: Optional[Decimal] = None
-    time_budget_weeks: Optional[Decimal] = None
-    team_size: int = 1
+class AssumptionInput(PublicInput):
+    """A supplied estimate stays assumed unless evidence was explicitly declared.
+
+    Defaults cannot acquire verified status from metadata alone. Null means
+    unknown. Preserve this metadata when serializing/reloading a request.
+    """
+    field_status: dict[str, EvidenceStatus] = Field(default_factory=dict)
+
+    @model_validator(mode="after")
+    def _record_assumptions(self):
+        statuses = dict(self.field_status)
+        excluded = {"field_status", "source", "status", "brief_id", "brief_version", "feature_id"}
+        declared = getattr(self, "status", EvidenceStatus.assumed)
+        if "status" not in self.model_fields_set:
+            declared = EvidenceStatus.assumed
+        for name in type(self).model_fields:
+            if name in excluded:
+                continue
+            value = getattr(self, name)
+            if value is None:
+                statuses[name] = EvidenceStatus.unknown
+            elif name not in self.model_fields_set:
+                statuses[name] = EvidenceStatus.assumed
+            else:
+                statuses.setdefault(name, declared)
+        object.__setattr__(self, "field_status", statuses)
+        return self
+
+
+class BuildConstraints(AssumptionInput):
+    cash_budget_usd: Optional[NonNegativeDecimal] = None
+    time_budget_weeks: Optional[NonNegativeDecimal] = None
+    team_size: PositiveInt = 1
     technical_skill: Literal["none", "scripting", "professional"] = "scripting"
     devops_capacity: Literal["none", "basic", "full"] = "none"
-    status: EvidenceStatus = EvidenceStatus.reconstructed
+    status: EvidenceStatus = EvidenceStatus.assumed
 
 
-class FeatureItem(BaseModel):
-    feature_id: str
-    title: str
+class FeatureItem(PublicInput):
+    feature_id: NonBlank
+    title: NonBlank
     size_class: Literal["S", "M", "L", "XL"]
     compute_heavy: bool = False
 
 
-class UsageAssumptions(BaseModel):
-    active_users: Optional[int] = None
-    workflows_per_user_month: Optional[Decimal] = None
-    calls_per_workflow: Optional[Decimal] = None
-    paying_fraction: Optional[Decimal] = None
-    subscription_price_usd: Optional[Decimal] = None
+class UsageAssumptions(AssumptionInput):
+    active_users: Optional[NonNegativeInt] = None
+    workflows_per_user_month: Optional[NonNegativeDecimal] = None
+    calls_per_workflow: Optional[PositiveDecimal] = None
+    paying_fraction: Optional[Fraction] = None
+    subscription_price_usd: Optional[NonNegativeDecimal] = None
     status: EvidenceStatus = EvidenceStatus.unknown
 
 
-class FounderBrief(BaseModel):
-    brief_id: str
-    brief_version: str
-    product_concept: str
-    target_user: str
-    features_v1: list[FeatureItem]
-    constraints: BuildConstraints
-    quality_needs: list[str] = Field(default_factory=list)
-    alternatives_considered: list[str] = Field(default_factory=list)
+class FounderBrief(AssumptionInput):
+    brief_id: NonBlank
+    brief_version: NonBlank
+    product_concept: NonBlank
+    target_user: NonBlank
+    features_v1: list[FeatureItem] = Field(default_factory=list)
+    constraints: BuildConstraints = Field(default_factory=BuildConstraints)
+    quality_needs: list[NonBlank] = Field(default_factory=list)
+    alternatives_considered: list[NonBlank] = Field(default_factory=list)
     usage: UsageAssumptions = Field(default_factory=UsageAssumptions)
-    ai_features: list[FeatureProfile] = Field(default_factory=list)          # 07 §2; not yet read by the controller
-    growth_stages: list[Stage] = Field(default_factory=lambda: default_stages())
-    field_status: dict[str, EvidenceStatus] = Field(default_factory=dict)
+    ai_features: list[FeatureProfile] = Field(default_factory=list)
+    growth_stages: list[Stage] = Field(default_factory=lambda: default_stages(), min_length=1)
+    monthly_ai_budget_usd: Optional[NonNegativeDecimal] = None
+    switch_threshold_usd: NonNegativeDecimal = Decimal("100")
     source: Optional[SourceRef] = None
+
+    @model_validator(mode="after")
+    def _unique_ids(self):
+        require_unique([f.feature_id for f in self.ai_features], "AI feature IDs")
+        require_unique([f.feature_id for f in self.features_v1], "Build feature IDs")
+        require_unique([s.name for s in self.growth_stages], "Stage names")
+        return self
 
 
 # --------------------------------------------------------- pricing snapshots
@@ -84,6 +139,8 @@ class RateCategory(str, Enum):
     cache_write_tokens = "cache_write_tokens"                 # cached_input_tokens is the cache-read rate
     long_context_input_tokens = "long_context_input_tokens"   # whole-request rate above the threshold
     long_context_output_tokens = "long_context_output_tokens"
+    long_context_cached_input_tokens = "long_context_cached_input_tokens"
+    long_context_cache_write_tokens = "long_context_cache_write_tokens"
     audio_input_tokens = "audio_input_tokens"
     audio_output_tokens = "audio_output_tokens"
     credits = "credits"
@@ -94,7 +151,7 @@ class RateCategory(str, Enum):
 class Rate(BaseModel):
     category: RateCategory
     unit: str                        # "1M tokens" | "credit" | "seat/month" | "month"
-    usd_per_unit: Optional[Decimal]  # None == unknown, and stays unknown
+    usd_per_unit: Optional[NonNegativeDecimal]  # None == unknown, and stays unknown
     status: EvidenceStatus
     source: SourceRef
 
@@ -104,27 +161,46 @@ class ApproachProfile(BaseModel):
     approach_id: str
     name: str
     rates: list[Rate]
-    credits_per_task_class: Optional[dict[str, Decimal]] = None  # S/M/L/XL -> credits, when the platform bills in credits
-    tokens_per_task_class: Optional[dict[str, Decimal]] = None   # S/M/L/XL -> tokens (in+out), when billed by token
+    credits_per_task_class: Optional[dict[str, NonNegativeDecimal]] = None  # S/M/L/XL -> credits, when the platform bills in credits
+    tokens_per_task_class: Optional[dict[str, NonNegativeDecimal]] = None   # S/M/L/XL -> tokens (in+out), when billed by token
     requires_devops: Literal["none", "basic", "full"] = "none"
     notes: list[str] = Field(default_factory=list)
     source: SourceRef
 
 
+class LeverCombination(BaseModel):
+    """A cited provider rule for an exact combination; pairwise support is not triple support."""
+    model_config = ConfigDict(extra="forbid")
+    levers: list[Literal["prompt_caching", "batch_api", "long_context_cliff"]] = Field(min_length=2, max_length=3)
+    supported: bool
+    source: SourceRef
+
+    @model_validator(mode="after")
+    def _distinct_levers(self):
+        require_unique(self.levers, "Levers in a pricing combination")
+        return self
+
+
 class ModelPricingTerms(BaseModel):
     """Provider terms that decide lever eligibility (07 §5.1). None == unknown, so the lever is not applied."""
-    cache_min_prefix_tokens: Optional[int] = None
-    cache_ttl_minutes: Optional[Decimal] = None
+    cache_min_prefix_tokens: Optional[NonNegativeInt] = None
+    cache_ttl_minutes: Optional[PositiveDecimal] = None
     batch_available: Optional[bool] = None
-    batch_discount: Optional[Decimal] = None          # 0.5 == 50% off input and output
-    long_context_threshold_tokens: Optional[int] = None
+    batch_discount: Optional[Fraction] = None          # 0.5 == 50% off input and output
+    long_context_threshold_tokens: Optional[NonNegativeInt] = None
+    lever_combinations: list[LeverCombination] = Field(default_factory=list)
     status: EvidenceStatus = EvidenceStatus.unknown
+
+    @model_validator(mode="after")
+    def _unique_combinations(self):
+        require_unique(["/".join(sorted(item.levers)) for item in self.lever_combinations], "Pricing combinations")
+        return self
 
 
 class AudioConversion(BaseModel):
     """Seconds of audio to billed audio tokens. Always an estimate until measured from API usage fields."""
-    input_tokens_per_second: Optional[Decimal] = None
-    output_tokens_per_second: Optional[Decimal] = None
+    input_tokens_per_second: Optional[NonNegativeDecimal] = None
+    output_tokens_per_second: Optional[NonNegativeDecimal] = None
     basis: Literal["estimated"] = "estimated"
     status: EvidenceStatus = EvidenceStatus.unverified
     source: Optional[SourceRef] = None
@@ -132,7 +208,7 @@ class AudioConversion(BaseModel):
 
 class IntelligenceScore(BaseModel):
     """A published capability index for a model. It only ranks the shortlist; it never replaces measurement."""
-    score: Decimal
+    score: NonNegativeDecimal
     score_source: str
     score_date: str
     status: EvidenceStatus = EvidenceStatus.unverified
@@ -142,15 +218,26 @@ class MarketReference(BaseModel):
     """A catalog snapshot (e.g. OpenRouter). Ranks the shortlist only; costs always use the price snapshots."""
     catalog: Literal["OpenRouter"] = "OpenRouter"
     snapshot_date: str
-    list_price_input_usd_per_m: Optional[Decimal] = None
-    list_price_output_usd_per_m: Optional[Decimal] = None
-    usage_rank: Optional[int] = None          # 1 == most used in the catalog snapshot
+    list_price_input_usd_per_m: Optional[NonNegativeDecimal] = None
+    list_price_output_usd_per_m: Optional[NonNegativeDecimal] = None
+    usage_rank: Optional[PositiveInt] = None          # 1 == most used in the catalog snapshot
     status: EvidenceStatus = EvidenceStatus.unverified
 
     @computed_field
     @property
     def label(self) -> str:
         return f"market reference ({self.catalog}, {self.snapshot_date})"
+
+
+class DispatchPolicy(PublicInput):
+    """Route-specific, cited upper bounds; never inferred from expected output or sample prices."""
+    max_prompt_bytes: PositiveInt
+    prompt_tokens_per_byte: PositiveDecimal
+    prompt_overhead_tokens: NonNegativeInt
+    max_output_tokens: PositiveInt
+    completion_limit_includes_reasoning: Literal[True]
+    billing_mode: Literal["input_output_only"]
+    source: SourceRef
 
 
 class ModelProfile(BaseModel):
@@ -164,6 +251,7 @@ class ModelProfile(BaseModel):
     intelligence: Optional[IntelligenceScore] = None
     market: Optional[MarketReference] = None
     source: SourceRef
+    dispatch_policy: Optional[DispatchPolicy] = None
 
 
 class ShortlistEntry(BaseModel):
@@ -185,7 +273,7 @@ class ShortlistEntry(BaseModel):
 CheckKind = Literal["max_words", "required_json_fields", "forbidden_terms", "regex", "human_review"]
 
 
-class RubricCheck(BaseModel):
+class RubricCheck(PublicInput):
     """A deterministic check on a model output; these and human review decide pass/fail, never a model.
 
     params by kind (json_field optional for all but required_json_fields: check one field of a JSON output):
@@ -195,8 +283,8 @@ class RubricCheck(BaseModel):
       regex                {"pattern": str, "must_match": bool = true, "ignore_case": bool = false}
       human_review         {}  no machine result; pending until a reviewer records one
     """
-    check_id: str
-    description: str
+    check_id: NonBlank
+    description: NonBlank
     kind: CheckKind = "human_review"
     params: dict = Field(default_factory=dict)
     critical: bool = True            # a cheaper model must pass every critical check to qualify a switch point
@@ -204,13 +292,27 @@ class RubricCheck(BaseModel):
     @model_validator(mode="after")
     def _params_match_kind(self):
         p = self.params
+        allowed = {
+            "max_words": {"limit", "json_field"},
+            "required_json_fields": {"fields"},
+            "forbidden_terms": {"terms", "json_field"},
+            "regex": {"pattern", "must_match", "ignore_case", "json_field"},
+            "human_review": set(),
+        }[self.kind]
+        if set(p) - allowed:
+            raise ValueError(f"rubric check {self.check_id}: unsupported params {sorted(set(p) - allowed)}")
+        if "json_field" in p and (not isinstance(p["json_field"], str) or not p["json_field"].strip()):
+            raise ValueError(f"rubric check {self.check_id}: json_field must be nonblank")
+        if any(key in p and not isinstance(p[key], bool) for key in ("must_match", "ignore_case")):
+            raise ValueError(f"rubric check {self.check_id}: matching flags must be booleans")
         ok = {
-            "max_words": lambda: isinstance(p.get("limit"), int) and p["limit"] > 0,
+            "max_words": lambda: type(p.get("limit")) is int and p["limit"] > 0,
             "required_json_fields": lambda: isinstance(p.get("fields"), list) and p["fields"]
-                                            and all(isinstance(f, str) for f in p["fields"]),
+                                            and all(isinstance(f, str) and f.strip() for f in p["fields"])
+                                            and len(set(p["fields"])) == len(p["fields"]),
             "forbidden_terms": lambda: isinstance(p.get("terms"), list) and p["terms"]
-                                       and all(isinstance(t, str) and t for t in p["terms"]),
-            "regex": lambda: isinstance(p.get("pattern"), str) and bool(p["pattern"]),
+                                       and all(isinstance(t, str) and t.strip() for t in p["terms"]),
+            "regex": lambda: isinstance(p.get("pattern"), str) and bool(p["pattern"].strip()),
             "human_review": lambda: True,
         }[self.kind]()
         if not ok:
@@ -224,48 +326,45 @@ class RubricCheck(BaseModel):
         return self
 
 
-class HumanReview(BaseModel):
+class HumanReview(PublicInput):
     """A reviewer's result for one check on one feature × model; it overrides the machine result."""
-    feature_id: str
-    model_id: str
-    check_id: str
+    feature_id: NonBlank
+    model_id: NonBlank
+    check_id: NonBlank
     passed: bool
-    reviewer: str
+    reviewer: NonBlank
     note: str = ""
 
 
-class FeatureProfile(BaseModel):
+class FeatureProfile(AssumptionInput):
     """One AI feature of the founder's SaaS idea. Volume fields are the founder's estimate."""
-    feature_id: str
-    description: str
-    example_input: str
+    feature_id: NonBlank
+    description: NonBlank
+    example_input: NonBlank
     mode: Literal["interactive", "background"]
-    modality: list[Literal["text", "audio_in", "audio_out"]] = Field(default_factory=lambda: ["text"])
-    audio_seconds_per_use: Optional[Decimal] = None   # applied to each audio direction in modality
-    revenue_per_use: Optional[Decimal] = None          # present -> AI cost per use as a share of revenue per use
-    uses_per_user_month: Optional[Decimal] = None
-    calls_per_use: Decimal = Decimal("1")
-    static_prefix_tokens: int = 0    # instructions repeated on every call; part of the input
-    expected_output_words: Optional[int] = None   # used only to estimate output tokens offline
+    modality: list[Literal["text", "audio_in", "audio_out"]] = Field(default_factory=lambda: ["text"], min_length=1)
+    audio_seconds_per_use: Optional[NonNegativeDecimal] = None   # applied to each audio direction in modality
+    revenue_per_use: Optional[NonNegativeDecimal] = None          # present -> AI cost per use as a share of revenue per use
+    uses_per_user_month: Optional[NonNegativeDecimal] = None
+    calls_per_use: PositiveDecimal = Decimal("1")
+    static_prefix_tokens: NonNegativeInt = 0    # instructions repeated on every call; part of the input
+    expected_output_words: Optional[NonNegativeInt] = None   # used only to estimate output tokens offline
     # Share of uses served from a cache of previously generated outputs (e.g. the same sentence spoken again);
     # a production-setup projection, not measured. distinct_outputs sizes the one-time cache fill.
-    output_reuse_rate: Optional[Decimal] = None
-    distinct_outputs: Optional[int] = None
+    output_reuse_rate: Optional[Fraction] = None
+    distinct_outputs: Optional[PositiveInt] = None
     rubric_checks: list[RubricCheck] = Field(default_factory=list)
-    field_status: dict[str, EvidenceStatus] = Field(default_factory=dict)
 
     @model_validator(mode="after")
-    def _reuse_in_range(self):
-        if self.output_reuse_rate is not None and not Decimal("0") <= self.output_reuse_rate <= Decimal("1"):
-            raise ValueError(f"{self.feature_id}: output_reuse_rate must be between 0 and 1")
-        if self.distinct_outputs is not None and self.distinct_outputs <= 0:
-            raise ValueError(f"{self.feature_id}: distinct_outputs must be positive")
+    def _unique_checks(self):
+        require_unique([c.check_id for c in self.rubric_checks], "Rubric check IDs within a feature")
+        require_unique(self.modality, "Modalities within a feature")
         return self
 
 
-class Stage(BaseModel):
-    name: str
-    active_users: int
+class Stage(PublicInput):
+    name: NonBlank
+    active_users: NonNegativeInt
     status: EvidenceStatus = EvidenceStatus.assumed
 
 
@@ -279,11 +378,11 @@ class TokenUsage(BaseModel):
     """Per-call tokens. measured == from API usage fields only; estimated == 4/3 rule on words.
     output_tokens is the completion count and already INCLUDES reasoning_tokens (OpenAI-compatible usage).
     Decimal so a mean over samples is kept exactly."""
-    input_tokens: Decimal
-    output_tokens: Decimal
-    reasoning_tokens: Optional[Decimal] = None   # breakdown of output_tokens; None == unknown, never coerced to zero
-    audio_input_tokens: Optional[Decimal] = None    # measured only; None -> estimated from seconds if the feature has audio
-    audio_output_tokens: Optional[Decimal] = None
+    input_tokens: NonNegativeDecimal
+    output_tokens: NonNegativeDecimal
+    reasoning_tokens: Optional[NonNegativeDecimal] = None   # breakdown of output_tokens; None == unknown, never coerced to zero
+    audio_input_tokens: Optional[NonNegativeDecimal] = None    # measured only; None -> estimated from seconds if the feature has audio
+    audio_output_tokens: Optional[NonNegativeDecimal] = None
     basis: Literal["measured", "estimated"]
     method: str
 
@@ -470,7 +569,7 @@ class OperatingLedger(BaseModel):
 
 class CostLine(BaseModel):
     name: Literal["input", "output", "reasoning", "audio_input", "audio_output", "retries"]
-    monthly_usd: Optional[Decimal]
+    monthly_usd: Optional[NonNegativeDecimal]
     billed: bool = True              # False == breakdown only (reasoning is inside output); never added to the bill
     note: str = ""
 
@@ -480,31 +579,33 @@ class LeverLine(BaseModel):
     lever: Literal["prompt_caching", "batch_api", "output_cap", "long_context_cliff", "output_reuse"]
     applies: bool
     reason: str
-    monthly_delta_usd: Optional[Decimal] = None   # negative == saving, positive == surcharge
-    one_time_usd: Optional[Decimal] = None        # output_reuse: filling the cache once; never added to a monthly total
+    monthly_delta_usd: Optional[Annotated[Decimal, Field(allow_inf_nan=False)]] = None   # negative == saving, positive == surcharge
+    one_time_usd: Optional[NonNegativeDecimal] = None        # output_reuse: filling the cache once; never added to a monthly total
     label: Optional[str] = None                   # "projected (production setup)" for caching, batch and output reuse
+    _exact_monthly_delta: Optional[Decimal] = PrivateAttr(default=None)
 
 
 class StageCostRow(BaseModel):
     feature_id: str
     stage: str
-    active_users: int
+    active_users: NonNegativeInt
     model_id: str
     tier: Optional[str] = None
-    calls_per_month: Optional[Decimal]
-    cost_per_call_usd: Optional[Decimal]
+    calls_per_month: Optional[NonNegativeDecimal]
+    cost_per_call_usd: Optional[NonNegativeDecimal]
     token_basis: Literal["measured", "estimated"]
     lines: list[CostLine]
-    gross_monthly_usd: Optional[Decimal]
+    gross_monthly_usd: Optional[NonNegativeDecimal]
     levers: list[LeverLine]
-    monthly_with_levers_usd: Optional[Decimal]
-    cost_per_use_usd: Optional[Decimal] = None
-    revenue_per_use_usd: Optional[Decimal] = None
-    revenue_share: Optional[Decimal] = None   # AI cost per use / revenue per use; None when revenue absent
+    monthly_with_levers_usd: Optional[NonNegativeDecimal]
+    cost_per_use_usd: Optional[NonNegativeDecimal] = None
+    revenue_per_use_usd: Optional[NonNegativeDecimal] = None
+    revenue_share: Optional[NonNegativeDecimal] = None   # AI cost per use / revenue per use; None when revenue absent
     lower_bound: bool = False        # True when an unknown component (e.g. reasoning tokens) is excluded
     rate_ids: list[str] = Field(default_factory=list)
     warnings: list[str] = Field(default_factory=list)
     # Unrounded values for downstream rules (switch points, revenue risk); not serialized.
+    _exact_gross: Optional[Decimal] = PrivateAttr(default=None)
     _exact_with_levers: Optional[Decimal] = PrivateAttr(default=None)
     _exact_share: Optional[Decimal] = PrivateAttr(default=None)
 
@@ -568,15 +669,30 @@ class RunState(str, Enum):
     failed = "failed"
 
 
-class RunRequest(BaseModel):
-    schema_version: Literal["1.0"] = "1.0"
-    project_id: str
-    run_id: str                       # also the idempotency key
+class RunRequest(PublicInput):
+    schema_version: Literal["1.1"] = "1.1"
+    project_id: Annotated[NonBlank, Field(pattern=r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")]
+    run_id: Annotated[NonBlank, Field(pattern=r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")]  # also the idempotency key and trace filename
     brief: FounderBrief
     evaluation_approved: bool = False
-    max_spend_usd: Decimal = Decimal("0")
+    max_spend_usd: Annotated[NonNegativeDecimal, Field(le=25)] = Decimal("0")
     sample_mode: Optional[bool] = None
     human_reviews: list[HumanReview] = Field(default_factory=list)
+    sampling_profile: Literal["production", "validation"] = "production"
+
+    @model_validator(mode="before")
+    @classmethod
+    def _migrate_v1(cls, value):
+        """Legacy envelopes normalize to 1.1; they receive the same strict validation."""
+        if isinstance(value, dict) and value.get("schema_version", "1.0") == "1.0":
+            return {**value, "schema_version": "1.1"}
+        return value
+
+    @model_validator(mode="after")
+    def _feature_count(self):
+        if not 2 <= len(self.brief.ai_features) <= 5:
+            raise ValueError("A founder run requires 2–5 AI features")
+        return self
 
 
 class EvidenceGap(BaseModel):
@@ -606,11 +722,73 @@ class Risk(BaseModel):
     origin: Literal["rule", "model_generated"] = "rule"
 
 
+class ReadinessCheck(BaseModel):
+    """Observed diagnostic evidence; skipped required checks never establish readiness."""
+    name: NonBlank
+    status: Literal["pass", "fail", "skip", "not_verified"]
+    required: bool = True
+    detail: str = ""
+
+
+class ReadinessResult(BaseModel):
+    scope: Literal["sponsor_integration", "live_diagnostic"] = "sponsor_integration"
+    checks: list[ReadinessCheck] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def _unique_checks(self):
+        require_unique([check.name for check in self.checks], "readiness check names")
+        return self
+
+    @computed_field
+    @property
+    def status(self) -> Literal["ready", "not_ready", "incomplete", "not_verified"]:
+        required = [check for check in self.checks if check.required]
+        if any(check.status == "fail" for check in required):
+            return "not_ready"
+        if any(check.status == "skip" for check in required):
+            return "incomplete"
+        if not required or any(check.status == "not_verified" for check in required):
+            return "not_verified"
+        return "ready"
+
+
+def unverified_sponsor_readiness() -> ReadinessResult:
+    # A completed pack or a connectivity diagnostic proves none of these end-to-end requirements.
+    return ReadinessResult(checks=[ReadinessCheck(name=name, status="not_verified", detail=detail) for name, detail in (
+        ("zetaris_roundtrip", "Requires sourced reads and evidence write/readback (M06)."),
+        ("hmem_persistence", "Requires pinned-engine restart, recall, isolation and audit (M07)."),
+        ("nightshift_candidates", "Requires identified, usage-bearing candidate executions (M08)."),
+        ("nemotron_feature", "Requires a working feature with corroborated Nemotron identity (M08)."),
+    )])
+
+
+class DispatchRecord(BaseModel):
+    operation_id: str
+    logical_id: str
+    attempt: PositiveInt
+    role: Literal["Planner", "Analyst", "Critic", "Revision", "Diagnostic"]
+    requested_model: str
+    resolved_model: Optional[str] = None
+    provider_request_id: Optional[str] = None
+    state: Literal["dispatching", "completed", "unknown", "not_dispatched", "overrun"]
+    reserved_usd: NonNegativeDecimal
+    actual_usd: Optional[NonNegativeDecimal] = None
+    prompt_token_bound: PositiveInt
+    max_tokens: PositiveInt
+    usage: dict = Field(default_factory=dict)
+    error_type: Optional[str] = None
+    source_refs: list[SourceRef] = Field(default_factory=list)
+
+
 class DecisionPack(BaseModel):
+    schema_version: Literal["1.1"] = "1.1"
     run_id: str
     project_id: str
     execution_mode: Literal["live", "sample"]
     status: RunState
+    readiness: ReadinessResult = Field(default_factory=unverified_sponsor_readiness)
+    monthly_ai_budget_usd: Optional[NonNegativeDecimal] = None
+    switch_threshold_usd: NonNegativeDecimal = Decimal("100")
     reasons: list[str] = Field(default_factory=list)
     candidate_shortlist: list[ShortlistEntry] = Field(default_factory=list)
     model_stack: list[ModelStackEntry] = Field(default_factory=list)
@@ -630,7 +808,13 @@ class DecisionPack(BaseModel):
     risks: list[Risk] = Field(default_factory=list)
     limitations: list[str] = Field(default_factory=list)
     questions: list[str] = Field(default_factory=list)   # blocking when status == needs_input; otherwise what would change the result
-    spend_usd: Decimal = Decimal("0")
+    spend_usd: NonNegativeDecimal = Decimal("0")
+    reserved_spend_usd: NonNegativeDecimal = Decimal("0")
+    dispatch_count: NonNegativeInt = 0
+    transport_retries: NonNegativeInt = 0
+    selected_samples_per_pair: NonNegativeInt = 0
+    sampling_profile: Literal["production", "validation"] = "production"
+    operations: list[DispatchRecord] = Field(default_factory=list)
     trace_path: Optional[str] = None
     disclaimer: str = (
         "Economics are modeled estimates from entered assumptions and cited rates. "
