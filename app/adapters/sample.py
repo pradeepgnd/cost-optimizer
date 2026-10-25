@@ -7,6 +7,7 @@ execution_kind=rule_policy with model=None.
 from __future__ import annotations
 
 import json
+import os
 import re
 import time
 from decimal import Decimal
@@ -75,40 +76,51 @@ class RulePolicyInference(Inference):
                                execution_kind="rule_policy")
 
     def _policy(self, role: str, user: str) -> str:
+        request = json.loads(user)
         if role == "candidate":
-            # Produce a spec skeleton that covers required elements named in the prompt, deliberately
-            # omitting any element the prompt marks as "context not retrieved" so the critic has work to do.
-            required = re.findall(r"required_element:(\w+)", user)
-            missing_ctx = set(re.findall(r"context_missing:(\w+)", user))
-            sections = {k: (f"[{k}] specified from brief and retrieved records" if k not in missing_ctx
-                            else f"[{k}] NOT SPECIFIED — supporting record not in context") for k in required}
-            sections["cost_note"] = "cost_note: " + ("sourced:rate_ref" if "rate_ref:" in user else "UNSOURCED")
+            missing = set(request.get("sample_context_missing", []))
+            sections = {key: (f"[{key}] specified from brief and retrieved records" if key not in missing
+                              else "NOT SPECIFIED — supporting record not in context")
+                        for key in request["task"]["required_elements"]}
+            refs = [ref["record_id"] for ref in request["pricing_evidence"]]
+            sections["cost_note"] = {"text": "Rates are cited; unverified amounts remain estimates.", "evidence_ids": refs[:1]}
             return json.dumps(sections)
         if role == "critic":
-            gaps = re.findall(r"NOT SPECIFIED — supporting record not in context", user)
-            unsourced = "UNSOURCED" in user
-            return json.dumps({"gaps": len(gaps), "unsourced_cost": unsourced,
-                               "action": "retrieve_evidence" if gaps else ("revise_prototype" if unsourced else "finalize")})
+            cases = [case["result"] for case in request["cases"]]
+            failed = [r for r in cases if not all(r["elements_present"].values()) or not r["cost_note_sourced"] or r["critical_failures_hit"]]
+            target = failed[0] if failed else None
+            refs = [target["output_ref"]] if target else []
+            return json.dumps({"case_ids": [r["output_ref"] for r in cases],
+                "findings": [{"claim": "The sample stress case omits a required element.",
+                              "supporting_or_missing_source_ids": refs, "severity": "high", "task_id": target["task_id"]}] if target else [],
+                "proposed_action": {"action": "revise_prototype" if target else "finalize",
+                    "inputs": {"config_id": target["config_id"], "task_ids": [target["task_id"]]} if target else {},
+                    "evidence_ids": refs, "concise_reason": "Repair the observed gap" if target else "All cases pass the deterministic checks",
+                    "expected_observation": "Required elements present", "proposed_by": "rule_policy"},
+                "expected_check": "Rerun development once" if target else "Freeze without repair"})
         return json.dumps({"note": "rule_policy"})
 
 
 class SampleMemory(Memory):
-    """Offline H-MEM path. Until the sponsor reference is pinned and verified offline, this adapter
-    refuses to pretend: it raises SetupIncomplete so sample readiness fails loudly (architecture §6)."""
+    """The real offline reference, with sample storage separate from live memory."""
 
-    def __init__(self, bridge_available: bool = False):
-        self.bridge_available = bridge_available
+    def __init__(self, bridge_available: bool = False, trace=None):
+        from app.engines.hmem.bridge import HERE, HmemBridge
+        self.bridge = HmemBridge(trace, storage_dir=os.getenv("HMEM_SAMPLE_STORAGE_DIR", str(HERE / "storage" / "sample"))) if bridge_available else None
 
     def _guard(self):
-        if not self.bridge_available:
+        if self.bridge is None:
             raise SetupIncomplete("H-MEM bridge not pinned/verified for offline use; sample readiness fails rather than "
                                   "substituting a dictionary. See app/engines/hmem/README.md.")
 
     def remember_confirmed(self, project_scope, payload):
         self._guard()
+        return self.bridge.remember_confirmed(project_scope, payload)
 
     def recall(self, project_scope, query):
         self._guard()
+        return self.bridge.recall(project_scope, query)
 
     def audit(self, project_scope):
         self._guard()
+        return self.bridge.audit(project_scope)

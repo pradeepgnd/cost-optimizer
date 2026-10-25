@@ -9,7 +9,7 @@ from decimal import Decimal
 from enum import Enum
 from typing import Literal, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 # ---------------------------------------------------------------- provenance
@@ -59,6 +59,7 @@ class UsageAssumptions(BaseModel):
 
 
 class FounderBrief(BaseModel):
+    project_id: Optional[str] = None
     brief_id: str
     brief_version: str
     product_concept: str
@@ -138,8 +139,8 @@ class ActionProposal(BaseModel):
     action: ActionType
     inputs: dict = Field(default_factory=dict)
     evidence_ids: list[str] = Field(default_factory=list)
-    concise_reason: str
-    expected_observation: str
+    concise_reason: str = Field(min_length=1, max_length=1000)
+    expected_observation: str = Field(min_length=1, max_length=1000)
     proposed_by: Literal["Planner", "Critic", "rule_policy"]
 
 
@@ -172,12 +173,15 @@ class CaseResult(BaseModel):
     elapsed_s: Optional[float] = None
     requested_model: Optional[str] = None
     resolved_model: Optional[str] = None
+    route_id: Optional[str] = None
+    receipt_id: Optional[str] = None
+    evidence_ids: list[str] = Field(default_factory=list)
     execution_kind: Literal["live_inference", "rule_policy"]
     human_review: Optional[Literal["confirmed", "rejected", "pending"]] = "pending"
 
 
 class CritiqueFinding(BaseModel):
-    claim: str
+    claim: str = Field(min_length=1, max_length=1000)
     supporting_or_missing_source_ids: list[str]
     severity: Literal["low", "medium", "high"]
     task_id: Optional[str] = None
@@ -192,6 +196,15 @@ class Critique(BaseModel):
     resolved_model: Optional[str] = None
     execution_kind: Literal["live_inference", "rule_policy"]
     controller_decision: Optional[Literal["accepted", "rejected", "no_change"]] = None
+
+
+class CriticResponse(BaseModel):
+    """Only this model-authored payload is accepted; transport provenance is added by code."""
+    model_config = ConfigDict(extra="forbid")
+    case_ids: list[str]
+    findings: list[CritiqueFinding]
+    proposed_action: ActionProposal
+    expected_check: str
 
 
 class Revision(BaseModel):
@@ -261,11 +274,11 @@ class RunState(str, Enum):
 
 class RunRequest(BaseModel):
     schema_version: Literal["1.0"] = "1.0"
-    project_id: str
-    run_id: str                       # also the idempotency key
+    project_id: str = Field(pattern=r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
+    run_id: str = Field(pattern=r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")  # also the idempotency key
     brief: FounderBrief
     evaluation_approved: bool = False
-    max_spend_usd: Decimal = Decimal("0")
+    max_spend_usd: Decimal = Field(default=Decimal("0"), ge=0, allow_inf_nan=False)
     sample_mode: Optional[bool] = None
 
 
@@ -312,7 +325,11 @@ class DecisionPack(BaseModel):
     risks: list[Risk] = Field(default_factory=list)
     limitations: list[str] = Field(default_factory=list)
     questions: list[str] = Field(default_factory=list)   # blocking when status == needs_input; otherwise what would change the result
-    spend_usd: Decimal = Decimal("0")
+    spend_usd: Optional[Decimal] = Decimal("0")  # None when a dispatched call has unknown usage/cost
+    spend_reserved_usd: Decimal = Decimal("0")
+    inference_costs: list[dict] = Field(default_factory=list)
+    frozen_configs: list[CandidateConfig] = Field(default_factory=list)
+    freeze_digest: Optional[str] = None
     trace_path: Optional[str] = None
     disclaimer: str = (
         "Economics are modeled estimates from entered assumptions and cited rates. "

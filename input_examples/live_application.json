@@ -1,0 +1,16 @@
+{
+  "schema_version": "1.0",
+  "project_id": "proj-brief-avl-prebuild",
+  "run_id": "live-application-preview",
+  "sample_mode": false,
+  "brief": {
+    "brief_id": "brief-avl-prebuild",
+    "brief_version": "1",
+    "product_concept": "Load the registered founder brief selected by brief_id.",
+    "target_user": "Loaded from Zetaris",
+    "features_v1": [],
+    "constraints": {}
+  },
+  "evaluation_approved": false,
+  "max_spend_usd": "0"
+}

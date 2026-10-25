@@ -110,3 +110,16 @@ def test_cli_report_has_no_savings_language(packs, tmp_path):
     assert "agreement with history" in p.stdout and "SYNTHETIC" in p.stdout
     with pytest.raises(RuntimeError):
         cr.assert_no_savings_language("the tool would have saved $500")
+
+
+def test_project_mismatch_is_refused_even_with_synthetic_actuals(packs):
+    pack, actuals, _ = _load(packs)
+    actuals["project_id"] = "another-project"
+    with pytest.raises(cr.Refused, match="project_id"):
+        cr.compare(pack, actuals)
+
+
+def test_unfrozen_pack_is_refused_before_zetaris_is_constructed(packs):
+    result = _cli("--pack", packs["needs_input"], "--zetaris")
+    assert result.returncode == 4 and "refused" in result.stderr
+    assert "retrieval failed" not in result.stderr and "Traceback" not in result.stderr

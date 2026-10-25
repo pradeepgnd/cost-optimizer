@@ -33,12 +33,12 @@ def build_controller(req: RunRequest, trace: Trace) -> Controller:
         # Offline adapters are constructed before any network client or secret validation.
         from app.adapters.sample import RulePolicyInference, SampleDataLayer, SampleMemory
         from app.engines.hmem.bridge import offline_bridge_available
-        return Controller(SampleDataLayer(), RulePolicyInference(), SampleMemory(bridge_available=offline_bridge_available()),
+        return Controller(SampleDataLayer(), RulePolicyInference(), SampleMemory(bridge_available=offline_bridge_available(), trace=trace),
                           trace, "sample", Checkpoints(os.getenv("RUNS_DB", "runs-sample.db")))
     from app.adapters.live import NightshiftInference, ZetarisDataLayer
     from app.engines.hmem.bridge import HmemBridge
     critic = os.getenv("METERLESS_CRITIC_MODEL", "")
-    cands = [m for m in os.getenv("METERLESS_CANDIDATE_MODELS", "").split(",") if m]
+    cands = [m.strip() for m in os.getenv("METERLESS_CANDIDATE_MODELS", "").split(",") if m.strip()]
     return Controller(ZetarisDataLayer(trace), NightshiftInference(trace), HmemBridge(trace), trace, "live",
                       Checkpoints(os.getenv("RUNS_DB", "runs.db")), critic_model=critic, candidate_models=cands or None)
 

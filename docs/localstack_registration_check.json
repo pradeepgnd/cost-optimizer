@@ -1,0 +1,81 @@
+{
+  "checked_at": "2026-10-25T01:35:30+00:00",
+  "status": "passed",
+  "storage": "LocalStack S3 emulation",
+  "setup_fixtures_only": true,
+  "registered": [
+    {
+      "table": "oah_localstack.connectivity_check",
+      "s3_key": "cost-optimizer/v1/connectivity_check.csv",
+      "sealed": false
+    },
+    {
+      "table": "oah_localstack.founder_briefs",
+      "s3_key": "cost-optimizer/v1/inputs/founder_briefs.json",
+      "sealed": false
+    },
+    {
+      "table": "oah_localstack.pricing_snapshots_approaches",
+      "s3_key": "cost-optimizer/v1/inputs/pricing_snapshots_approaches.json",
+      "sealed": false
+    },
+    {
+      "table": "oah_localstack.pricing_snapshots_models",
+      "s3_key": "cost-optimizer/v1/inputs/pricing_snapshots_models.json",
+      "sealed": false
+    },
+    {
+      "table": "oah_localstack.dev_task_cases",
+      "s3_key": "cost-optimizer/v1/inputs/dev_task_cases_development.json",
+      "sealed": false
+    },
+    {
+      "table": "oah_localstack_sealed.dev_task_cases_holdout",
+      "s3_key": "cost-optimizer/v1/sealed/dev_task_cases_holdout.json",
+      "sealed": true
+    }
+  ],
+  "verified": [
+    {
+      "table": "oah_localstack.connectivity_check",
+      "rows": 1
+    },
+    {
+      "table": "oah_localstack.founder_briefs",
+      "rows": 3
+    },
+    {
+      "table": "oah_localstack.pricing_snapshots_approaches",
+      "rows": 4
+    },
+    {
+      "table": "oah_localstack.pricing_snapshots_models",
+      "rows": 2
+    },
+    {
+      "table": "oah_localstack.dev_task_cases",
+      "rows": 3
+    }
+  ],
+  "sealed_content_queried": false,
+  "probe_row": {
+    "id": "1",
+    "message": "localstack_connection_ok"
+  },
+  "trace_path": "/Users/muthumeena/Development/cost-optimizer/logs/trace-localstack-register-5d70e7e96559.jsonl",
+  "query_ids": [
+    "6f8f62e4-6485-4eb4-8c03-66f84420c57a",
+    "770121c9-97f6-4ebe-b9d7-e006d0c92a94",
+    "aaf952c8-2547-4e2d-9724-2992224f4777",
+    "56edbbfd-02d5-40da-b070-873a19ac9529",
+    "261320fd-c669-43e3-81be-4f5c703e5873",
+    "ca5d8772-655d-45f3-a445-e0aa3e02733b",
+    "31fd5bed-dd79-4ac5-a681-1795b0c3685a",
+    "d8364c3f-c3c9-498b-8624-01f9350af1df",
+    "08d460e9-6830-4dc6-9259-60eac4406f24",
+    "1ef5d74e-7298-42cb-94b7-c69b7fc0c79a",
+    "c19c1b3c-120c-4e36-90be-b75cee8bae45",
+    "ec257def-d0fe-4977-acf1-b2457c671186",
+    "1fa03659-6f7b-4a30-98a6-bb10db072585"
+  ]
+}

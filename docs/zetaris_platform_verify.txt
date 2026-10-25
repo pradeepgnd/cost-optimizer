@@ -1,0 +1,20 @@
+Reverified 2026-10-25 00:28 UTC using the installed platform's verify.sh.
+Only the saved ZETARIS_ADMIN_PASSWORD setting was synchronized with the
+working administrator sign-in, under explicit user authorization.
+No credential values or authentication tokens are included in this record.
+
+Zetaris platform -- verify
+==========================
+
+  PASS  postgres: running (healthy)
+  PASS  driver: running (healthy)
+  PASS  api: running (healthy)
+  PASS  ui: running (healthy)
+  PASS  init: completed (exit 0 -- this is correct for a one-shot job)
+  PASS  bootstrap: completed (exit 0 -- this is correct for a one-shot job)
+  PASS  ui responding (/api/config 200)
+  PASS  login as admin@zetaris.com
+  PASS  query through ui -> api -> driver -> spark
+
+All 9 checks passed. The platform is ready on http://localhost:3000
+Sign in as admin@zetaris.com

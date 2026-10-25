@@ -1,0 +1,12 @@
+{
+  "checked_at": "2026-10-25T00:19:22+00:00",
+  "status": "passed",
+  "authentication": "administrator_session_token",
+  "sql": "SELECT 1 AS one",
+  "trace_path": "/Users/muthumeena/Development/cost-optimizer/logs/trace-zetaris-check-109fc1200eca.jsonl",
+  "code": "SQL_VERIFIED",
+  "row_count": 1,
+  "value": 1,
+  "organization_id": 1,
+  "note": "Tests the current app adapter with session authentication; human-created API-key check remains separate."
+}

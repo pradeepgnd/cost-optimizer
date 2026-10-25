@@ -1,0 +1,43 @@
+name: cost-optimizer-data
+
+services:
+  localstack:
+    # Pinned image downloaded for this setup; LocalStack AWS activation requires
+    # the user's own token. Never commit a real LOCALSTACK_AUTH_TOKEN here.
+    image: localstack/localstack@sha256:0e95fa70a58fff808cdc4c8deea8cf56a247cdad403c082e33ec37924987e0c3
+    container_name: cost-optimizer-localstack
+    ports:
+      - "127.0.0.1:4566:4566"
+    environment:
+      LOCALSTACK_AUTH_TOKEN: ${LOCALSTACK_AUTH_TOKEN:?Privately configure your LocalStack account token first}
+      SERVICES: s3
+      AWS_DEFAULT_REGION: us-east-1
+      PERSISTENCE: "1"
+    volumes:
+      - localstack-data:/var/lib/localstack
+      - ./scripts/localstack/init-s3.sh:/etc/localstack/init/ready.d/10-cost-optimizer-s3.sh:ro
+      - ./data/localstack:/opt/cost-optimizer-fixtures:ro
+    networks:
+      zetaris:
+        aliases:
+          - cost-optimizer-localstack
+    healthcheck:
+      test:
+        - CMD
+        - python3
+        - -c
+        - >-
+          import json,urllib.request;
+          health=json.load(urllib.request.urlopen('http://localhost:4566/_localstack/health',timeout=2));
+          assert health.get('services',{}).get('s3') in ('available','running')
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+volumes:
+  localstack-data:
+
+networks:
+  zetaris:
+    external: true
+    name: ${ZETARIS_DOCKER_NETWORK:-zetaris_default}

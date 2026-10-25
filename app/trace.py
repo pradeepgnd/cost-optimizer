@@ -15,11 +15,14 @@ from typing import Any, Optional
 
 _SECRET_KEYS = re.compile(r"(token|api[_-]?key|secret|password|authorization)", re.I)
 _SECRET_SHAPE = re.compile(r"\b(sk-[A-Za-z0-9_\-]{12,}|[A-Za-z0-9_\-]{40,})\b")
+_USAGE_KEYS = {"prompt_tokens", "completion_tokens", "input_tokens", "output_tokens", "total_tokens", "cached_tokens", "reasoning_tokens"}
 
 
 def _mask(v: Any) -> Any:
     if isinstance(v, dict):
-        return {k: ("...redacted" if _SECRET_KEYS.search(k) else _mask(x)) for k, x in v.items()}
+        return {k: (x if k in _USAGE_KEYS and type(x) is int and x >= 0 else "...redacted" if _SECRET_KEYS.search(k) else x
+                    if k == "engine_revision" and isinstance(x, str) and re.fullmatch(r"[a-f0-9]{40}", x)
+                    else _mask(x)) for k, x in v.items()}
     if isinstance(v, list):
         return [_mask(x) for x in v]
     if isinstance(v, str):

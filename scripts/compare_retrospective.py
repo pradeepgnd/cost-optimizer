@@ -25,11 +25,13 @@ from decimal import Decimal, ROUND_HALF_UP
 from pathlib import Path
 from typing import Optional
 
+import httpx
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from pydantic import ValidationError  # noqa: E402
 
 from app.contracts import DecisionPack, EvidenceStatus, FounderBrief, RunState  # noqa: E402
+from app.adapters.base import SetupIncomplete  # noqa: E402
 
 ALLOWED_STATUS = {RunState.complete, RunState.frozen}
 MATCH_LABEL = "class-level match — relevance requires human review"
@@ -190,9 +192,14 @@ def alternative_surfacing(pack: DecisionPack, actuals: dict, brief: Optional[Fou
 
 def compare(pack: DecisionPack, actuals: dict, brief: Optional[FounderBrief] = None,
             review: Optional[dict[str, dict]] = None) -> dict:
+    if pack.status not in ALLOWED_STATUS:
+        raise Refused("Comparison requires a frozen or complete pack")
+    if not actuals.get("project_id") or actuals["project_id"] != pack.project_id:
+        raise Refused("Actuals project_id does not match the frozen pack")
     return {
         "run_id": pack.run_id, "execution_mode": pack.execution_mode, "pack_status": pack.status.value,
         "actuals_status": actuals.get("total_spend", {}).get("status"),
+        "actuals_source": actuals.get("source"),
         "approach_coverage": approach_coverage(pack, actuals),
         "build_range": build_range(pack, actuals),
         "checkpoint_timing": checkpoint_timing(pack, actuals),
@@ -298,7 +305,9 @@ def render(r: dict) -> str:
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--pack", required=True)
-    ap.add_argument("--actuals", required=True)
+    source = ap.add_mutually_exclusive_group(required=True)
+    source.add_argument("--actuals", help="Controlled private export; project_id must match the frozen pack")
+    source.add_argument("--zetaris", action="store_true", help="Retrieve private actuals only after validating the frozen pack")
     ap.add_argument("--brief")
     ap.add_argument("--reviewed")
     ap.add_argument("--json-out")
@@ -307,13 +316,27 @@ def main() -> int:
     sys.stdout.reconfigure(errors="replace", **({} if sys.stdout.isatty() else {"encoding": "utf-8"}))
     try:
         pack = load_pack(json.loads(Path(args.pack).read_text(encoding="utf-8")))
-        actuals = json.loads(Path(args.actuals).read_text(encoding="utf-8"))
+        if args.zetaris:
+            from dotenv import load_dotenv
+            from app.adapters.live import ZetarisDataLayer
+            from app.trace import Trace
+            load_dotenv(Path(__file__).resolve().parents[1] / ".env")
+            layer = ZetarisDataLayer(Trace(pack.run_id + "-retrospective", "live"))
+            try:
+                actuals = layer.read_sealed_actuals(pack.project_id)
+            finally:
+                layer.client.close()
+        else:
+            actuals = json.loads(Path(args.actuals).read_text(encoding="utf-8"))
         brief = load_brief(json.loads(Path(args.brief).read_text(encoding="utf-8"))) if args.brief else None
         review = load_review(json.loads(Path(args.reviewed).read_text(encoding="utf-8")), pack) if args.reviewed else None
         result = compare(pack, actuals, brief, review)
     except Refused as e:
         print(f"refused: {e}", file=sys.stderr)
         return 4
+    except (SetupIncomplete, httpx.HTTPError):
+        print("retrieval failed: check restricted Zetaris configuration and registered private actuals", file=sys.stderr)
+        return 3
     except (OSError, json.JSONDecodeError, ValidationError, KeyError, TypeError, ValueError) as e:
         print(f"invalid input: {type(e).__name__}: {str(e)[:300]}", file=sys.stderr)
         return 2

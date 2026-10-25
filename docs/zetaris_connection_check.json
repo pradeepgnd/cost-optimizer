@@ -1,0 +1,10 @@
+{
+  "checked_at": "2026-10-25T00:39:13+00:00",
+  "status": "passed",
+  "authentication": "configured_bearer_credential",
+  "sql": "SELECT 1 AS one",
+  "trace_path": "/Users/muthumeena/Development/cost-optimizer/logs/trace-zetaris-check-c3a3f46f21f9.jsonl",
+  "code": "SQL_VERIFIED",
+  "row_count": 1,
+  "value": 1
+}

@@ -1,0 +1,27 @@
+{
+  "checked_at": "2026-10-25T03:37:30+00:00",
+  "status": "passed",
+  "engine": "Meterless H-MEM deterministic reference",
+  "inference_calls": 0,
+  "storage": "temporary synthetic scopes, deleted after verification",
+  "engine_revision": "1742dec56a66e58eef9dda2d2b865823758ca8cd",
+  "checks": {
+    "offline_selftest": true,
+    "fresh_process_recall": true,
+    "project_isolation": true,
+    "superseded_constraint_excluded": true,
+    "provenance": true,
+    "audit": true
+  },
+  "memory_ids": [
+    "check-A:mem-2"
+  ],
+  "audit_refs": [
+    "check-A:ledger:1",
+    "check-A:ledger:2",
+    "check-A:ledger:3",
+    "check-A:ledger:4",
+    "check-A:ledger:5",
+    "check-A:ledger:6"
+  ]
+}

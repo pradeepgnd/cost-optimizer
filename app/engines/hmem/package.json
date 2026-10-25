@@ -1,0 +1,14 @@
+{
+  "name": "cost-optimizer-hmem-bridge",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=20.11" },
+  "scripts": {
+    "selftest": "node bridge.mjs --selftest",
+    "test": "vitest run reference/test --maxWorkers=1 --minWorkers=1",
+    "conformance": "tsx conformance/runner.ts"
+  },
+  "dependencies": { "tsx": "4.23.0" },
+  "devDependencies": { "vitest": "2.1.9" }
+}

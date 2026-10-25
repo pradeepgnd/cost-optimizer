@@ -2,7 +2,8 @@ import json, os, subprocess, sys
 from pathlib import Path
 
 def _run(example, tmp_path, env_extra=None):
-    env = {**os.environ, "SAMPLE_MODE": "true", "LOG_DIR": str(tmp_path / "logs"), "RUNS_DB": str(tmp_path / "runs.db")}
+    env = {**os.environ, "SAMPLE_MODE": "true", "LOG_DIR": str(tmp_path / "logs"), "RUNS_DB": str(tmp_path / "runs.db"),
+           "HMEM_SAMPLE_STORAGE_DIR": str(tmp_path / "memory")}
     env.update(env_extra or {})
     out = tmp_path / "out.json"
     p = subprocess.run([sys.executable, "run.py", "--input", example, "--output", str(out)], capture_output=True, text=True, env=env, cwd=Path(__file__).resolve().parents[1])

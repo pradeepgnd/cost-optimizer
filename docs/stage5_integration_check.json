@@ -1,0 +1,78 @@
+{
+  "checked_at": "2026-10-25T16:39:49+00:00",
+  "status": "passed",
+  "scope": "local integration plumbing; not a founder benchmark",
+  "inference_calls": 0,
+  "sealed_content_queried": false,
+  "unapproved_run_limitations": [
+    "evaluation not approved",
+    "Registered data are setup fixtures; founder/rubric approval and current model rates remain pending.",
+    "Approach-level alternatives compared on cited rates; no build executed on any platform."
+  ],
+  "project_evidence_ids": [
+    "api-only-custom",
+    "app-builder-credits",
+    "brief-avl-prebuild",
+    "ide-agent-own-hosting",
+    "rate-api-in",
+    "rate-api-out",
+    "rate-builder-credit",
+    "rate-ide-in",
+    "rate-ide-out",
+    "rate-ide-seat",
+    "rate-ma-in",
+    "rate-ma-out",
+    "rate-mb-in",
+    "rate-mb-out",
+    "rate-replit-credit",
+    "rate-replit-seat",
+    "replit-agent",
+    "sample/model-a",
+    "sample/model-b"
+  ],
+  "writeback_ref": {
+    "source_set": "evaluation_evidence",
+    "record_id": "live-integration-f99ff57846c3/setup",
+    "version": "live-integration-f99ff57846c3",
+    "origin_url": "zetaris://oah_localstack.evaluation_evidence_385e880ca6835d76542c519e/live-integration-f99ff57846c3/setup",
+    "verified_at": null,
+    "status": "verified"
+  },
+  "append_ref": {
+    "source_set": "evaluation_evidence",
+    "record_id": "live-integration-f99ff57846c3/append",
+    "version": "live-integration-f99ff57846c3",
+    "origin_url": "zetaris://oah_localstack.evaluation_evidence_385e880ca6835d76542c519e/live-integration-f99ff57846c3/append",
+    "verified_at": null,
+    "status": "verified"
+  },
+  "checks": {
+    "registered_brief": true,
+    "registered_approaches": true,
+    "registered_models": true,
+    "development_cases": true,
+    "configured_routes_discovered": true,
+    "sealed_guard_before_dispatch": true,
+    "unapproved_evaluation_stops": true,
+    "evidence_ingestion_and_zetaris_readback": true,
+    "evidence_append_and_readback": true
+  },
+  "fixture_records": [
+    "T1",
+    "T2",
+    "T3",
+    "api-only-custom",
+    "app-builder-credits",
+    "brief-avl-prebuild",
+    "ide-agent-own-hosting",
+    "replit-agent",
+    "sample/model-a",
+    "sample/model-b"
+  ],
+  "trace_path": "/Users/muthumeena/Development/cost-optimizer/logs/trace-live-integration-f99ff57846c3.jsonl",
+  "limitations": [
+    "No paid candidate/critic workflow was exercised.",
+    "Approved founder/task records and dated prices for the configured routes are still required.",
+    "No server-side sealed-source permission claim is made by this check."
+  ]
+}
