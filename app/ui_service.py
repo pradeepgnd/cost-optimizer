@@ -263,11 +263,17 @@ def outbox_hint(result: dict) -> str:
     pending = result.get("unpublished_evidence_ids") or []
     if not pending:
         return ""
+    replay = (f"python scripts/retry_evidence.py --runs-db {UI_DIR / 'runs-live.db'} --run-id {result.get('run_id')} "
+              "--bindings <bindings file>")
+    if any(ref.get("source_set") == "evaluation_evidence" for ref in result.get("evidence_refs") or []):
+        # The publisher accepted other records from this run, so it was reachable; the cause is elsewhere.
+        return (f"{len(pending)} evidence record(s) were not written back to Zetaris, although the publisher accepted "
+                "other records from this run. See the stop reason and the trace for the failing step. The records are "
+                f"kept in the local outbox; replay them with: {replay}")
     return (f"{len(pending)} evidence record(s) were not written back to Zetaris: the evidence publisher was not "
             "running (or SOURCE_INGEST_TOKEN/SOURCE_INGEST_URL were not set in the shell that started Streamlit). "
             "The model runs and costs are complete and the records are kept in the local outbox. Start the publisher "
-            "before the next run (README, Level 3), and replay this run with: python scripts/retry_evidence.py "
-            f"--runs-db {UI_DIR / 'runs-live.db'} --run-id {result.get('run_id')} --bindings <bindings file>")
+            f"before the next run (README, Level 3), and replay this run with: {replay}")
 
 
 def setup_hint(reason: str) -> str:

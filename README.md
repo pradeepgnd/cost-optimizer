@@ -68,6 +68,60 @@ Live smoke test (diagnostic only, reads `.env`): `python scripts/smoke_live.py` 
 
 Incremental trace/readiness check (offline fixtures, no paid requests): `python -m pytest -q tests/test_trace.py tests/test_smoke_live.py`. See [M03 evidence](docs/v4-release-checklist.md#m03--trace-evidence-and-truthful-readiness).
 
+## Test live from start (step by step)
+
+A full live test through the UI, from a fresh checkout. Steps 1–4 are one-time setup; steps 5–8 are each session. Nothing here costs money on a free NVIDIA Developer Program key.
+
+**1. Prerequisites (once).** Python 3.12 with `.venv` (Quick start above); Node 20+ and `(cd app/engines/hmem/reference && npm ci)` for H-MEM; Docker running Zetaris, plus a LocalStack container named `cost-optimizer-localstack` on the same Docker network (port 4566, your `LOCALSTACK_AUTH_TOKEN` set); Meterless Nightshift running with your NVIDIA key in its Providers tab. Starting these services follows the Participant Setup Guide.
+
+**2. Providers in Nightshift (once).** For cross-lab candidates, also add an OpenRouter key in Nightshift's Providers tab. Nightshift verifies a new key on the next request routed through it, and lists that provider's models only afterwards; with OpenRouter connected it listed 111 routes, without it 74 (only Ultra and Lightning are then candidates).
+
+**3. `.env` (once).** `cp .env.example .env` and fill in the Zetaris and Nightshift URLs and tokens. Keep the role routes and thinking settings as in `.env.example` (see the Settings table above): Planner Lightning, Critic Ultra, `METERLESS_NO_THINKING_ROLES=Planner,Critic`, `METERLESS_NO_THINKING_MODELS` listing both Nemotron routes, `METERLESS_REQUEST_TIMEOUT_S=150`. Never put `SOURCE_INGEST_TOKEN` in `.env`.
+
+**4. Price data (once, or when the catalog or Nightshift routes change).** Run the source setup in **Level 2** below: collect the OpenRouter catalog, discover Nightshift routes, build the bundle with `--include-discovered`, and register it with `--bindings-output data/localstack/bindings.json`. Set `ZETARIS_BINDINGS_FILE` in `.env` to that file (or to another bindings file you already have).
+
+**5. Health check (each session; no model calls).**
+
+```bash
+python scripts/smoke_live.py
+```
+
+Expect `SELECT 1`, `read_models` (the model row count), `GET /v1/models` (the route count; about 111 with OpenRouter connected) and the H-MEM self-test to PASS. The two completion checks SKIP unless you add `--max-spend-usd 0.10`, which sends one tiny Planner and one tiny Critic request (both $0 on the free key).
+
+**6. Start the evidence publisher and the UI from the same terminal (each session).** The app writes measured results back to Zetaris through the publisher, and Streamlit must share its throwaway token, so start both from one shell:
+
+```bash
+export SOURCE_INGEST_TOKEN=$(python -c "import secrets;print(secrets.token_hex(16))") SOURCE_INGEST_URL=http://127.0.0.1:8766
+python scripts/serve_source_ingest.py --storage data/source_examples/localstack.json \
+    --bindings data/localstack/bindings.json --port 8766 &   # the same bindings file as ZETARIS_BINDINGS_FILE
+python -m streamlit run streamlit_app.py
+```
+
+If port 8766 is taken (a publisher is already running), stop it with `pkill -f serve_source_ingest.py`, or use another port in both `SOURCE_INGEST_URL` and `--port`. Restart Streamlit after any code change.
+
+**7. Run in the UI.**
+
+1. Sidebar: choose **Live**. Check the green line, e.g. "Price data: snapshot `87f8564d`, 37 models, 460 catalog rows"; a red line means step 3 or 4 is missing, and **Run** stays disabled.
+2. Pick an example (Example 3 is text only and gives complete totals; Example 1 includes audio features whose cost stays unknown). Optionally edit the features, stages, budget ceiling, price per paying user and paying fraction, and pick up to three candidate models.
+3. Press **New run**, tick **I approve measured evaluation runs**, keep the spend cap small (e.g. `0.50`), and press **Run**.
+4. Watch the progress panel: prices read, candidates chosen, the Planner, each model request with its tokens, the Critic, costs, memory and evidence writes. About 30–60 seconds for 10 requests.
+
+**8. What a good result looks like.** Status `complete`, about 10 model requests, evaluation spend `$0`, no warning about evidence not written back. **Cost by stage** shows the monthly total per stage and per-feature charts; **Measured vs estimated** shows real token counts for Ultra and Lightning and estimates for projected-only models; **Quality checks** shows pass/fail and pending human review; **Trace and export** lists every step and downloads the pack and trace.
+
+**If something goes wrong**
+
+| What you see | Cause | Fix |
+|---|---|---|
+| "Price data not found" (red, sidebar) | No bindings file | Set `ZETARIS_BINDINGS_FILE` in `.env` (step 4), restart Streamlit |
+| `needs_input` · "evaluation not approved" | Approval box not ticked | New run, tick approval, Run |
+| `partial` · "evidence record(s) were not written back" | Publisher not running, or Streamlit started without its token | Step 6 from one terminal; replay the run with the `retry_evidence.py` command the UI shows |
+| `partial` · "operation … unknown; further spending stopped" | A model with thinking on used the whole 1,024-token output cap | Check both thinking settings in `.env` (step 3), restart Streamlit, New run |
+| `needs_input` · "pricing unavailable" / `SetupIncomplete` | Zetaris, bindings or `.env` problem | Run step 5 and fix the first FAIL |
+| Only Ultra and Lightning as candidates | Nightshift's OpenRouter provider not connected | Step 2; step 5 should then show about 111 routes |
+| "No candidate covers …" for an audio-out feature | No offered route produces audio | Expected; the totals name the feature as unknown |
+| `AttributeError … ui_service` | Streamlit kept an old module after a code change | Restart Streamlit |
+| Upstream `429` from a `:free` model | Shared free-tier rate limit at OpenRouter | Retry later; projected-only candidates are not called at all |
+
 ## Verify the implementation (Steps 0–8)
 
 Three levels, from no accounts to a bounded live run. The step numbers are those of the [implementation plan](docs/08-v4-Implementation-Plan.md); counts are from 26 October and will grow as tests are added. Anything under `data/localstack/` and `logs/` is gitignored.

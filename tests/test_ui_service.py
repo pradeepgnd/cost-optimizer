@@ -183,3 +183,7 @@ def test_outbox_hint_explains_a_partial_run_with_unpublished_evidence():
     assert svc.outbox_hint({"unpublished_evidence_ids": []}) == ""
     hint = svc.outbox_hint({"run_id": "ui-x", "unpublished_evidence_ids": ["a", "b"]})
     assert hint.startswith("2 evidence record(s) were not written back") and "retry_evidence.py" in hint and "--run-id ui-x" in hint
+    assert "publisher was not running" in hint
+    reached = svc.outbox_hint({"run_id": "ui-y", "unpublished_evidence_ids": ["a"],
+                               "evidence_refs": [{"source_set": "evaluation_evidence", "record_id": "ui-y/s1"}]})
+    assert "publisher accepted other records" in reached and "not running" not in reached and "--run-id ui-y" in reached

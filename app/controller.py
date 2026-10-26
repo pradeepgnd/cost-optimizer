@@ -56,6 +56,10 @@ ALLOWLIST = {
     RunState.frozen: {"dev_task_cases:holdout", "evaluation_evidence", "retrospective_actuals"},
     RunState.holdout: {"dev_task_cases:holdout", "evaluation_evidence", "retrospective_actuals"},
     RunState.complete: {"retrospective_actuals", "evaluation_evidence"},
+    # A stopped run still publishes its decision evidence and must read it back; sealed sources stay closed.
+    RunState.partial: {"evaluation_evidence"},
+    RunState.needs_input: {"evaluation_evidence"},
+    RunState.failed: {"evaluation_evidence"},
 }
 SEALED = {"retrospective_actuals", "dev_task_cases:holdout"}
 
