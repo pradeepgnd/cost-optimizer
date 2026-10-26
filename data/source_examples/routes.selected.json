@@ -12,8 +12,8 @@
       "tier": "mid_tier"
     },
     {
-      "catalog_id": "google/gemma-4-31b-it:free",
-      "route_id": "openrouter/google/gemma-4-31b-it:free",
+      "catalog_id": "nvidia/nemotron-3-super-120b-a12b:free",
+      "route_id": "openrouter/nvidia/nemotron-3-super-120b-a12b:free",
       "tier": "open_source",
       "required": true
     }
