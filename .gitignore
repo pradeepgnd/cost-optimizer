@@ -17,3 +17,6 @@ data/sample_evidence_written.jsonl
 
 # H-MEM runtime memory (sample and live runs); see app/engines/hmem/README.md
 app/engines/hmem/storage/
+
+# Generated source catalogs, bundles and reports (see data/README.md); never committed
+data/localstack/
