@@ -670,6 +670,27 @@ class ModelStackEntry(BaseModel):
     reason: str
 
 
+class StageTotal(BaseModel):
+    """R9: the monthly AI cost of all features together at one growth stage, for one way of choosing models.
+    AI-only: non-AI operating costs are outside the model, and one-time build costs stay in the build ledger.
+    Unknown feature costs are never counted as zero; the total then covers the known features only."""
+    scenario: Literal["recommended", "cheapest_per_feature", "single_model"]
+    pricing_scope: Literal["actual_route", "openrouter_listed_token_scenario"]
+    model_id: Optional[str] = None                        # single_model only
+    stage: str
+    active_users: NonNegativeInt
+    feature_models: dict[str, Optional[str]] = Field(default_factory=dict)
+    feature_costs: dict[str, Optional[Decimal]] = Field(default_factory=dict)   # None == unknown
+    monthly_usd: Optional[Decimal] = None                 # sum of the known feature costs; None when none is known
+    complete: bool = False                                # every feature has a known cost
+    lower_bound: bool = True                              # incomplete, or a summed row leaves out an unknown component
+    revenue_usd: Optional[Decimal] = None                 # active users x paying fraction x subscription price
+    ai_contribution_usd: Optional[Decimal] = None         # revenue - AI cost; at most this when the cost is a lower bound
+    ai_contribution_margin: Optional[Decimal] = None      # contribution / revenue, only when revenue > 0
+    budget_fit: Literal["within", "over", "unknown", "no_budget"] = "no_budget"
+    note: str = ""
+
+
 class BuildPanel(BaseModel):
     """Secondary panel (07 §5.2): build approaches. Missing build inputs add questions; they never stop the run."""
     ranked_approach_ids: list[str] = Field(default_factory=list)   # empty when eligibility depends on a missing input
@@ -704,6 +725,9 @@ class RunRequest(PublicInput):
     human_reviews: list[HumanReview] = Field(default_factory=list)
     sampling_profile: Literal["production", "validation"] = "production"
     candidate_tiers: list[Literal["frontier", "mid_tier", "open_source"]] | None = None
+    # Optional founder choice of 1-3 candidate routes for every feature, replacing the automatic choice. The controller
+    # still validates each (offered, priced, modality, one per tier) and executes only routes with a verified profile.
+    candidate_models: Optional[list[NonBlank]] = Field(default=None, exclude_if=lambda value: value is None)
 
     @model_validator(mode="before")
     @classmethod
@@ -722,6 +746,11 @@ class RunRequest(PublicInput):
                 raise ValueError("candidate_tiers is available only for validation sampling")
             if not 2 <= len(self.candidate_tiers) <= 3 or len(set(self.candidate_tiers)) != len(self.candidate_tiers):
                 raise ValueError("candidate_tiers requires two or three unique candidate tiers")
+        if self.candidate_models is not None:
+            if not 1 <= len(self.candidate_models) <= 3 or len(set(self.candidate_models)) != len(self.candidate_models):
+                raise ValueError("candidate_models requires one to three unique route IDs")
+            if self.candidate_tiers is not None:
+                raise ValueError("candidate_models and candidate_tiers cannot be combined")
         return self
 
 
@@ -831,6 +860,7 @@ class DecisionPack(BaseModel):
     model_stack: list[ModelStackEntry] = Field(default_factory=list)
     stage_tables: list[StageCostTable] = Field(default_factory=list)
     openrouter_projection_tables: list[OpenRouterProjectionTable] = Field(default_factory=list)
+    stage_totals: list[StageTotal] = Field(default_factory=list)
     feature_runs: list[FeatureRun] = Field(default_factory=list)
     build_panel: BuildPanel = Field(default_factory=BuildPanel)
     build_ledgers: list[BuildLedger] = Field(default_factory=list)

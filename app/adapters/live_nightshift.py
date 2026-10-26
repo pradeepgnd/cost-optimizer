@@ -20,6 +20,14 @@ from app.adapters.validation import parse_model_discovery
 ADAPTER_REVISION = hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
 
 
+def strip_inline_reasoning(text: str) -> str:
+    """Some routes return their reasoning inside the content, closed by </think> (the opening tag may be missing,
+    as Ultra did on 2026-10-26). The answer is what follows the last closing tag. Billing is unaffected: reasoning is
+    already counted inside completion tokens."""
+    _, closed, answer = text.rpartition("</think>")
+    return answer.lstrip() if closed else text
+
+
 def parse_completion_response(data, headers) -> dict:
     """Accept only attributable, metered OpenAI-compatible completion responses.
 
@@ -82,7 +90,7 @@ def parse_completion_response(data, headers) -> dict:
     finish_reason = choices[0].get("finish_reason")
     if finish_reason is not None and not isinstance(finish_reason, str):
         raise ValueError("Completion finish reason is invalid")
-    return {"text": message["content"], "resolved_model": resolved,
+    return {"text": strip_inline_reasoning(message["content"]), "resolved_model": resolved,
             "response_model": data.get("model"), "receipt_id": receipt_id,
             "provider": provider, "provider_kind": provider_kind,
             "requires_review": requires_review, "finish_reason": finish_reason,
@@ -109,8 +117,11 @@ class NightshiftInference(Inference):
         self.no_thinking_models = frozenset(item.strip() for item in os.getenv("METERLESS_NO_THINKING_MODELS", "").split(",")
                                             if item.strip())
         self._dispatch_operation = ContextVar("nightshift_dispatch_operation", default=None)
+        # No fixed meterless-scope: with "user", Nightshift's built-in memory injected an earlier answer into similar
+        # prompts and both models copied it back (2026-10-26). Each request gets its own scope in _request, so nothing
+        # is shared between evaluation calls. The app's own memory is the separate H-MEM engine.
         self.headers = {"Authorization": f"Bearer {self.token}", "meterless-app": "llm-cost-intelligence",
-                        "meterless-scope": "user", "Content-Type": "application/json"}
+                        "Content-Type": "application/json"}
 
     def _request(self, *, role, action, method, path, timeout, body=None):
         operation_id = self._dispatch_operation.get() or str(uuid.uuid4())
@@ -129,7 +140,7 @@ class NightshiftInference(Inference):
         started = time.monotonic()
         response, data = None, None
         try:
-            headers = {**self.headers, "X-Request-ID": operation_id}
+            headers = {**self.headers, "X-Request-ID": operation_id, "meterless-scope": f"eval-{uuid.uuid4().hex}"}
             if method == "GET":
                 response = httpx.get(f"{self.base}{path}", headers=headers, timeout=timeout)
             else:

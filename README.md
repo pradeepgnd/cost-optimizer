@@ -22,9 +22,37 @@ Sample mode runs the same controller, contracts and cost engine on bundled data.
 
 For a repeatable check of all three examples, run `python scripts/check_sample_examples.py`. The checker forces sample mode in copied requests, disables private dotenv loading, blocks Python sockets and Node network calls, and uses fresh databases and logs. It retains packs, traces and a `manifest.json` in a new temporary directory and prints its location. To retain them in a chosen location, pass `--output-dir <new-directory>`; existing directories are refused. A passing check establishes the offline baseline and local H-MEM delegation; live sponsor readiness needs later checks. See the [implementation plan](docs/08-v4-Implementation-Plan.md), [revised steps](docs/17-v4-Revised-Implementation-Steps.md) and [evidence ledger](docs/v4-release-checklist.md).
 
+## Streamlit UI
+
+```bash
+python -m streamlit run streamlit_app.py
+```
+
+Sample mode needs no accounts. The UI builds a request, runs it through `run.py` (the CLI's own entry point, via `app/ui_service.py`) and renders the saved pack. While a run is going, a progress panel shows the latest steps as they are written to the trace (prices read, candidates chosen, each model request, the Critic, costs, memory and evidence writes), with a count of model requests and errors. A run ID runs once; rerenders and double clicks load the stored result in `data/ui/` (gitignored) and never start a second run. `SAMPLE/OFFLINE` stays visible on offline views and in export file names. Live mode reads the same `.env` as `run.py` (values are never displayed). The sidebar shows which price snapshot it will use, from `ZETARIS_BINDINGS_FILE` or `data/localstack/bindings.json`; if none is found, **Run** is disabled and the fix is shown. A collapsed override box can point at another bindings file. **Candidate models (optional):** a dropdown lets the founder pick up to three routes, at most one per tier, which replace the automatic per-feature choice (`candidate_models` in the request). The controller still validates each pick: an unknown, un-offered or router-alias route, or two picks in one tier, stops the run before any model call; a pick that can't handle a feature's modality is skipped for that feature. Routes labeled *can be measured* have a verified profile; the rest are projected only. Tick the approval box and set a spend cap to run models. Start the evidence publisher first (see Level 3 below) and launch Streamlit from that same shell, or the run ends `partial` (the UI then says which evidence was not written back and how to replay it). After a code change, restart Streamlit: it keeps already-loaded helper modules in memory.
+
+The UI is deliberately trimmed to five views: **cost by stage** (each feature's monthly cost per model at the dated market price, using measured tokens where a model was run and estimated tokens where it is projected only), **measured versus estimated tokens**, **quality checks** (deterministic pass/fail, human review pending, Critic flags), **risks and gaps** (build panel collapsed), and **trace and export**. Cost by stage opens with **one monthly AI cost for all features together** per stage (R9): choose the cheapest model per feature, or one model for every feature, and see revenue (price per paying user × paying fraction × users), AI contribution and margin, and the first stage over the monthly budget. Totals are AI-only, keep unknown feature costs unknown, and are lower bounds when any part is. Not in this version: a recommended model stack (it needs human review, which has no entry screen yet), switch points and memory changes (R7, R8).
+
 ## Live mode
 
-Requires Zetaris (Docker Desktop / WSL2) and Meterless Nightshift running locally; see the Participant Setup Guide. Fill `.env` from your Zetaris and Nightshift consoles (the NVIDIA key goes in Nightshift's Providers tab, never here), then:
+Requires Zetaris (Docker Desktop / WSL2) and Meterless Nightshift running locally; see the Participant Setup Guide. Copy `.env.example` to `.env` and fill in the Zetaris and Nightshift values from their consoles (the NVIDIA key goes in Nightshift's Providers tab, never here).
+
+### Settings (`.env`)
+
+| Setting | Example value | Why |
+|---|---|---|
+| `ZETARIS_REST_URL`, `ZETARIS_ORG_ID`, `ZETARIS_API_KEY` | from the Zetaris Console | Data layer |
+| `ZETARIS_BINDINGS_FILE` | `data/localstack/bindings.json` | Which registered price tables to read; written by `register_sources.py --bindings-output` (Level 2). Relative paths are from the repository root |
+| `METERLESS_BASE_URL`, `METERLESS_RUNTIME_TOKEN` | from the Nightshift Console | All inference |
+| `METERLESS_MODEL` | `nvidia/nemotron-3.5-lightning-30b-a3b` | Planner route (NVIDIA proof). Needs a verified profile in `routes.selected.json`; `meterless/auto` is refused |
+| `METERLESS_CRITIC_MODEL` | `nvidia/nemotron-3-ultra-550b-a55b` | Critic route (NVIDIA proof), same rule |
+| `METERLESS_NO_THINKING_ROLES` | `Planner,Critic` | Thinking off for these roles. Reasoning counts toward the 1,024-token cap; with it on, the Planner returned empty answers and the Critic hit the cap. An **empty value means no roles** and turns the Planner default off |
+| `METERLESS_NO_THINKING_MODELS` | `nvidia/nemotron-3.5-lightning-30b-a3b,nvidia/nemotron-3-ultra-550b-a55b` | Thinking off for these routes wherever they are used, including as candidates. Without it, Lightning (Example 3) and Ultra (Example 1) each hit the 1,024-token cap as a candidate and the run stopped `partial`; listing both also keeps their comparison like for like |
+| `METERLESS_REQUEST_TIMEOUT_S` | `150` | Read timeout per request (default 60); Ultra has needed more |
+| `METERLESS_OPEN_MODEL` | leave unset | Optional override of the open-source candidate; a route that is not offered or has no price row stops the run |
+| `SOURCE_INGEST_URL` | `http://127.0.0.1:8766` | Evidence publisher. Its `SOURCE_INGEST_TOKEN` is generated in the shell per session and never stored in `.env` |
+| `SAMPLE_MODE`, `LOG_LEVEL`, `MAX_SPEND_USD`, `RUNS_DB` | `false`, `INFO`, `25.00`, unset | Runtime behaviour |
+
+Then:
 
 ```bash
 python run.py --input input_examples/example_1.json --output result.json
@@ -49,7 +77,7 @@ Three levels, from no accounts to a bounded live run. The step numbers are those
 ```bash
 python -m venv .venv && . .venv/bin/activate && pip install -r requirements.txt
 (cd app/engines/hmem/reference && npm ci)          # Node 20+; needed for the real H-MEM test
-python -m pytest -q -rs                             # 539 passed, 8 skipped (the 8 are the shelved retrospective)
+python -m pytest -q -rs                             # 595 passed, 8 skipped (the 8 are the shelved retrospective)
 python scripts/check_sample_examples.py             # three PASS lines
 ```
 
@@ -57,15 +85,17 @@ Per step (`-rs` shows skips; a skipped H-MEM test means Step 7 is **not** confir
 
 | Step | Command | Expected |
 |---|---|---|
-| 0 Baseline | the two commands above | 539 passed; 3 examples PASS |
-| 1 Contracts | `python -m pytest -q tests/test_v4_contracts.py` | 89 passed |
-| 2 Cost levers | `python -m pytest -q tests/test_stage_economics.py tests/test_economics.py` | 75 passed |
-| 3 Traces, readiness | `python -m pytest -q tests/test_trace.py tests/test_smoke_live.py` | 110 passed |
+| 0 Baseline | the two commands above | 595 passed; 3 examples PASS |
+| 1 Contracts | `python -m pytest -q tests/test_v4_contracts.py` | 95 passed |
+| 2 Cost levers | `python -m pytest -q tests/test_stage_economics.py tests/test_economics.py` | 76 passed |
+| 3 Traces, readiness | `python -m pytest -q tests/test_trace.py tests/test_smoke_live.py` | 111 passed |
 | 4 Spend, dispatch | `python -m pytest -q tests/test_dispatch_limits.py tests/test_controller_live_fake.py` | 96 passed |
 | 5 Sources | `python -m pytest -q tests/test_source_manifest.py tests/test_source_registry.py tests/test_modality.py` | 64 passed |
 | 6 Zetaris adapter | `python -m pytest -q tests/test_zetaris_adapter.py tests/test_source_ingest.py tests/test_openrouter_projection.py` | 29 passed |
 | 7 H-MEM | `python -m pytest -q -rs tests/test_hmem_engine.py tests/test_sample_memory.py` | 5 passed, no skips |
-| 8 Nightshift, candidates | `python -m pytest -q tests/test_nightshift_adapter.py tests/test_role_routes.py tests/test_candidate_selection.py tests/test_m08_gate.py` | 36 passed |
+| UI (R10) | `python -m pytest -q tests/test_ui_service.py tests/test_streamlit_app.py` | 22 passed |
+| Totals (R9) | `python -m pytest -q tests/test_stage_summary.py` | 15 passed |
+| 8 Nightshift, candidates | `python -m pytest -q tests/test_nightshift_adapter.py tests/test_role_routes.py tests/test_candidate_selection.py tests/test_m08_gate.py` | 47 passed |
 
 ### Level 2: read-only live (no model completions)
 
@@ -84,7 +114,7 @@ python scripts/check_zetaris_sources.py --bindings data/localstack/bindings.json
     --catalog-id nvidia/nemotron-3-ultra-550b-a55b --round-trip --storage data/source_examples/localstack.json \
     --run-id verify-001 --output-dir data/localstack/verify-001                              # status pass, 0 completions
 python scripts/check_m08_gate.py --bindings data/localstack/bindings.json --output data/localstack/gate.json
-export ZETARIS_BINDINGS_FILE=$PWD/data/localstack/bindings.json
+export ZETARIS_BINDINGS_FILE=$PWD/data/localstack/bindings.json   # or set it once in .env
 python scripts/check_openrouter_projection.py --input input_examples/example_3.json \
     --bindings data/localstack/bindings.json --output-dir data/localstack/preview-001        # needs_input, 0 dispatches
 python scripts/smoke_live.py                                                                 # Zetaris, discovery, H-MEM
@@ -106,25 +136,27 @@ Confirms Steps 4, 6 and 8 together: the Planner, Critic and candidates through t
 # 1. a request: copy input_examples/example_3.json, set a new "run_id", "sampling_profile": "validation",
 #    "evaluation_approved": true and "max_spend_usd": "0.50" (save as data/localstack/r5/request.json)
 
-# 2. start the evidence publisher with a throwaway token (never put it in .env)
+# 2. start the evidence publisher with a throwaway token (never put it in .env; SOURCE_INGEST_URL can live in .env)
 export SOURCE_INGEST_TOKEN=$(python -c "import secrets;print(secrets.token_hex(16))") SOURCE_INGEST_URL=http://127.0.0.1:8766
 python scripts/serve_source_ingest.py --storage data/source_examples/localstack.json \
     --bindings data/localstack/bindings.json --port 8766 &
 
-# 3. run
-SAMPLE_MODE=false ZETARIS_BINDINGS_FILE=$PWD/data/localstack/bindings.json RUNS_DB=$PWD/data/localstack/r5/runs.db \
-METERLESS_NO_THINKING_ROLES=Planner,Critic METERLESS_NO_THINKING_MODELS=<route that returns empty_response> \
-METERLESS_REQUEST_TIMEOUT_S=150 python run.py --input data/localstack/r5/request.json --output data/localstack/r5/pack.json
+# 3. run (the role routes, thinking and timeout settings come from .env as in the Settings table)
+SAMPLE_MODE=false RUNS_DB=$PWD/data/localstack/r5/runs.db \
+python run.py --input data/localstack/r5/request.json --output data/localstack/r5/pack.json
+# or the UI, from this same shell: python -m streamlit run streamlit_app.py
 
 # 4. stop the publisher
 pkill -f serve_source_ingest.py
 ```
 
-Expected in `pack.json`: `status: complete`, `dispatch_count` about 6, `spend_usd` 0 on a free key, every `operations[].state` `completed` with the requested model equal to the resolved model, `unpublished_evidence_ids` empty, and any unproven candidate marked "projected only". Without the publisher the run ends `partial` with its evidence in the outbox; `python scripts/retry_evidence.py --runs-db <db> --run-id <id> --bindings <bindings>` replays it. The settings are explained in [docs/17](docs/17-v4-Revised-Implementation-Steps.md) §6. Set `METERLESS_NO_THINKING_MODELS` only for a route that returns `empty_response` with thinking on (Lightning did).
+Expected in `pack.json`: `status: complete`, `dispatch_count` about 6 with `sampling_profile: validation` (about 10 from the UI, which uses the default two samples per pair), `spend_usd` 0 on a free key, every `operations[].state` `completed` with the requested model equal to the resolved model, `unpublished_evidence_ids` empty, and any unproven candidate marked "projected only". Without the publisher the run ends `partial` with its evidence in the outbox; `python scripts/retry_evidence.py --runs-db <db> --run-id <id> --bindings <bindings>` replays it. The settings are explained in the Settings table above. A run ID runs once; use a new one each time.
+
+**Nightshift providers.** Candidates come from the routes Nightshift lists. With its OpenRouter provider connected it listed 111 routes, and without it 74 (NVIDIA, local and router aliases only), which leaves only Ultra and Lightning as candidates. After adding a provider key, Nightshift verifies it on the next routed request; check the route count with `python scripts/smoke_live.py`.
 
 ### What these checks do not confirm
 
-Windows execution (the preflight script was never run), a second-machine clean clone, AWS/IAM access (only LocalStack was used), and sponsor `readiness`, which stays `not_verified` until `smoke_live.py` is run on the final setup. One sample per pair supports no model-quality claim.
+Windows execution (the preflight script was never run), a second-machine clean clone, AWS/IAM access (only LocalStack was used), and end-to-end sponsor `readiness`, which stays `not_verified` (the smoke check passed at diagnostic scope on 26 October). Two samples per pair support no model-quality claim, and only Ultra and Lightning are measured; other candidates are projected only.
 
 ## Interface
 
@@ -233,15 +265,15 @@ No model grades the comparison. The Critic only flags issues and proposes one ac
 
 ## Build status
 
-The offline suite covers contracts, Decimal economics, durable dispatch, source collection/publication, typed Zetaris reads, ingestion/outbox recovery, the controller loop, rubric checks, trace, CLI, sample adapters and the repeatable sample checker. The current plan, findings and remaining work are in [docs/08](docs/08-v4-Implementation-Plan.md) and [docs/17](docs/17-v4-Revised-Implementation-Steps.md), with evidence in the [ledger](docs/v4-release-checklist.md). As of 26 October the suite has 538 passing tests (8 shelved retrospective tests skipped); local H-MEM, the Planner/Critic role routes and a clean bounded live pack pass, and memory influence on a later run, human-review binding, stage totals and the UI remain open.
+The offline suite covers contracts, Decimal economics, durable dispatch, source collection/publication, typed Zetaris reads, ingestion/outbox recovery, the controller loop, rubric checks, trace, CLI, sample adapters and the repeatable sample checker. The current plan, findings and remaining work are in [docs/08](docs/08-v4-Implementation-Plan.md) and [docs/17](docs/17-v4-Revised-Implementation-Steps.md), with evidence in the [ledger](docs/v4-release-checklist.md). As of 26 October the suite has 595 passing tests (8 shelved retrospective tests skipped). Local H-MEM, the Planner/Critic role routes, the live smoke check, stage totals (R9) and a trimmed UI with live runs work; memory influence on a later run and human-review binding remain open.
 
 | Component | State |
 |---|---|
-| Contracts, economics, dispatch, sources/Zetaris, controller, rubric checks, trace, CLI, sample adapters | implemented with known gaps; 538 tests pass, 8 shelved retrospective tests skipped |
+| Contracts, economics, dispatch, sources/Zetaris, controller, rubric checks, trace, CLI, sample adapters | implemented with known gaps; 595 tests pass, 8 shelved retrospective tests skipped |
 | Zetaris live adapter | typed pinned reads, preserved provenance, external ingestion/readback and durable outbox implemented; LocalStack component proof passes; applicable execution-tariff/model evidence remains pending |
-| Nightshift live adapter | The Planner (Lightning) and Critic (Ultra) calls go through the spend-checking Dispatcher on a free NVIDIA Developer Program key, and the model that actually answered is logged; a clean bounded pack (`r5-live-20261026-113150-e`, 6 dispatches, $0) is recorded in the ledger. Only those two routes have verified execution profiles; other candidates are projected only. |
+| Nightshift live adapter | The Planner (Lightning) and Critic (Ultra) calls go through the spend-checking Dispatcher on a free NVIDIA Developer Program key, and the model that actually answered is logged. Every request gets its own `meterless-scope`, because Nightshift's built-in memory otherwise injected earlier answers into similar prompts (found and fixed 26 October); reasoning text placed inside an answer is stripped. Clean live runs after the fix: `ui-20261026-170134` (Example 3) and `ui-20261026-172053` (Example 1); numbers from earlier runs, including R5, should not be quoted. Only Ultra and Lightning have verified execution profiles; other candidates are projected only. |
 | H-MEM bridge | M07 local reference PASS: pinned Node bridge, save/restart/recall/isolation/audit and blocked-network sample delegation (checks in the ledger). Decision influence remains open (R8). |
-| Streamlit UI | not started (`streamlit_app.py` does not exist yet; R10) |
+| Streamlit UI | trimmed first version (R10): form with modality, revenue and up to three candidate picks; live progress; cost by stage with monthly totals; measured versus estimated tokens; quality checks; risks; trace and export. Live runs from the UI pass. No recommended stack until human review exists; layout not reviewed in a browser |
 | Pricing snapshots | sample mode uses unverified placeholders; live mode reads a dated OpenRouter catalog reference (market reference only) plus verified $0 profiles for the two role routes |
 | Retrospective comparison script | shelved in v4 |
 
@@ -249,7 +281,9 @@ The offline suite covers contracts, Decimal economics, durable dispatch, source 
 
 - Economics are modeled estimates from entered assumptions and the rates in the price snapshots, not financial advice. Small samples throughout; no claim about a model's quality beyond the measured tasks.
 - Sample-mode prices, intelligence scores and market references are unverified placeholders. Live catalog prices are dated market references, not billing evidence; the two verified $0 profiles assume a free NVIDIA Developer Program key and are for prototyping only.
-- Audio is priced from per-second conversions, not measured; audio and image inputs are never sent to a model. Image feature costs are unknown, not zero.
+- Audio is priced from per-second conversions, not measured; audio and image inputs are never sent to a model. No offered route produces audio, and audio-input candidates have no cited conversion rate, so audio feature costs are unknown, as are image costs. Never zero.
+- Thinking is off for the Planner, Critic and both measured Nemotron models (with it on they exceeded the 1,024-token output cap), so measured tokens describe answers without reasoning.
+- Estimated tokens include the brief's assumed production system prompt, which evaluation calls do not send; measured rows may understate an app that sends one.
 - Prompt caching, batch API and output reuse are projections for a production setup, not measured in our runs.
 - The self-host break-even is not shown: it needs a cited throughput figure for the selected open-model variant.
 - Founder-impact evidence so far comes only from the founder's own ideas (self-evaluation).

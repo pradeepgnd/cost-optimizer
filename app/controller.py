@@ -28,7 +28,7 @@ from app.contracts import (
 )
 from app.contracts import covers_modalities
 from app.economics import (SIZE_MULTIPLIER, build_ledger, estimate_feature_tokens, openrouter_projection_table,
-                           recommend_model_stack, stage_cost_table)
+                           recommend_model_stack, stage_cost_table, stage_totals)
 from app.rubric import evaluate, json_fields_requested, parse_json_object
 from app.trace import Trace
 from app.dispatch import (Budget, Checkpoints, Dispatcher, DuplicateRun, StopRun,
@@ -141,6 +141,7 @@ class Controller:
         self.project_id = req.project_id
         budget = Budget(max_spend=req.max_spend_usd)
         requested_tiers = tuple(req.candidate_tiers or CANDIDATE_TIERS)
+        self.picked_models = list(req.candidate_models or [])
         pack = DecisionPack(run_id=req.run_id, project_id=req.project_id, execution_mode=self.mode,
                             status=RunState.approved, trace_path=str(self.trace.path),
                             monthly_ai_budget_usd=req.brief.monthly_ai_budget_usd,
@@ -174,8 +175,6 @@ class Controller:
                     if st != EvidenceStatus.verified:
                         self.gaps.append(EvidenceGap(field=f"ai_features:{f.feature_id}.{fld}", status=st,
                                                      note="founder estimate or default; editable"))
-            if brief.monthly_ai_budget_usd is not None:
-                self.limitations.append("Monthly AI budget ceiling is recorded; total monthly stack cost is not yet calculated, so budget fit is unknown.")
 
             # 2. Pricing evidence and candidates
             self._transition(RunState.investigating)
@@ -246,7 +245,7 @@ class Controller:
 
             # 5. Estimate every feature × candidate (free); the stage tables exist even if the run stops later
             for f in brief.ai_features:
-                est = estimate_feature_tokens(f)
+                est = estimate_feature_tokens(f, self._prompt(f))
                 if f.uses_per_user_month is None:
                     self.questions.append(f"How many times per month does a user use {f.feature_id}? Its cost is unknown without it.")
                 if est is None:
@@ -254,7 +253,7 @@ class Controller:
                                           "Its token estimate is unknown without it.")
                 for m in self.feature_candidates.get(f.feature_id, []):
                     runs[(f.feature_id, m.model_id)] = FeatureRun(
-                        feature_id=f.feature_id, model_id=m.model_id, tier=m.tier, executed=False, estimated=est,
+                        feature_id=f.feature_id, model_id=m.model_id, tier=self._tier(f.feature_id, m), executed=False, estimated=est,
                         not_executed_reason=self._not_executable(f) or (
                             "sample mode: not executed; tokens estimated with the 4/3 rule" if self.mode == "sample"
                             else f"projected only: {self.unproven[m.model_id]}; tokens estimated, quality unknown"
@@ -439,7 +438,21 @@ class Controller:
         def is_route(m):
             return None if routes is None else m.model_id in routes
         by_id = {m.model_id: m for m in models}
-        if self.open_model:
+        picked = list(getattr(self, "picked_models", None) or [])   # founder's choice; replaces the automatic one
+        for mid in picked:
+            if mid == AUTO_ROUTE or mid.startswith("meterless/"):
+                raise StopRun(RunState.needs_input, f"Chosen candidate {mid} is a router alias, not a model",
+                              ["Choose model routes, not a router alias."])
+            if mid not in by_id:
+                raise StopRun(RunState.needs_input, f"Chosen candidate {mid} has no price snapshot row",
+                              ["Choose candidates from the registered price snapshot."])
+            if is_route(by_id[mid]) is False:
+                raise StopRun(RunState.needs_input, f"Chosen candidate {mid} is not offered by Nightshift",
+                              ["Enable the route in Nightshift, or choose another candidate."])
+        if picked:
+            self.limitations.append(f"Candidates were chosen by the founder ({', '.join(picked)}); the automatic "
+                                    "per-feature selection was not used.")
+        if self.open_model and not picked:
             if self.open_model not in by_id:
                 raise StopRun(RunState.needs_input, f"METERLESS_OPEN_MODEL {self.open_model} has no price snapshot row",
                               ["Add a price snapshot for the override route, or clear METERLESS_OPEN_MODEL."])
@@ -448,6 +461,7 @@ class Controller:
                               ["Enable the route in Nightshift, or clear METERLESS_OPEN_MODEL."])
         subjects = list(features) if features else [None]
         self.feature_candidates = {}
+        self.candidate_tiers = {}      # (feature, model) -> the tier it was chosen for, curated or derived
         chosen_for: dict[str, list[tuple[str, str, str]]] = {m.model_id: [] for m in models}   # id -> (feature, tier, why)
         excluded: dict[str, list[str]] = {m.model_id: [] for m in models}
         derived: dict[str, str] = {}          # first tier a model was given by the rules, for the shortlist
@@ -465,10 +479,24 @@ class Controller:
             for mid, (tier, _) in tier_of.items():
                 derived.setdefault(mid, tier)
             taken: dict[str, tuple[ModelProfile, str]] = {}
-            if self.open_model and self.open_model in notes:
+            for mid in picked:
+                if mid not in notes:
+                    self.limitations.append(f"Chosen candidate {mid} is not used for {fid or 'the request'}: "
+                                            f"{excluded[mid][-1]}.")
+                    continue
+                tier, how = tier_of[mid]
+                if tier in taken:
+                    raise StopRun(RunState.needs_input, f"Chosen candidates {taken[tier][0].model_id} and {mid} are both "
+                                  f"{tier}; the comparison takes one candidate per tier",
+                                  ["Choose at most one frontier, one mid-tier and one open-source model."])
+                verified = self._dispatch_verified(by_id[mid])
+                taken[tier] = (by_id[mid], f"chosen by the founder ({tier}: {how}); "
+                                           f"{'verified rate and dispatch policy, so it can be measured' if verified else 'no verified dispatch policy, so projected only'}"
+                                           + (f"; {notes[mid]}" if notes[mid] else ""))
+            if self.open_model and not picked and self.open_model in notes:
                 taken["open_source"] = (by_id[self.open_model], "founder override (METERLESS_OPEN_MODEL)")
             for tier in tiers:
-                if tier in taken:
+                if tier in taken or picked:
                     continue
                 pool = [(i, m) for i, m in eligible if tier_of[m.model_id][0] == tier and m.model_id not in
                         {t[0].model_id for t in taken.values()}]
@@ -480,6 +508,7 @@ class Controller:
                                     f"{'verified rate and dispatch policy, so it can be measured' if verified else 'no verified dispatch policy, so projected only'}"
                                     + (f"; {notes[top.model_id]}" if notes[top.model_id] else ""))
             self.feature_candidates[fid] = [taken[t][0] for t in tiers if t in taken]
+            self.candidate_tiers.update({(fid, taken[t][0].model_id): t for t in tiers if t in taken})
             for t in tiers:
                 if t in taken:
                     chosen_for[taken[t][0].model_id].append((fid, t, taken[t][1]))
@@ -499,7 +528,8 @@ class Controller:
             elif (m.tier or derived.get(m.model_id)) in CANDIDATE_TIERS and (m.tier or derived.get(m.model_id)) not in tiers:
                 tier, reason = m.tier or derived.get(m.model_id), "omitted from this validation comparison"
             else:
-                tier, reason = m.tier or derived.get(m.model_id), "eligible but ranked below the chosen route in its tier"
+                tier, reason = m.tier or derived.get(m.model_id), ("eligible but not chosen by the founder" if picked else
+                                                                    "eligible but ranked below the chosen route in its tier")
             shortlist.append(ShortlistEntry(model_id=m.model_id, tier=tier, nightshift_route=is_route(m),
                                             intelligence=m.intelligence, market=m.market,
                                             price_per_intelligence_point_usd=ppp, price_per_intelligence_point_label=ppp_label,
@@ -514,6 +544,10 @@ class Controller:
                                                   for fid, cs in self.feature_candidates.items())
                                         + f" ({len(models)} snapshot models considered)")
         return [by_id[i] for i in union], shortlist
+
+    def _tier(self, fid: str, m: ModelProfile) -> Optional[str]:
+        """The tier a candidate was chosen for in this feature: curated in the route map, or derived by the rules."""
+        return getattr(self, "candidate_tiers", {}).get((fid, m.model_id)) or m.tier
 
     def _unproven_routes(self, candidates: list[ModelProfile]) -> dict[str, str]:
         """Candidates the Dispatcher would refuse (no verified route tariff or dispatch policy). They stay in the
@@ -904,7 +938,7 @@ class Controller:
                        change={"max_tokens": cap}, justified_by_critique=True)
         self.trace.event("Controller", "repair", output_summary=f"re-run {fid} on {mid} once with max_tokens={cap}")
         sample = self._execute(f, m, original.estimated, budget, f"{self.run_id}/{fid}/{mid}/repair", max_tokens=cap)
-        rerun = FeatureRun(feature_id=fid, model_id=mid, tier=m.tier, executed=False, estimated=original.estimated, is_repair=True)
+        rerun = FeatureRun(feature_id=fid, model_id=mid, tier=self._tier(fid, m), executed=False, estimated=original.estimated, is_repair=True)
         self._finish_run(rerun, f, [sample], req)
         criticals = [c.check_id for c in f.rubric_checks if c.critical]
         broke = [c for c in criticals if original.rubric and original.rubric.checks.get(c) and not rerun.rubric.checks.get(c)]
@@ -934,12 +968,21 @@ class Controller:
             tokens = {r.model_id: r.measured_mean for r in pair if r.measured_mean is not None}
             rubric = [r.rubric for r in pair if r.rubric is not None]
             table = stage_cost_table(f, candidates, tokens, brief.growth_stages, rubric,
-                                     threshold_usd=brief.switch_threshold_usd, output_caps=self.output_caps)
+                                     threshold_usd=brief.switch_threshold_usd, output_caps=self.output_caps,
+                                     instructions=self._prompt(f))
+            by_row_id = {m.model_id: self._tier(f.feature_id, m) for m in candidates}
+            for row in table.rows:
+                row.tier = row.tier or by_row_id.get(row.model_id)
             pack.stage_tables.append(table)
             matched = [self.openrouter_catalog[m.model_id] for m in candidates if m.model_id in self.openrouter_catalog]
             if matched:
-                pack.openrouter_projection_tables.append(openrouter_projection_table(f, matched, tokens,
-                                                                                      brief.growth_stages))
+                projection = openrouter_projection_table(f, matched, tokens, brief.growth_stages,
+                                                         instructions=self._prompt(f))
+                by_row_id.update({f"openrouter/{catalog.catalog_id}": by_row_id.get(model.model_id)
+                                  for model, catalog, _ in matched})
+                for row in projection.rows:
+                    row.tier = row.tier or by_row_id.get(row.model_id)
+                pack.openrouter_projection_tables.append(projection)
             pack.risks += table.risks
             if live_executed:   # features that could not run (audio) are reported as "no candidate passes", with why
                 pack.model_stack += recommend_model_stack(f, table, candidates, rubric)
@@ -948,6 +991,9 @@ class Controller:
                        else "requires live run: no feature was executed in this run")
                 pack.model_stack += [ModelStackEntry(feature_id=f.feature_id, stage=s.name, status="requires_live_run", reason=why)
                                      for s in table.stages]
+        pack.stage_totals = stage_totals(brief.ai_features, brief.growth_stages, pack.stage_tables,
+                                         pack.openrouter_projection_tables, pack.model_stack,
+                                         budget=brief.monthly_ai_budget_usd, usage=brief.usage)
         self.trace.event("Analyst", "calculate_cost", execution_kind="rule_policy",
                          output_summary=f"{len(pack.stage_tables)} stage cost tables; "
                                         f"{sum(len(t.switch_points) for t in pack.stage_tables)} switch points, "

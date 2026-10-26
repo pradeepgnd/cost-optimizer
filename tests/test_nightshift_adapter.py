@@ -78,3 +78,16 @@ def test_review_and_truncation_flags_are_preserved_for_dispatch():
     body["meterless"] = {"requires_review": True}
     parsed = parse_completion_response(body, {})
     assert parsed["requires_review"] is True and parsed["finish_reason"] == "length"
+
+
+@pytest.mark.parametrize("content,expected", [
+    ('I should output JSON.</think>\n{"summary": "s"}', '{"summary": "s"}'),          # closing tag only (Ultra)
+    ('<think>plan</think>{"a": 1}', '{"a": 1}'),
+    ('a</think>b</think> final', 'final'),
+    ('{"no": "tags"}', '{"no": "tags"}'),
+])
+def test_inline_reasoning_is_removed_from_text_but_usage_is_unchanged(content, expected):
+    body = _response()
+    body["choices"][0]["message"]["content"] = content
+    parsed = parse_completion_response(body, {"x-request-id": "nightshift-456"})
+    assert parsed["text"] == expected and parsed["usage"] == body["usage"]

@@ -242,3 +242,23 @@ def test_no_thinking_roles_can_be_set_from_the_environment(monkeypatch, live_env
     if env is not None:
         monkeypatch.setenv("METERLESS_NO_THINKING_ROLES", env)
     assert (role in module.NightshiftInference().no_thinking_roles) is off
+
+
+def test_every_request_gets_its_own_meterless_scope_so_no_memory_is_shared(monkeypatch, live_env):
+    """Nightshift's built-in memory injected an earlier answer under a shared scope (2026-10-26); scopes are now unique."""
+    import app.adapters.live_nightshift as module
+    scopes = []
+
+    def post(url, **kwargs):
+        scopes.append(kwargs["headers"].get("meterless-scope"))
+        return httpx.Response(200, json={"id": "c", "model": "m", "choices": [{"message": {"content": "OK"}}],
+                                         "usage": {"prompt_tokens": 1, "completion_tokens": 1}},
+                              headers={"x-request-id": "r"}, request=httpx.Request("POST", url))
+
+    monkeypatch.setattr(module.httpx, "post", post)
+    adapter = module.NightshiftInference()
+    assert "meterless-scope" not in adapter.headers
+    for operation in ("op-1", "op-2"):
+        with adapter.dispatch_context(operation):
+            adapter.complete(role="Analyst", model="route/alias", system="s", user="u", max_tokens=8)
+    assert len(set(scopes)) == 2 and all(s.startswith("eval-") and s != "user" for s in scopes)

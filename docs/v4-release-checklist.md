@@ -19,23 +19,28 @@ Updated 2026-10-26. The step-by-step plan and findings table are in [08-v4-Imple
 | R2 Modality-aware catalog and contracts | PASS | below |
 | R3a Per-feature candidate selection | PASS | below |
 | R4 Execute verified routes, project the rest | PASS | below |
-| R5 First bounded live pack | PASS (clean pack `r5-live-20261026-113150-e`) | below |
+| R5 First bounded live pack | PASS for dispatch, spend, identity and evidence (`r5-live-20261026-113150-e`); token and cost numbers predate the memory fix | below |
 | R11a Live smoke check (Planner and Critic) | PASS, diagnostic scope (2026-10-26) | below |
+| Nightshift memory isolation (unique scope per request) | PASS; Examples 1 and 3 re-measured | entries at the end |
 | R6 Task planning, grounded critique (was M09) | Not started | plan Step 9 |
 | R7 Review binding, effective repair (was M10) | Not started | plan Step 10 |
 | R8 Memory changes a later run (was M11) | Not started | plan Step 11 |
-| R9 Stage totals, revenue, budget fit (was M12) | Not started | plan Step 12 |
-| R10 Streamlit workflow (was M13) | Not started | plan Step 13 |
+| R9 Stage totals, revenue, budget fit (was M12) | PASS, offline arithmetic and UI; recommended-stack totals stay unknown until R7 | R9 entry below |
+| R10 Streamlit workflow (was M13) | Trimmed version: live runs from the UI PASS, founder candidate picks, revenue inputs, totals and a live progress panel; no human-review controls (R7); layout not reviewed in a browser | R10 entries below |
 | R11 Release rehearsal (was M14) | Not started | plan Step 14 |
 
 ## Open items and caveats before submission
 
 - **R0 not closed:** the official NVIDIA rule wording is not yet quoted, and Narin has not signed off on `07` v4.3.
+- **Quote only post-fix measurements:** runs before `ui-20261026-165715` used Nightshift's shared memory scope, so their token, cost and quality numbers are unreliable. Clean runs: `ui-20261026-165715`, `ui-20261026-170134` (Example 3) and `ui-20261026-172053` (Example 1, cross-lab candidates).
+- **Nightshift providers:** cross-lab candidates exist only while Nightshift's OpenRouter provider is connected (it dropped once on 26 October; 111 routes when connected, 74 without).
+- **Estimates versus measurements:** estimates include the brief's assumed production system prompt, which evaluation calls do not send; measured rows may understate an app that sends one (open modelling decision).
+- **Audio:** no audio-output route exists, and audio-input candidates have no audio conversion rate, so their cost is unknown.
 - **Sponsor readiness:** `scripts/smoke_live.py` passed on 2026-10-26 (R11a below) at diagnostic scope. Pack `readiness` still reads `not_verified`: billing and in-run evidence readback are separate dimensions, and this is not end-to-end sponsor proof. Re-run it on the final setup before submission.
 - **Local-only data:** the registered bundles, bindings, catalog copies and R5 artifacts are gitignored. A clean clone must re-collect and re-register sources (`collect_sources.py`, `prepare_source_bundle.py --include-discovered`, `register_sources.py`); this has not been rehearsed on a second machine.
-- **Free key:** the NVIDIA key is a free Developer Program key (prototyping only); its rate limits are unknown, and only the Planner and Critic routes have verified profiles.
+- **Free key:** the NVIDIA key is a free Developer Program key (prototyping only); its rate limits are unknown, and only Ultra and Lightning have verified profiles, so only they are measured; other candidates are projected only. Market-price totals are lower bounds.
 - **Quality:** one sample per pair and pending human-review checks mean no candidate qualifies yet and no quality claim is made.
-- **Settings passed on the command line for R5:** thinking off for the Planner and Critic and for Lightning, a 150 s timeout, and a running evidence publisher.
+- **Required live settings:** thinking off for the Planner and Critic and for both Nemotron routes, a 150 s timeout, and a running evidence publisher (README settings table). Ultra still used 1,015 of 1,024 output tokens on one sample.
 
 ## Final handoff checklist
 
@@ -43,14 +48,14 @@ Updated 2026-10-26. The step-by-step plan and findings table are in [08-v4-Imple
 - [x] F02 Real H-MEM works and passes restart and isolation tests (local reference)
 - [x] F03 Candidate and role identities match their records; Nemotron proof attributable (R1, R5)
 - [x] F04 Dated, cited source snapshots and repeatable registration
-- [ ] F05 Shared-core founder UI in both modes
+- [x] F05 Shared-core founder UI in both modes (trimmed; no review controls; layout not reviewed in a browser)
 - [ ] F06 Validated representative tasks and rubrics from the planning workflow
 - [ ] F07 Confirmed and accepted memory changes a later run
 - [x] F08 Composed levers give valid totals; unknown prices preserved
 - [ ] F09 Repaired tokens and quality jointly drive the recommendation
 - [x] F10 Dispatch, spend limits and unknown-outcome recovery
-- [x] F11 Input validation and founder controls (budget fit across stages needs R9)
-- [ ] F12 Stage totals, revenue, AI contribution and margin
+- [x] F11 Input validation and founder controls (budget fit across stages added in R9)
+- [x] F12 Stage totals, revenue, AI contribution and margin (R9; recommended-stack totals need R7)
 - [ ] F13 Critic grounding and honest lab independence
 - [ ] F14 Human reviews bound to immutable outputs
 - [x] F15 Traces keep usage; required SKIPs cannot report readiness (Windows unverified)
@@ -355,3 +360,140 @@ Same limits as above: one sample per pair, thinking off for Planner and Critic, 
 - An earlier run without the bindings file failed `read_models`, and one without role routes skipped both completions (`incomplete`); both are expected setup outcomes, not defects.
 
 Not established: end-to-end sponsor readiness, billing (the $0 rate rests on the owner's confirmation of a free key), evidence readback in this run (proved in R5), quality (thinking off, 8-token cap), Windows. Report files are under `data/localstack/smoke-r11b/` (gitignored).
+
+## R10: Streamlit workflow, first version (2026-10-26, PARTIAL)
+
+Added `streamlit_app.py`, `app/ui_service.py`, `tests/test_ui_service.py` and `tests/test_streamlit_app.py`; `data/ui/` is gitignored. The UI holds no business rules: it builds a `RunRequest` from the form (an example is the starting template), runs `run.py` as a subprocess (the CLI's own entry point), and renders the saved pack.
+
+| Command | Result |
+|---|---|
+| `python -m pytest -q tests/test_ui_service.py tests/test_streamlit_app.py` | 11 passed (now including a live-shaped pack showing market costs, pending human review and Critic flags): all three examples round-trip through the form to a valid request; edits and new feature rows reach the request; an invalid form is reported, not raised; a run ID runs once and the second call loads the stored result; run IDs are validated; the app (Streamlit `AppTest`) runs a sample request, shows `SAMPLE/OFFLINE`, shows status `complete` and spend 0, and a rerender creates no new files |
+| `python -m pytest -q` | 554 passed, 8 skipped |
+| `python -m streamlit run streamlit_app.py --server.headless true` | Server started and `/_stcore/health` returned `ok` |
+
+**Trimmed scope (decided 2026-10-26):** five views only. (1) Cost by stage: each feature's monthly cost per model at the dated OpenRouter market price (`openrouter_projection_tables`), measured tokens where a model ran and estimated where it is projected only; sample packs fall back to placeholder stage tables, labeled. (2) Measured versus estimated tokens. (3) Quality checks: deterministic pass/fail, human review pending, Critic flags. (4) Risks, limitations, evidence gaps, with the build panel collapsed. (5) Trace table and pack/trace downloads. Hidden: the actual-route tables (they show $0 on the free key), the model stack (empty until human review exists), lever drill-down and the full shortlist. A stopped run shows the trace's stop reason and a setup hint; Live mode takes the Zetaris bindings file in the sidebar.
+
+Rendering the R5 pack `r5-live-20261026-113150-e` through the app: no exception; `summarize_notes` at Scale shows Ultra $1,545.98, Lightning $114.74 (measured tokens) and DeepSeek $65.58 (estimated, projected only), all lower bounds at market reference price.
+
+**Adapter fix found while trimming:** in R5, Ultra (thinking on) returned its reasoning inside the content, closed by `</think>` with no opening tag, so the JSON rubric check failed on prose. `parse_completion_response` now keeps only the text after the last `</think>`; usage and billing are unchanged (reasoning is already inside completion tokens). Re-checking the retained Ultra output gives a JSON object with `summary` and `action_items`. Test: `tests/test_nightshift_adapter.py` (4 new cases). Not yet confirmed by a new live run.
+
+Not done: aggregate stage totals and budget fit (R9); human-review controls and accepting a decision (R7); memory changes (R8); a live run from the UI was not tried; the screens were not looked at in a browser by a person, only exercised through `AppTest` and a health check; modality entry is a comma-separated text column.
+
+### R10 live run from the UI (2026-10-26, PASS)
+
+Driven through the app with Streamlit `AppTest` (Live mode, Example 3, bindings `data/localstack/openrouter/bindings-wide2.json`, approval ticked, $0.50 cap, evidence publisher running), with `METERLESS_MODEL` (Lightning), `METERLESS_CRITIC_MODEL` (Ultra), `METERLESS_NO_THINKING_ROLES=Planner,Critic`, `METERLESS_NO_THINKING_MODELS=nvidia/nemotron-3.5-lightning-30b-a3b` and `METERLESS_REQUEST_TIMEOUT_S=150` set before launch.
+
+- Run `ui-20261026-144257`: status `complete`; 10 dispatches (Planner, 8 candidate samples at two per pair, Critic), all `completed` with requested equal to resolved model; spend $0, reserved $0; `unpublished_evidence_ids` empty; one H-MEM memory saved.
+- The adapter fix is confirmed live: Ultra's `summarize_notes` output (thinking on) now passes `has_summary_and_actions` and `concise`, as does Lightning's. Human-review checks stay pending, so no model is recommended.
+- The UI showed cost by stage at market price (`summarize_notes` at Scale: Ultra $1,547.17 and Lightning $114.74 from measured tokens; DeepSeek $65.58 estimated, projected only), measured versus estimated tokens, four Critic `token_gap` flags and the trace.
+- A first attempt, `ui-20261026-144146`, ended `partial` because `METERLESS_NO_THINKING_MODELS` was not set: Lightning, with thinking on as a candidate, used all 1,024 output tokens, the receipt was `unknown` and spending stopped after 4 dispatches ($0). Kept as a negative result; the setting is required for Lightning.
+
+### R10 live run with founder-picked candidates (2026-10-26, PASS)
+
+Added `candidate_models` (optional, 1-3 unique routes) to the request, a controller path that uses the picks instead of the automatic choice while keeping its checks (unknown, un-offered or router-alias route, or two picks in one tier, stop the run before any paid call; a pick that can't handle a feature's modality is skipped for that feature), and a dropdown in the UI. Tests: `tests/test_candidate_selection.py`, `tests/test_v4_contracts.py`, `tests/test_ui_service.py`; suite 570 passed, 8 skipped.
+
+Driven through the app (`AppTest`, Live, Example 3, same settings and publisher as the earlier UI run) with picks Ultra, Lightning and `openrouter/qwen/qwen3.8-27b` (the automatic open-source choice would have been DeepSeek):
+
+- Run `ui-20261026-153312`: `complete`; 10 dispatches, all `completed`, requested equal to resolved; spend $0; no unpublished evidence; one memory saved. The request carried the three picks; the pack lists them as "chosen by the founder" and records the limitation that automatic selection was not used.
+- Qwen was projected only (no verified dispatch policy): `summarize_notes` at Scale $713.99 from estimated tokens at market reference price, beside Ultra $1,547.17 and Lightning $114.74 from measured tokens.
+- Not shown: tier clashes are only reported at run time, because the dropdown does not know each model's derived tier.
+
+## R9: stage totals, revenue and budget fit (2026-10-26, PASS for stated scope)
+
+Plan Step 12, findings F11 (rest) and F12. `StageTotal` and `DecisionPack.stage_totals` added (schema 1.1, additive); `stage_totals` in `app/economics.py`; the controller fills it after projection and no longer records the "budget fit is unknown" limitation.
+
+- **Three ways of choosing models**, each summed across all features per stage: the recommended stack (quality-qualified only), the cheapest known candidate per feature (cost only, quality not checked) and one model for every feature it was a candidate for. Computed separately for the actual-route tables and the OpenRouter listed-price projection; the two are never mixed.
+- **Unknown stays unknown:** a feature with no known cost makes the total incomplete and a lower bound, names the missing feature, and is never counted as zero. A lower-bound row makes the total a lower bound.
+- **Revenue** = stage active users × paying fraction × subscription price (the paying fraction applies to active users). **AI contribution** = revenue − AI cost (an upper bound when the cost is a lower bound); **margin** = contribution ÷ revenue when revenue > 0; missing revenue shows costs only. AI-only: other operating costs and one-time build costs are excluded.
+- **Budget fit:** `over` when the total, even a lower bound, exceeds the ceiling; `within` only when the total is complete and not a lower bound; otherwise `unknown`; `no_budget` without a ceiling.
+- **UI:** price per paying user and paying fraction inputs; a "Monthly AI cost, all features together" table and chart at the top of Cost by stage, with the first stage over budget called out.
+
+| Command | Result |
+|---|---|
+| `python -m pytest -q tests/test_stage_summary.py` | 15 passed: known totals, recommended-only totals, unknown costs never zero, non-candidate features, budget crossings, lower bound under and over budget, paying fraction of stage users, 0% and 100% paying, missing revenue, separate pricing scopes, Decimal rounding once. The first run caught a defect (rows keyed without the stage, so later stages overwrote earlier ones), fixed before recording |
+| `python -m pytest -q tests/test_ui_service.py tests/test_streamlit_app.py` | 17 passed, including revenue inputs and a sample run showing totals |
+| `python -m pytest -q` | 587 passed, 8 skipped |
+| `python scripts/check_sample_examples.py` | Examples 1–3 PASS after regenerating `output_examples/` |
+
+Recomputed offline from the live UI pack `ui-20261026-153312` (assumed $15 price, 8% paying, $300 budget): at Scale, all features on Ultra $1,747.68 (budget `over`), all on Lightning or cheapest per feature $129.93, all on Qwen $969.85 (`over`); every market-price total is a lower bound, so totals under the ceiling read `unknown`, not `within`. The recommended-stack total is unknown at every stage because no model is qualified until human review exists (R7).
+
+### R9 live run from the UI (2026-10-26, PASS)
+
+Driven through the app (`AppTest`, Live, Example 3, automatic candidates; budget $300, price $15, paying fraction 0.08; same settings and evidence publisher as the earlier UI runs). Run `ui-20261026-154913`: `complete`, 10 dispatches all `completed` with requested equal to resolved, spend $0, no unpublished evidence, one memory saved, totals in the pack.
+
+Monthly AI cost for both features together at the OpenRouter listed price (all lower bounds), Scale stage: cheapest per feature $80.77 (DeepSeek, estimated, $65.58 for `summarize_notes`; Lightning, measured, $15.19 for `weekly_digest`); all on Ultra $1,746.10, budget `over`; all on Lightning $129.93; all on DeepSeek $85.28 (estimated, projected only). Revenue at Scale $60,000; AI margin 97.1% (Ultra) to 99.9%. Totals below the ceiling read `unknown` because every market-price total is a lower bound. The totals dropdown was changed to plain text options so every choice can be exercised in tests.
+
+### Live UI run with picks on Example 1, and the Ultra thinking fix (2026-10-26)
+
+- **Failed run `ui-20261026-155047`** (Example 1; picks Ultra, DeepSeek V4 Pro, Muse Spark): Ultra as a candidate, with thinking on, used all 1,024 output tokens on a feature in 43 s; the receipt was `unknown` and spending stopped (`partial`). The evidence publisher was also not running. Kept as a negative result: Ultra needs thinking off as a candidate on harder tasks, as Lightning did.
+- **Re-run `ui-20261026-155532`** with `METERLESS_NO_THINKING_MODELS` listing both Lightning and Ultra and the publisher running: `complete`, 6 dispatches all `completed`, requested equal to resolved, spend $0, no unpublished evidence, one memory saved.
+- No pick covers the two audio features (`A1` audio in, `A3` audio out): each is skipped with a limitation, so every total is incomplete and names them. Monthly totals at Scale for the two text features, OpenRouter listed price, lower bounds: all on Ultra $16,013.51 (measured), all on DeepSeek V4 Pro $6,419.29 and all on Muse Spark $678.70 (both estimated, projected only).
+- **Finding:** measured input tokens include the instructions sent with each example (A2: 426.5 measured against 15 estimated), while the 4/3-rule estimate counts only the example text. Projected-only rows therefore understate input cost against measured rows; at Scale, Ultra's A2 input line is $12,283.20 of $15,412.32. Not fixed; stated here and in the UI's measured-versus-estimated view.
+
+### Estimate counts the instructions sent with each call (2026-10-26)
+
+`estimate_feature_tokens` now adds the 4/3-rule count of the instructions the controller sends with each example (`Controller._prompt`) to the static prefix and the example input; the controller passes them to the run estimates, the actual-route stage tables and the OpenRouter projection, so projected-only rows use the same basis. Method label: "4/3 words rule (instructions + example)". Tests: `tests/test_stage_economics.py` (unit) and `tests/test_ui_service.py` (a sample run's estimates equal prefix + instructions + example). `output_examples/` regenerated; sample checker PASS for Examples 1–3; suite 589 passed, 8 skipped.
+
+Effect against the measured runs (input tokens per call, estimate before → after, measured): Example 1 `A2` 15 → 121, measured 426.5; `A4` 530 → 578, measured 1,698.5; Example 3 `summarize_notes` 1,234 → 1,334, measured 2,095; `weekly_digest` 815 → 867, measured 815.
+
+**Still open:** the gap is smaller but not closed, and it is not explained. Two known mismatches remain: (1) measured runs do not send the founder's assumed `static_prefix_tokens`, while estimates include them (Example 3 assumes 1,200 and 800); (2) measured counts are higher than the 4/3 rule on the sent text by an amount that varies by feature (about 300 to 1,100 tokens here), which may be tokenizer behaviour or text added before the model; a one-word smoke prompt measured 29 tokens. Not investigated further; estimated rows remain labeled estimated and lower bounds.
+
+### Example 1 live UI run and an identical-output finding (2026-10-26, run complete; finding OPEN)
+
+Run `ui-20261026-164648` (Example 1, automatic candidates, thinking off for both Nemotron routes, publisher running): `complete`, 10 dispatches all `completed` with requested equal to resolved, spend $0, no unpublished evidence, one memory saved. Totals incomplete: no candidate covers `A1` (audio in) or `A3` (audio out).
+
+- **Nightshift offered 74 routes instead of 111.** The `openrouter/...` routes were missing, so only the two Nemotron routes were eligible: no open-source candidate for the text features and no audio-input candidate for `A1` (an earlier run, `ui-20261026-162348`, had Gemini 3.7 Flash and MiMo v2.5 for `A1` and DeepSeek for the text features). The app handled the change correctly; the cause is on the Nightshift side and was not investigated.
+- **OPEN: identical outputs from different models.** With thinking off, Ultra and Lightning returned byte-identical text for `A4` (2,598 characters, 714 completion tokens, ending mid-sentence) in every sample of three runs (`155532`, `162348`, `164648`), and identical `A2` text in several samples, each with its own receipt, request ID and 7–10 s latency. Two different models producing the same 2,598 characters is implausible, so either Nightshift serves both route IDs from one backend when thinking is off, or a response cache returns earlier text. Until explained, Ultra-versus-Lightning measured differences under thinking off are not evidence of model differences; the requested-equals-resolved check relies on Nightshift's own report. With thinking on for Ultra (Example 3, `154913`), outputs differed.
+
+### Probe: cause of the identical outputs (2026-10-26, cause FOUND; fix OPEN)
+
+Eight requests through the Dispatcher on the free key ($0), thinking off for both Nemotron routes; scripts kept outside the repository.
+
+| Probe | Result |
+|---|---|
+| Example 1 `A4` prompt, Ultra and Lightning, with and without a random tag in the system prompt | All four identical: 714 output tokens, 2,598 characters, fingerprint `78e5b24004` (same as the earlier runs), 6–13 s each |
+| Same prompt, random tag in the user message, both routes | Both identical again (`78e5b24004`) |
+| A new prompt (fictional lighthouse keeper), both routes | Different answers: Ultra 82 tokens, Lightning 105 tokens. The two route IDs are distinct models |
+| `A4` prompt on Lightning with Nightshift's full receipt captured | `cache.status: miss`, `from_cache: false`; **`hmem: injected 1, reason "retrieved 1 memories", top_score 0.88`**; `context_sources: ["messages", "hmem:1 records"]`; provider input 1,542 tokens |
+
+**Cause:** Nightshift's own memory layer (requests carry `meterless-scope: user`) retrieves a stored record for a similar prompt and injects it into the request before it reaches the model. Both models then reproduce the injected earlier answer. This is Nightshift's built-in memory, separate from the app's H-MEM engine (`app/engines/hmem/`).
+
+**Consequences for every live measurement so far:** (1) measured input tokens include injected memory text, which explains much of the unexplained gap between measured and estimated input; (2) outputs, and so output tokens and rubric results, can be copies of earlier answers rather than the model's own work, so Ultra-versus-Lightning measured differences are not reliable evidence; (3) results can depend on earlier runs. Identity (requested equals the answering route) is still correct.
+
+**Fix needed (open):** evaluation requests must run without memory injection. The adapter sends `meterless-scope: user`; the documented way to turn injection off was not found in the repository. Next: confirm the switch in the Nightshift documentation or with the Meterless team, then re-run the measurements.
+
+### Fix: a unique `meterless-scope` per request (2026-10-26, PASS)
+
+Probe first (two requests, `A4` prompt): with a unique scope, Nightshift's receipt showed `hmem: null` and context `["messages"]` only; input fell from 1,542 to 751 tokens; Ultra and Lightning gave different answers (996 and 363 output tokens). The adapter now sends no fixed `meterless-scope` and gives every request `eval-<random>` (`app/adapters/live_nightshift.py`); test `tests/test_trace.py::test_every_request_gets_its_own_meterless_scope_so_no_memory_is_shared`; suite 594 passed, 8 skipped.
+
+Re-run from the UI, Example 1, run `ui-20261026-165715`: `complete`, 10 dispatches, $0, no unpublished evidence. Measured input per call now sits close to the estimate (A2: 142 measured, 121 estimated; A4: 751 measured, 578 estimated), and A4 outputs differ by model and by sample (Ultra 785 and 1,015 tokens; Lightning 475 and 556). Totals at Scale for the two text features, OpenRouter listed price, lower bounds: all on Ultra $6,973.69, all on Lightning or cheapest per feature $717.48 (before the fix: $9,926.27 and $1,076.86).
+
+**Earlier live measurements are affected.** R5 and every UI run before `ui-20261026-165715` ran with the shared `user` scope, so their measured input tokens may include injected memory and their outputs may repeat earlier answers. Their dispatch, spend, identity and evidence results stand; their token, cost and quality numbers should be re-measured before being quoted.
+
+**Watch:** Ultra used 1,015 of the 1,024 output tokens on one A4 sample with thinking off; a longer answer would hit the cap and stop the run as `partial`.
+
+### Example 3 re-measured after the scope fix (2026-10-26, PASS)
+
+Run `ui-20261026-170134` (UI, Live, Example 3, automatic candidates, budget $300, price $15, paying 0.08): `complete`, 10 dispatches all `completed` with requested equal to resolved, $0, no unpublished evidence, one memory saved. Nightshift still offered 74 routes, so only Ultra and Lightning were candidates.
+
+| Feature, model | Input per call (measured / estimated) | Output per call (measured / estimated) | Automated checks |
+|---|---|---|---|
+| `summarize_notes`, Ultra | 141 / 1,334 | 147, 150 / 334 | both pass |
+| `summarize_notes`, Lightning | 141 / 1,334 | 136, 128 / 334 | both pass |
+| `weekly_digest`, Ultra | 86 / 867 | 36, 27 / 400 | none defined |
+| `weekly_digest`, Lightning | 86 / 867 | 44, 44 / 400 | none defined |
+
+Totals for both features at the OpenRouter listed price (lower bounds), Scale: all on Ultra $319.04 (budget `over`), all on Lightning or cheapest per feature $27.20; AI margin 99.47% and 99.95% against $60,000 revenue. Before the fix the same run measured $1,746.10 and $129.93. The Critic flagged four token gaps and two output-format differences.
+
+**New finding (open, not changed):** the estimate now exceeds the measurement because it includes the brief's assumed production system prompt (`static_prefix_tokens`: 1,200 and 800), which evaluation calls do not send. Measured rows therefore leave out that assumed prefix and may understate a production app that sends one; adding the assumed prefix to measured input in projections is a modelling decision for the team.
+
+### OpenRouter provider restored; Example 1 with cross-lab candidates (2026-10-26, PASS)
+
+After the OpenRouter key was added in Nightshift, one request to `openrouter/google/gemma-4-31b-it:free` (outside the Dispatcher, as a provider check; returned an upstream `429` rate limit, no completion, no charge) triggered key verification. `GET /v1/models` then listed 111 routes (37 `openrouter/...`), and all 37 registered price rows were offered again.
+
+Run `ui-20261026-172053` (UI, Live, Example 1, automatic candidates): `complete`, 10 dispatches all `completed` with requested equal to resolved, $0, no unpublished evidence, one memory saved. Candidates: `A1` Gemini 3.7 Flash and MiMo v2.5 (projected only; cost unknown, not zero, because the catalog gives no per-second audio conversion); `A2` and `A4` Ultra and Lightning (measured) and DeepSeek V4 Flash (projected only); `A3` none (no audio-output route). Totals at Scale for the two text features, OpenRouter listed price, lower bounds: all on Ultra $6,877.86, all on Lightning $712.60, all on DeepSeek (estimated) $681.42, which is also the cheapest per feature. Display nit: projected-only feature rows show no tier, because a derived tier is not copied onto the run row.
+
+### Candidate tiers on run rows (2026-10-26, PASS)
+
+The controller records the tier each candidate was chosen for in each feature (curated, or derived by the rules) and uses it for run rows, actual-route stage rows and OpenRouter projection rows. Test: `tests/test_candidate_selection.py::test_derived_tiers_are_recorded_per_feature_for_the_run_rows`. Live check without approval (Example 1, 0 dispatches): Gemini 3.7 Flash frontier, MiMo v2.5 open-source, Ultra frontier, Lightning mid-tier, DeepSeek V4 Flash open-source. Sample checker PASS for Examples 1–3. Suite 595 passed, 8 skipped.
+

@@ -18,3 +18,4 @@ data/sample_evidence_written.jsonl
 data/localstack/
 steps-testing.txt
 docs/evidence
+data/ui/

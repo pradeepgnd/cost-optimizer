@@ -326,3 +326,16 @@ def test_bundled_examples_use_current_schema(number):
     data = json.loads((ROOT / "input_examples" / f"example_{number}.json").read_text())
     assert data["schema_version"] == "1.1"
     assert RunRequest.model_validate(data).schema_version == "1.1"
+
+
+@pytest.mark.parametrize("picked,ok", [(["a/x"], True), (["a/x", "b/y", "c/z"], True), ([], False),
+                                       (["a/x", "a/x"], False), (["a", "b", "c", "d"], False), ([" "], False)])
+def test_candidate_models_accepts_one_to_three_unique_routes(picked, ok):
+    from app.ui_service import load_template
+    request = {**load_template("example_3"), "candidate_models": picked}
+    if ok:
+        assert RunRequest.model_validate(request).candidate_models == picked
+    else:
+        with pytest.raises(ValidationError):
+            RunRequest.model_validate(request)
+    assert "candidate_models" not in RunRequest.model_validate(load_template("example_3")).model_dump(mode="json")

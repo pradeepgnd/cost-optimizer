@@ -136,3 +136,46 @@ def test_a_verified_dispatch_policy_ranks_first_within_its_tier():
     c, _, shortlist = _choose([_feature("t", ["text"])], models)
     assert _ids(c, "t") == [verified.model_id]
     assert "verified rate and dispatch policy" in next(e for e in shortlist if e.selected).reason
+
+
+def _choose_picked(features, picked, routes=None):
+    c = _ctl()
+    c.picked_models = picked
+    union, shortlist = c._candidates(POOL, routes, CANDIDATE_TIERS, features)
+    return c, union, shortlist
+
+
+def test_founder_picks_replace_the_automatic_choice_and_are_labelled():
+    c, union, shortlist = _choose_picked([_feature("t", ["text"])], ["lab/small-text", "lab/open-text"])
+    assert _ids(c, "t") == ["lab/small-text", "lab/open-text"] or set(_ids(c, "t")) == {"lab/small-text", "lab/open-text"}
+    assert {m.model_id for m in union} == {"lab/small-text", "lab/open-text"}
+    by = {e.model_id: e for e in shortlist}
+    assert "chosen by the founder" in by["lab/small-text"].reason
+    assert by["lab/big-text"].reason == "eligible but not chosen by the founder"
+    assert any("chosen by the founder" in item for item in c.limitations)
+
+
+def test_a_pick_that_misses_a_feature_modality_is_skipped_for_that_feature_only():
+    c, _, _ = _choose_picked([_feature("t", ["text"]), _feature("v", ["image_in", "text"])], ["lab/big-text", "lab/open-vision"])
+    assert set(_ids(c, "t")) == {"lab/big-text", "lab/open-vision"}
+    assert _ids(c, "v") == ["lab/open-vision"]
+    assert any("lab/big-text is not used for v" in item for item in c.limitations)
+
+
+@pytest.mark.parametrize("picked,routes,message", [
+    (["lab/unknown"], None, "has no price snapshot row"),
+    (["meterless/auto"], None, "router alias"),
+    (["lab/big-text"], {"lab/open-text"}, "is not offered by Nightshift"),
+    (["lab/big-text", "lab/big-vision"], None, "one candidate per tier"),
+])
+def test_invalid_picks_stop_before_any_paid_call(picked, routes, message):
+    with pytest.raises(StopRun) as stop:
+        _choose_picked([_feature("t", ["text"])], picked, routes)
+    assert message in stop.value.reason
+
+
+def test_derived_tiers_are_recorded_per_feature_for_the_run_rows():
+    c, _, _ = _choose([_feature("t", ["text"])])
+    tiers = {mid: tier for (fid, mid), tier in c.candidate_tiers.items() if fid == "t"}
+    assert set(tiers.values()) == {"frontier", "mid_tier", "open_source"}      # none of the POOL rows has a curated tier
+    assert all(c._tier("t", m) == tiers[m.model_id] for m in c.feature_candidates["t"])

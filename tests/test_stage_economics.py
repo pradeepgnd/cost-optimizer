@@ -551,3 +551,15 @@ def test_no_revenue_risk_below_100_percent_or_without_revenue():
     assert stage_cost_table(_rev("0.05"), [_model()], {"f": _tok(reasoning=0)}).risks == []
     t = stage_cost_table(_feature(), [_model()], {"f": _tok(reasoning=0)})
     assert t.risks == [] and all(r.revenue_share is None for r in t.rows)
+
+
+def test_estimate_counts_the_instructions_sent_with_each_call():
+    feature = _feature(prefix=1200, words=300)
+    instructions = "You are the AI feature in a product. Respond with one JSON object."      # 13 words -> 18 tokens
+    with_instructions = estimate_feature_tokens(feature, instructions)
+    assert with_instructions.input_tokens == estimate_feature_tokens(feature).input_tokens + 18
+    assert with_instructions.output_tokens == estimate_feature_tokens(feature).output_tokens
+    assert "instructions" in with_instructions.method and with_instructions.basis == "estimated"
+    table = stage_cost_table(feature, [_model()], {}, [STAGE], instructions=instructions)
+    assert table.rows[0].token_basis == "estimated"
+    assert table.rows[0].gross_monthly_usd > stage_cost_table(feature, [_model()], {}, [STAGE]).rows[0].gross_monthly_usd

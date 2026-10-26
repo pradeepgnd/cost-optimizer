@@ -20,8 +20,8 @@ The authoritative product specification is [07-Realignment-v4.md](../Planning/07
 | F08 | Composed levers can go negative | PASS | M02 |
 | F09 | Repaired quality feeds the recommendation | **Open** | M10 |
 | F10 | Spend ceiling, retries, unknown outcomes | PASS | M04; R5 exercised overrun, timeout and non-stop-finish stops |
-| F11 | Input validation and operating controls | PASS, partly | M01; budget fit across stages needs M12 |
-| F12 | Stage revenue, contribution, margin | **Open** | M12 |
+| F11 | Input validation and operating controls | PASS | M01; budget fit across stages added in R9 |
+| F12 | Stage revenue, contribution, margin | PASS, scoped | R9; recommended-stack totals stay unknown until R7 qualifies models |
 | F13 | Critic grounding and lab independence | **Open** | M09; shared-lab disclosure exists |
 | F14 | Human reviews bound to outputs | **Open** | M10 |
 | F15 | Diagnostics and traces | PASS, scoped | M03; Windows unverified |
@@ -48,7 +48,7 @@ The milestone number matches its implementation step below. Every milestone must
 | M09 | P1 | Not started (R6) | Validated task planning and grounded flags-only critique | F06, F13 | M08 | Offline scripted loop, then live |
 | M10 | P1 | Not started (R7) | Output-bound human review and effective repair results | F09, F14 | M02, M04, M09 | Saved/scripted samples, then live |
 | M11 | P1 | Not started (R8) | Accepted memory changes a later decision | F07 | M06, M07, M10 | Local engine + persisted evidence |
-| M12 | P2 | Not started (R9) | Stack totals, editable switch threshold, revenue and margin | F11, F12 | M02, M10 | Offline stage fixtures |
+| M12 | P2 | Done (R9) | Stack totals, editable switch threshold, revenue and margin | F11, F12 | M02, M10 | Offline stage fixtures |
 | M13 | P2 | Not started (R10) | Form, results, chart, review and export | F05 | M09–M12 | Sample UI, then live UI |
 | M14 | P2 | Not started (R11) | Clean-clone rehearsal and release evidence | F16; final F01–F15 verification | M00–M13 | Second-machine sample/live |
 
@@ -381,7 +381,7 @@ Add tests/test_memory_workflow.py. Accept a confirmed assumption/decision, stop 
 
 ## Step 12 — Aggregate stage costs, revenue and budget fit
 
-**Status (October 26, 2026): not started** (R9). Findings F11 (rest), F12.
+**Status (October 26, 2026): done for stated scope** (R9): `stage_totals` with three ways of choosing models, revenue, AI contribution, margin and budget fit, in the pack and UI; `tests/test_stage_summary.py`. The recommended-stack total stays unknown until R7 qualifies models. Findings F11 (rest), F12.
 
 **Files:** [economics.py](../app/economics.py), [contracts.py](../app/contracts.py), `_project` in [controller.py](../app/controller.py).
 

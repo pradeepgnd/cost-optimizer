@@ -16,7 +16,7 @@ from app.contracts import (
     ApproachProfile, BuildLedger, Checkpoint, CostLine, EvidenceStatus, FeatureItem, FeatureProfile, LeverLine,
     ModelPricingTerms, ModelProfile, ModelStackEntry, OpenRouterProjectionTable, OperatingLedger, OutputCapRerun, Rate,
     RateCategory, Risk, RiskCause, RubricResult, Scenario, SourceRef, Stage,
-    StageCostRow, StageCostTable, SwitchPoint, TokenUsage, UsageAssumptions, default_stages,
+    StageCostRow, StageCostTable, StageTotal, SwitchPoint, TokenUsage, UsageAssumptions, default_stages,
 )
 
 CENT = Decimal("0.01")
@@ -186,13 +186,16 @@ def estimate_tokens(text: str) -> int:
     return int((Decimal(words) * 4 / 3).to_integral_value(rounding=ROUND_CEILING))
 
 
-def estimate_feature_tokens(feature: FeatureProfile) -> Optional[TokenUsage]:
-    """Offline estimate: static prefix + example input; output from expected words. Reasoning stays unknown."""
+def estimate_feature_tokens(feature: FeatureProfile, instructions: str = "") -> Optional[TokenUsage]:
+    """Offline estimate: static prefix + the instructions sent with each call + example input; output from expected
+    words. Counting the instructions keeps estimated rows on the same basis as measured ones, whose API input
+    counts include them. Reasoning stays unknown."""
     if feature.expected_output_words is None:
         return None
-    return TokenUsage(input_tokens=feature.static_prefix_tokens + estimate_tokens(feature.example_input),
+    return TokenUsage(input_tokens=feature.static_prefix_tokens + estimate_tokens(instructions) + estimate_tokens(feature.example_input),
                       output_tokens=int((Decimal(feature.expected_output_words) * 4 / 3).to_integral_value(rounding=ROUND_CEILING)),
-                      reasoning_tokens=None, basis="estimated", method="4/3 words rule")
+                      reasoning_tokens=None, basis="estimated",
+                      method="4/3 words rule (instructions + example)" if instructions.strip() else "4/3 words rule")
 
 
 def _usd(r) -> Optional[Decimal]:
@@ -675,12 +678,12 @@ def stage_cost_table(feature: FeatureProfile, models: list[ModelProfile],
                      tokens_by_model: Optional[dict[str, TokenUsage]] = None, stages: Optional[list[Stage]] = None,
                      rubric_results: Optional[list[RubricResult]] = None,
                      threshold_usd: Decimal = DEFAULT_SWITCH_THRESHOLD, retry_rate: Decimal = DEFAULT_RETRY_RATE,
-                     output_caps: Optional[list[OutputCapRerun]] = None) -> StageCostTable:
+                     output_caps: Optional[list[OutputCapRerun]] = None, instructions: str = "") -> StageCostTable:
     """Per-stage, per-candidate monthly cost for one feature. Without measured tokens, the 4/3 estimate is used."""
     stages = stages or default_stages()
     tokens_by_model = tokens_by_model or {}
     caps = {(c.feature_id, c.model_id): c for c in (output_caps or [])}
-    est = estimate_feature_tokens(feature)
+    est = estimate_feature_tokens(feature, instructions)
     rows = [stage_cost_row(feature, m, s, tokens_by_model.get(m.model_id, est), retry_rate,
                            caps.get((feature.feature_id, m.model_id)))
             for m in models for s in stages]
@@ -693,7 +696,8 @@ def stage_cost_table(feature: FeatureProfile, models: list[ModelProfile],
 
 
 def openrouter_projection_table(feature: FeatureProfile, matched_catalog: list[tuple[ModelProfile, object, SourceRef]],
-                                tokens_by_model: dict[str, TokenUsage], stages: list[Stage]) -> OpenRouterProjectionTable:
+                                tokens_by_model: dict[str, TokenUsage], stages: list[Stage],
+                                instructions: str = "") -> OpenRouterProjectionTable:
     """Price the same workload as a conditional OpenRouter token scenario, never as an execution tariff."""
     rows, sources = [], []
     for model, catalog, source in matched_catalog:
@@ -708,7 +712,7 @@ def openrouter_projection_table(feature: FeatureProfile, matched_catalog: list[t
                          "source": source})
         for stage in stages:
             row = stage_cost_row(feature, scenario, stage,
-                                 tokens_by_model.get(model.model_id, estimate_feature_tokens(feature)))
+                                 tokens_by_model.get(model.model_id, estimate_feature_tokens(feature, instructions)))
             row.lower_bound = True
             row.warnings.append("OpenRouter listed-token scenario; provider, conditional tariffs and account fees are not verified for this request.")
             rows.append(row)
@@ -717,3 +721,85 @@ def openrouter_projection_table(feature: FeatureProfile, matched_catalog: list[t
         warnings=["Hypothetical OpenRouter serving at the pinned catalog list price; not the Nightshift bill or a model recommendation.",
                   "Measured tokens, when available, came from Nightshift and may differ under OpenRouter tokenization or routing.",
                   "Account fees, provider selection, conditional tariffs and actual billing remain unverified."])
+
+
+# ---------------------------------------------------------------- R9: stage totals, revenue and budget fit
+
+RATIO = Decimal("0.0001")
+
+
+def _stage_revenue(stage: Stage, usage: Optional[UsageAssumptions]) -> Optional[Decimal]:
+    """Revenue = active users x paying fraction x subscription price. The paying fraction applies to the stage's active
+    users; absent price or fraction leaves revenue unknown (costs are still shown)."""
+    if usage is None or usage.paying_fraction is None or usage.subscription_price_usd is None:
+        return None
+    return Decimal(stage.active_users) * usage.paying_fraction * usage.subscription_price_usd
+
+
+def _total(scenario, scope, stage, features, picks, rows, *, budget, usage, model_id=None, note="") -> StageTotal:
+    """Sum one stage across features. picks: feature -> model ID or None; rows: (feature, model) -> StageCostRow."""
+    costs, lower = {}, False
+    for fid in features:
+        row = rows.get((fid, picks.get(fid))) if picks.get(fid) else None
+        cost = _exact(row, "with_levers") if row is not None else None
+        costs[fid] = cost
+        lower = lower or (row is not None and cost is not None and row.lower_bound)
+    known = [c for c in costs.values() if c is not None]
+    complete = len(known) == len(features)
+    total = sum(known, Decimal("0")) if known else None
+    lower_bound = lower or not complete
+    revenue = _stage_revenue(stage, usage)
+    contribution = None if revenue is None or total is None else revenue - total
+    margin = (contribution / revenue).quantize(RATIO, rounding=ROUND_HALF_UP) if contribution is not None and revenue > 0 else None
+    if budget is None:
+        fit = "no_budget"
+    elif total is not None and total > budget:
+        fit = "over"                   # even a lower bound above the ceiling is over
+    elif total is not None and not lower_bound:
+        fit = "within"
+    else:
+        fit = "unknown"
+    missing = [fid for fid in features if costs[fid] is None]
+    if missing:
+        note = (note + "; " if note else "") + f"cost unknown for {', '.join(missing)}, so the total covers known features only"
+    return StageTotal(scenario=scenario, pricing_scope=scope, model_id=model_id, stage=stage.name,
+                      active_users=stage.active_users, feature_models={fid: picks.get(fid) for fid in features},
+                      feature_costs={fid: _q(c) for fid, c in costs.items()}, monthly_usd=_q(total), complete=complete,
+                      lower_bound=lower_bound, revenue_usd=_q(revenue), ai_contribution_usd=_q(contribution),
+                      ai_contribution_margin=margin, budget_fit=fit, note=note)
+
+
+def stage_totals(features: list[FeatureProfile], stages: list[Stage], tables: list[StageCostTable],
+                 projections: list[OpenRouterProjectionTable], model_stack: list[ModelStackEntry], *,
+                 budget: Optional[Decimal] = None, usage: Optional[UsageAssumptions] = None) -> list[StageTotal]:
+    """Monthly AI cost of all features per stage (07 §6 item 2, plan Step 12). Three ways of choosing models:
+    the recommended stack (quality-qualified only), the cheapest known candidate per feature (cost only, quality not
+    checked), and one model for every feature it was a candidate for. Each is computed for the actual-route tables
+    and, when present, the OpenRouter listed-price projection; the two are never mixed."""
+    fids = [f.feature_id for f in features]
+    out: list[StageTotal] = []
+    for scope, source in (("actual_route", tables), ("openrouter_listed_token_scenario", projections)):
+        all_rows = [r for t in source for r in t.rows]
+        if not all_rows:
+            continue
+        models = list(dict.fromkeys(r.model_id for r in all_rows))
+        for stage in stages:
+            at = {(r.feature_id, r.model_id): r for r in all_rows if r.stage == stage.name}
+            if scope == "actual_route":
+                rec = {e.feature_id: e.model_id for e in model_stack if e.stage == stage.name and e.status == "recommended"}
+                out.append(_total("recommended", scope, stage, fids, rec, at, budget=budget, usage=usage,
+                                  note="quality-qualified models only" if rec else
+                                  "no model is qualified yet (critical checks, including human review, must pass)"))
+            cheapest = {}
+            for fid in fids:
+                known = [(_exact(r, "with_levers"), m) for (f, m), r in at.items() if f == fid and _exact(r, "with_levers") is not None]
+                cheapest[fid] = min(known)[1] if known else None
+            out.append(_total("cheapest_per_feature", scope, stage, fids, cheapest, at, budget=budget, usage=usage,
+                              note="cost only; quality not checked"))
+            for mid in models:
+                picks = {fid: mid if (fid, mid) in at else None for fid in fids}
+                note = "not a candidate for " + ", ".join(f for f in fids if picks[f] is None) if None in picks.values() else ""
+                out.append(_total("single_model", scope, stage, fids, picks, at, budget=budget, usage=usage,
+                                  model_id=mid, note=note))
+    return out
+
