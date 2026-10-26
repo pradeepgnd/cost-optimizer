@@ -30,7 +30,7 @@ Requires Zetaris (Docker Desktop / WSL2) and Meterless Nightshift running locall
 python run.py --input input_examples/example_1.json --output result.json
 ```
 
-Source setup now has an independent [Steps 5–6 manual test guide](docs/12-M05-M06-Manual-Testing.md): collect/validate a catalog, prepare pinned application records, preview/apply LocalStack or S3 registration, read typed rows and verify labeled evidence write/readback. These checks need no H-MEM or model completions. The OpenRouter collector retains raw/normalized data, exact hashes and explicit quarantine records. The [selected Ultra/Lightning/Gemma routes and OpenRouter projection](docs/13-M05-Serving-and-Billing-Selection.md) add a separate listed-token serving scenario; application model profiles keep those catalog prices separate from actual Nightshift execution tariffs.
+Source setup now has an independent [Steps 5–6 manual test guide](docs/12-M05-M06-Manual-Testing.md): collect/validate a catalog, prepare pinned application records, preview/apply LocalStack or S3 registration, read typed rows and verify labeled evidence write/readback. These checks need no H-MEM or model completions. The OpenRouter collector retains raw/normalized data, exact hashes and explicit quarantine records. The [OpenRouter projection and serving/billing notes](docs/13-M05-Serving-and-Billing-Selection.md) add a separate listed-token serving scenario; application model profiles keep those catalog prices separate from actual Nightshift execution tariffs.
 
 Use the generated schema 1.1 bindings file through `ZETARIS_BINDINGS_FILE`. Every source row is checked against its pinned envelope hash; the earlier unbound `LIMIT 50` query is no longer the application read path. Optional build-source failure leaves the operating comparison available. Result ingestion runs in a separate publisher process, and the application retains a durable evidence outbox when write/readback is unavailable. AWS/Windows validation and applicable provider tariffs/billing bounds remain separate acceptance work. Recorded component evidence is in [m05-m06-source-checks.json](docs/m05-m06-source-checks.json).
 
@@ -56,7 +56,7 @@ Every attempt transactionally claims money and a slot in SQLite before entering 
 
 The stricter [v4 call-budget policy](Planning/07-Realignment-v4.md) caps **all inference attempts, across roles and retries, at 30**. There is one logical Planner, one Critic and at most one repair, plus at most two safe retries globally. The default `sampling_profile: production` uses two samples per executable pair when the dispatch slots fit; four features need at most 29 slots including reserved repair/retry slots, while five use one sample. `sampling_profile: validation` explicitly selects one sample per pair for incremental checks. Spend is checked before each attempt; a selected sampling count does not guarantee the whole run fits the monetary budget.
 
-For an incremental Ultra + Lightning comparison, a validation request may set `candidate_tiers: ["frontier", "mid_tier"]`. The [two-model manual guide](docs/16-M08-Two-Model-Validation.md) prepares a zero-spend request, checks its gate and runs the controller; the pack records that Gemma remains pending. Production requests keep all three tiers.
+For an incremental two-model comparison, a validation request may set two `candidate_tiers`; under the current route map, Ultra + Lightning is `["frontier", "open_source"]`. The pack records the omitted tier as pending. The [two-model manual guide](docs/16-M08-Two-Model-Validation.md) predates the Oct 26 role change (it used `mid_tier` for Lightning). Production requests keep all three tiers.
 
 Incremental dispatch check (offline synthetic billing/HTTP fixtures): `python -m pytest -q tests/test_dispatch_limits.py tests/test_controller_live_fake.py`. See [M04 evidence](docs/evidence/v4-release-checklist.md#m04--bounded-dispatch-spend-and-restart-safety).
 
@@ -72,8 +72,8 @@ Founder idea + AI features ─► Controller (allowlist by state, call caps, spe
   2  Retrieve   Analyst ◄─ Zetaris         dated prices (input, output, cache, batch, audio, long-context),
                                            intelligence scores, OpenRouter market reference
   3  Select     Controller ◄─ Nightshift   candidate shortlist: one Nightshift route per tier (GET /v1/models,
-                                           before any paid call); open-source is the required pinned route;
-                                           shared candidate/Critic routes are disclosed
+                                           before any paid call); open-source is always the Nemotron route;
+                                           Critic route must not be a candidate's route
   4  Estimate   Analyst                    4/3 rule per feature × candidate, labeled estimated
      ── approval gate (evaluation_approved, max_spend_usd) ──
   5  Plan       Planner ◄─ Nightshift      domain risks only, labeled model-generated, not advice
@@ -91,7 +91,7 @@ Founder idea + AI features ─► Controller (allowlist by state, call caps, spe
 **Candidate shortlist.** One candidate per tier: frontier, mid-tier and open-source. In live mode only Nightshift routes are eligible; sample mode says the route check needs live mode.
 
 - **Frontier and mid-tier:** the top-ranked eligible model by intelligence score, then OpenRouter usage rank, then snapshot order.
-- **Open-source:** always the pinned required route, from `METERLESS_OPEN_MODEL` or the snapshot row marked `required`, regardless of score. The current selection is Gemma 4 31B Dense free through Nightshift's `openrouter/google/gemma-4-31b-it:free` route. Other open models can appear in the shortlist but never replace it. If the pinned route has no price snapshot or Nightshift doesn't offer it, the run stops for input before any paid call.
+- **Open-source:** always the Nemotron route, from `METERLESS_OPEN_MODEL` or the snapshot row marked `required`, regardless of score. The selected route map ([routes.selected.json](data/source_examples/routes.selected.json)) pins Nemotron 3.5 Lightning 30B (`nvidia/nemotron-3.5-lightning-30b-a3b`) as open-source, Gemma 4 31B (`openrouter/google/gemma-4-31b-it:free`) as mid-tier, and Nemotron 3 Ultra 550B as frontier, labeled "largest available (open weights)" until a closed frontier route replaces that one entry. Other open models can appear in the shortlist but never replace it. If the pinned route has no price snapshot or Nightshift doesn't offer it, the run stops for input before any paid call.
 - **In the pack:** `candidate_shortlist` lists every snapshot model, with:
   - whether it's a Nightshift route;
   - its intelligence score, with source and date;
@@ -122,7 +122,7 @@ Hard limits per run: 1 logical Planner, 1 logical Critic, ≤1 logical repair, �
 | Zetaris | Data layer: price snapshots for every candidate (S3-backed sources) and writeback of measured runs | `app/adapters/live_zetaris.py`; trace `zetaris_query` events with query IDs |
 | Meterless H-MEM | The idea's memory: confirmed assumptions recalled at the start of a run; accepted model-stack decisions saved at the end | `app/engines/hmem/`; `tests/test_hmem_engine.py` |
 | Meterless Nightshift | The router for every model call: Planner, all three candidates and the Critic; requested and resolved model logged per request | `app/adapters/live_nightshift.py`; trace `nightshift_request` and `run_feature` events |
-| NVIDIA Nemotron | Ultra and Lightning remain candidates; a measured Nemotron-backed working feature and corroborated identity are needed for NVIDIA evidence | Trace `select_candidates` (chosen routes) and `run_feature` events (`model` per request) |
+| NVIDIA Nemotron | The open-source candidate in every comparison (Lightning), pinned so no higher-scored open model replaces it; its measured cost and deterministic quality checks drive the switch points. Ultra fills the frontier slot | `METERLESS_OPEN_MODEL`; trace `select_candidates` (chosen routes) and `run_feature` events (`model` per request) |
 | Cursor | Used by Shrie for UI and Zetaris work | — |
 
 No model grades the comparison. The Critic only flags issues and proposes one action, which the controller validates. It never uses a candidate's route when Nightshift offers another; when none is available, the trace and the pack's limitations say so.

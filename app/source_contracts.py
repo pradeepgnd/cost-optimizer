@@ -4,7 +4,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Literal
 
-from pydantic import Field, model_validator
+from pydantic import Field, model_serializer, model_validator
 
 from app.contracts import (ApproachProfile, FounderBrief, ModelProfile, NonBlank, NonNegativeDecimal,
                            NonNegativeInt, PositiveInt, PublicInput, SourceRef, require_unique)
@@ -55,6 +55,8 @@ class RouteMapping(PublicInput):
     required: bool = False
     # A deliberately curated profile, never derived by copying a catalog price into a tariff.
     billing_profile: ModelProfile | None = None
+    # Human-readable role note, e.g. why this route fills its tier. Descriptive only; selection never reads it.
+    label: NonBlank | None = None
 
     @model_validator(mode="after")
     def _binding(self):
@@ -63,6 +65,14 @@ class RouteMapping(PublicInput):
         if self.billing_profile and self.billing_profile.model_id != self.route_id:
             raise ValueError("billing profile must match the exact mapped Nightshift route")
         return self
+
+    @model_serializer(mode="wrap")
+    def _omit_unset_label(self, handler):
+        # Bundle IDs hash the dumped route map; an absent label must not change existing bundle identities.
+        data = handler(self)
+        if self.label is None:
+            data.pop("label", None)
+        return data
 
 
 class RouteMap(PublicInput):

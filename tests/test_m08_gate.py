@@ -40,7 +40,7 @@ def test_two_model_gate_excludes_open_route_from_dispatch_readiness(tmp_path, mo
 
     def bound(profile, *args):
         if profile.model_id == routes["open_source"]:
-            raise StopRun(RunState.partial, "Gemma tariff unverified")
+            raise StopRun(RunState.partial, "open-source route tariff unverified")
         return None, Decimal("0.01"), None, None, None
 
     monkeypatch.setattr(gate, "request_bound", bound)

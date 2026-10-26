@@ -4,16 +4,17 @@
     {
       "catalog_id": "nvidia/nemotron-3-ultra-550b-a55b",
       "route_id": "nvidia/nemotron-3-ultra-550b-a55b",
-      "tier": "frontier"
-    },
-    {
-      "catalog_id": "nvidia/nemotron-3.5-lightning",
-      "route_id": "nvidia/nemotron-3.5-lightning-30b-a3b",
-      "tier": "mid_tier"
+      "tier": "frontier",
+      "label": "largest available (open weights); swap for a closed frontier route by replacing this entry"
     },
     {
       "catalog_id": "google/gemma-4-31b-it:free",
       "route_id": "openrouter/google/gemma-4-31b-it:free",
+      "tier": "mid_tier"
+    },
+    {
+      "catalog_id": "nvidia/nemotron-3.5-lightning",
+      "route_id": "nvidia/nemotron-3.5-lightning-30b-a3b",
       "tier": "open_source",
       "required": true
     }

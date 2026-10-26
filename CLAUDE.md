@@ -8,7 +8,7 @@ Submission closes 27 Oct 2026, 23:45 UTC (6:45 p.m. Chicago). This repository be
 
 An agent that turns a founder's AI SaaS idea into a costed model stack by feature and growth stage. The operating ledger is primary: compare frontier, mid-tier and Nemotron candidates using measured API usage and deterministic checks plus human review. The build-approach ledger is secondary; the two ledgers are never summed. Unknown evidence stays explicit, and the Critic flags issues rather than grading candidates.
 
-`Planning/07-Realignment-v4.md` (v4.1) is authoritative. Earlier PRD/architecture/plan requirements apply only where not contradicted by `07`. The retrospective, sealed-actuals evaluation and dev-spec tasks T1–T6 are historical/shelved; retain their existing access protections. Active gap work follows `docs/09-v4-Gap-Implementation-Guide.md`, with incremental results in `docs/evidence/v4-release-checklist.md`. A plan or green offline suite is not proof of live sponsor readiness.
+`Planning/07-Realignment-v4.md` (v4.2) is authoritative. Route roles: open-source is always Nemotron (3.5 Lightning, the required route), mid-tier is Gemma 4 31B, frontier is Nemotron 3 Ultra until a closed model replaces it; see `data/source_examples/routes.selected.json`. Earlier PRD/architecture/plan requirements apply only where not contradicted by `07`. The retrospective, sealed-actuals evaluation and dev-spec tasks T1–T6 are historical/shelved; retain their existing access protections. Active gap work follows `docs/09-v4-Gap-Implementation-Guide.md`, with incremental results in `docs/v4-release-checklist.md`. A plan or green offline suite is not proof of live sponsor readiness.
 
 ## Map of the code
 

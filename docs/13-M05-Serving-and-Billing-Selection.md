@@ -1,5 +1,7 @@
 # M05 serving and billing selection
 
+> **Superseded route roles (October 26, 2026).** The role assignments in this document (Ultra frontier, Lightning mid-tier, Gemma required open model) are superseded by `Planning/07-Realignment-v4.md` v4.2 and [routes.selected.json](../data/source_examples/routes.selected.json): Nemotron 3.5 Lightning 30B is the required open-source route, Gemma 4 31B is mid-tier, and Nemotron 3 Ultra 550B is frontier ("largest available (open weights)"). The Critic must not use a candidate's route while Nightshift offers another, so the Ultra-as-Critic configuration described below now stops before any paid call. The serving, billing and catalog-price findings below still apply; bundles and bindings named below were registered under the old roles and need re-preparing.
+
 Updated October 25, 2026: Gemma 4 31B Dense (free OpenRouter route) replaces Super as the required open-model contender. Lightning remains mid-tier and Ultra remains frontier. Fresh `GET /v1/models` discovery advertised 112 routes, including the exact Gemma route; it did not return active serving endpoints or billable usage rules. No completion was sent during this selection check. The earlier `feature/plan-07-impl-meena` Stage 3 record separately documents live Ultra and Lightning requests with NVIDIA cloud winning-route receipts.
 
 | Role | Nightshift serving route | OpenRouter catalog ID | Catalog reference input/output, USD per 1M tokens |

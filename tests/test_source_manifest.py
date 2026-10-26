@@ -178,3 +178,15 @@ def test_public_storage_config_cannot_embed_credentials_sql_or_remote_test_crede
     payload = json.loads((ROOT / "data/source_examples/localstack.json").read_text())
     with pytest.raises(ValueError):
         StorageConfig.model_validate({**payload, **updates})
+
+
+def test_selected_route_map_keeps_nemotron_as_the_required_open_route():
+    mapping = RouteMap.model_validate_json((ROOT / "data/source_examples/routes.selected.json").read_text())
+    tiers = {route.tier: route for route in mapping.routes}
+    assert tiers["open_source"].required and tiers["open_source"].route_id.startswith("nvidia/nemotron")
+    assert tiers["frontier"].label and not tiers["frontier"].required
+
+
+def test_unset_route_label_is_omitted_so_existing_bundle_ids_do_not_change():
+    mapping = RouteMap.model_validate_json(ROUTES.read_text())
+    assert all("label" not in route for route in mapping.model_dump(mode="json")["routes"])

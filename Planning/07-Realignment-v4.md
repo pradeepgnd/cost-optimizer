@@ -1,6 +1,6 @@
 # v4 Realignment: AI SaaS Cost Advisor
 
-Version 4.2 | October 25, 2026 | Owner: Narin | v4.1 applies Isioma's review (precision, reasoning tokens, critic authority, lever labels, self-host inputs); v4.2 selects Gemma 4 31B Dense free for the open-model comparison while retaining NVIDIA Nemotron candidates | **Authoritative.** Where this document conflicts with PRD/architecture/plan v3.4 or `06`, this document wins. Sections of v3.4 not contradicted here still apply: sponsor requirements, controller limits, trace format, sample mode rules, secrets, submission package.
+Version 4.2 | October 25, 2026 | Owner: Narin | v4.1 applies Isioma's review (precision, reasoning tokens, critic authority, lever labels, self-host inputs); v4.2 (Oct 26) pins route roles: Nemotron 3.5 Lightning is the open-source hero, Gemma 4 31B is mid-tier, Nemotron 3 Ultra is frontier (largest available, open weights, swappable for a closed model) | **Authoritative.** Where this document conflicts with PRD/architecture/plan v3.4 or `06`, this document wins. Sections of v3.4 not contradicted here still apply: sponsor requirements, controller limits, trace format, sample mode rules, secrets, submission package.
 
 ## 1. What changed and why
 
@@ -47,16 +47,16 @@ User volume remains the founder's estimate and is labeled that way. Tokens and q
 
 | Role | What | Purpose |
 |---|---|---|
-| Frontier | Best general route available in Nightshift | Quality ceiling |
-| Mid-tier | A cheaper route from a frontier lab | The usual production choice |
-| **Open-source (hero)** | **Google Gemma 4 31B Dense free via Nightshift** | The "frontier vs open source" question; compare a second lab |
+| Frontier | NVIDIA Nemotron 3 Ultra 550B: largest available (open weights) | Quality ceiling; one route-map entry, swappable for a closed frontier model later |
+| Mid-tier | Google Gemma 4 31B via Nightshift | The usual production choice; a second lab |
+| **Open-source (hero)** | **NVIDIA Nemotron 3.5 Lightning 30B via Nightshift** | The "frontier vs open source" question; NVIDIA award feature |
 | Self-hosted open-source (stretch) | Same open model on rented GPU, priced by hour | Break-even against API pricing at scale |
 
-Exact route IDs are pinned from Nightshift's `GET /v1/models` during setup. The current Gemma route is `openrouter/google/gemma-4-31b-it:free`; the NVIDIA Ultra and Lightning routes remain frontier and mid-tier. `meterless/auto` is not a candidate.
+Exact route IDs are pinned from Nightshift's `GET /v1/models` during setup and recorded in `data/source_examples/routes.selected.json`: frontier `nvidia/nemotron-3-ultra-550b-a55b`, mid-tier `openrouter/google/gemma-4-31b-it:free`, open-source (required) `nvidia/nemotron-3.5-lightning-30b-a3b`. `meterless/auto` is not a candidate.
 
 Incremental `validation` runs may select two candidate tiers while testing the Nightshift path. The request and pack must name the selected tiers and mark the omitted tier as pending. The full founder comparison still requires all three candidates.
 
-**No model grades the comparison.** Every candidate, frontier included, is being compared, so pass/fail comes from deterministic rubric checks plus human review. The Critic only flags issues and proposes one corrective action. Where Nightshift exposes a route from a lab that is not a candidate, the Critic uses it; otherwise the trace discloses that the Critic shares a lab with a candidate. NVIDIA award eligibility comes from the Ultra or Lightning Nemotron candidate handling a working feature with its model identity logged per request (Submission Requirements §4).
+**No model grades the comparison.** Every candidate, frontier included, is being compared, so pass/fail comes from deterministic rubric checks plus human review. The Critic only flags issues and proposes one corrective action. Where Nightshift exposes a route from a lab that is not a candidate, the Critic uses it; otherwise the trace discloses that the Critic shares a lab with a candidate. NVIDIA award eligibility comes from the Nemotron open-source candidate handling a working feature with its model identity logged per request (Submission Requirements §4).
 
 ## 5. Economics (two ledgers, never summed)
 
@@ -84,9 +84,9 @@ monthly[f,m,s]   = calls[f,s] × cost_call[f,m] × (1 + retry_rate)
 | Output cap | critic finds output longer than the rubric needs | measured re-run with the cap |
 | Long-context cliff | measured input above the provider threshold | **warning**: surcharge applies to the whole request |
 
-**Switch point:** the first stage at which moving a feature from frontier to mid or open-source is projected to cost at least the founder's threshold (default $100/month) less **and** the cheaper model passed every critical rubric check. Reported as: "From Traction (5,000 users), plan generation on Gemma is projected to cost ~$X/month less; measured quality 5/6 checks vs 6/6 on frontier. Test on your own data before switching."
+**Switch point:** the first stage at which moving a feature from frontier to mid or open-source is projected to cost at least the founder's threshold (default $100/month) less **and** the cheaper model passed every critical rubric check. Reported as: "From Traction (5,000 users), plan generation on Nemotron is projected to cost ~$X/month less; measured quality 5/6 checks vs 6/6 on frontier. Test on your own data before switching."
 
-**Self-host break-even (stretch, cut first):** needs three inputs, not one: GPU $/hour (Isioma, AWS), the pinned Gemma variant's served throughput in tokens/second on that GPU (cited benchmark), and a utilization assumption. Without a cited throughput figure, this item is not shown.
+**Self-host break-even (stretch, cut first):** needs three inputs, not one: GPU $/hour (Isioma, AWS), the pinned Nemotron variant's served throughput in tokens/second on that GPU (cited benchmark), and a utilization assumption. Without a cited throughput figure, this item is not shown.
 
 Unknown prices stay unknown. Revenue present → contribution and margin per stage; absent → cost-only.
 
@@ -119,8 +119,8 @@ The four build approaches and the rework multiplier from v3.4, unchanged. Shown 
 |---|---|
 | Zetaris | Data layer: price snapshots, intelligence index, founder ideas, measured runs (evaluation evidence). Every price the agent uses comes from a Zetaris query. |
 | Meterless H-MEM | The idea's memory: confirmed assumptions and earlier stage decisions, recalled on a re-run so the agent reports what changed as the SaaS matures. |
-| Meterless Nightshift | The router for every model call: frontier, mid and Gemma all go through it, which is what makes side-by-side measurement possible. |
-| NVIDIA Nemotron | Ultra and Lightning remain candidates; a measured working feature with corroborated Nemotron identity supplies NVIDIA-specific evidence. |
+| Meterless Nightshift | The router for every model call: frontier, mid and Nemotron all go through it, which is what makes side-by-side measurement possible. |
+| NVIDIA Nemotron | The open-source contender in every comparison (Lightning); its measured cost and deterministic quality checks drive the switch points. Ultra fills the frontier slot until a closed model replaces it. |
 | Cursor | Used by Shrie for UI and Zetaris work, truthfully described. |
 
 ## 9. Hosting: why Zetaris runs locally, and what Vercel can and can't do
@@ -155,6 +155,6 @@ The four build approaches and the rework multiplier from v3.4, unchanged. Shown 
 | When | Exit evidence |
 |---|---|
 | Sun midday–evening | v4 sample mode working (Narin); price snapshots v1 (Isioma); Nightshift routes pinned (Pradeep); Zetaris `SELECT 1` body shared (Shrie/Meena) |
-| **Sun 6 p.m. gate** | One real Nemotron request through Nightshift plus one real Gemma candidate request; one real Zetaris price query; H-MEM save/restart/recall. If any fails: cut the self-host stretch, then the hosted demo, never sponsor proof |
+| **Sun 6 p.m. gate** | One real Nemotron (open-source) request through Nightshift plus one real Gemma (mid-tier) request; one real Zetaris price query; H-MEM save/restart/recall. If any fails: cut the self-host stretch, then the hosted demo, never sponsor proof |
 | Mon | Live end-to-end on 3 ideas; UI wired; clean-clone rehearsal; video draft |
 | Tue by noon | Final recording, deck, public repo, submission |

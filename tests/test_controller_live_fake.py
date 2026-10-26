@@ -186,12 +186,11 @@ def test_prefix_move_is_recorded_not_executed(run):
     assert any("cacheable prefix" in q for q in pack.questions)
 
 
-def test_explicit_critic_on_candidate_route_discloses_shared_identity(run):
+def test_critic_on_candidate_route_stops_before_any_paid_call_when_another_exists(run):
     pack, inf, events, _ = run(critic_model=FR)
-    assert pack.status == RunState.complete
-    assert [c["model"] for c in inf.calls if c["role"] == "Critic"] == [FR]
-    assert any(e["action"] == "critic_shares_candidate_route" for e in events)
-    assert any("not independent" in limitation for limitation in pack.limitations)
+    assert pack.status == RunState.needs_input and inf.calls == []
+    assert "other/critic-route" in pack.questions[0]
+    assert not any(e["action"] == "critic_shares_candidate_route" for e in events)
 
 
 def test_critic_shares_candidate_route_only_when_nothing_else_is_offered(run):

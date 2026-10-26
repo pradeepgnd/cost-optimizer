@@ -423,7 +423,8 @@ class Controller:
         return [chosen[t][0] for t in tiers if t in chosen], shortlist
 
     def _check_critic_route(self, candidates: list[ModelProfile], route_list: list[str]):
-        """Record shared candidate identity; discovery alone cannot establish a different lab."""
+        """The Critic must not use a candidate's route when Nightshift offers another; otherwise the trace says so.
+        Checked before any paid call. GET /v1/models is free."""
         if self.mode == "sample":
             self.trace.event("Controller", "critic_route_check", execution_kind="rule_policy",
                              output_summary="sample mode: no Critic call")
@@ -431,12 +432,6 @@ class Controller:
         cand = {m.model_id for m in candidates}
         routes = route_list
         others = [r for r in routes if r not in cand and r != AUTO_ROUTE]
-        if self.critic_model in cand:
-            self.trace.event("Controller", "critic_shares_candidate_route", requested_model=self.critic_model,
-                             output_summary="explicit Critic route shares a candidate; lab independence unverified")
-            self.limitations.append(f"The Critic uses candidate route {self.critic_model}; its flags are not independent "
-                                    "of that candidate. No different-lab alternative was verified for this run.")
-            return
         if self.critic_model and self.critic_model not in cand and self.critic_model != AUTO_ROUTE:
             if routes and self.critic_model not in routes:
                 raise StopRun(RunState.needs_input, f"Critic route {self.critic_model} is not offered by Nightshift",
@@ -448,7 +443,7 @@ class Controller:
             return
         if others:
             raise StopRun(RunState.needs_input,
-                          "Critic route is unset or a router alias while Nightshift offers explicit routes",
+                          "Critic route is unset, the router alias, or a candidate's route, while Nightshift offers others",
                           [f"Set METERLESS_CRITIC_MODEL to a route that is not a candidate: {', '.join(others)}."])
         self.critic_model = self.critic_model if self.critic_model in cand else candidates[0].model_id
         self.trace.event("Controller", "critic_shares_candidate_route", requested_model=self.critic_model,
