@@ -60,14 +60,16 @@ def run_check(check: RubricCheck, text: str) -> Optional[bool]:
 
 
 def evaluate(feature: FeatureProfile, model_id: str, outputs: list[str],
-             reviews: Optional[list[HumanReview]] = None) -> RubricResult:
-    """A machine check passes only if it passes on every sample. A human review overrides the machine result;
-    a human_review check without a review stays pending."""
+             reviews: Optional[list[HumanReview]] = None, truncated: Optional[list[bool]] = None) -> RubricResult:
+    """A machine check passes only if it passes on every sample, and fails if any sample was cut at the token cap
+    (an incomplete answer). A human review overrides the machine result; a human_review check without a review
+    stays pending."""
     machine: dict[str, bool] = {}
+    cut = any(truncated or [])
     for c in feature.rubric_checks:
         results = [run_check(c, o) for o in outputs]
         if outputs and all(r is not None for r in results):
-            machine[c.check_id] = all(results)
+            machine[c.check_id] = all(results) and not cut
     ids = {c.check_id for c in feature.rubric_checks}
     overrides = {r.check_id: r.passed for r in (reviews or [])
                  if r.feature_id == feature.feature_id and r.model_id == model_id and r.check_id in ids}

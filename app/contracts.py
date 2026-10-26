@@ -397,6 +397,7 @@ class TokenUsage(BaseModel):
     audio_output_tokens: Optional[NonNegativeDecimal] = None
     basis: Literal["measured", "estimated"]
     method: str
+    truncated: bool = False   # measured output stopped at max_tokens, so output_tokens is a lower bound
 
     @model_validator(mode="after")
     def _reasoning_within_output(self):
@@ -431,6 +432,8 @@ class FeatureSample(BaseModel):
     provider: Optional[str] = None
     provider_kind: Optional[str] = None
     max_tokens: Optional[int] = None
+    finish_reason: Optional[str] = None
+    truncated: bool = False                  # the answer was cut at max_tokens; its text is incomplete
 
 
 class FeatureRun(BaseModel):

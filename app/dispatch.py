@@ -22,7 +22,10 @@ from app.trace import _mask
 MAX_DISPATCHES = 30
 MAX_TRANSPORT_RETRIES = 2
 MAX_ROLE_CALLS = {"Planner": 1, "Critic": 1, "Revision": 1}
-MAX_OUTPUT_TOKENS = 1024
+MAX_OUTPUT_TOKENS = 2048   # app ceiling; each route's verified dispatch policy may set a lower one
+# A feature sample cut at max_tokens is still a measurement with known usage and charge, so it completes as
+# truncated. Planner and Critic output must be whole to act on, so a cut there still stops spending.
+TRUNCATABLE_ROLES = {"Analyst", "Revision"}
 _SAFE_PRE_DISPATCH = (httpx.ConnectError, httpx.ConnectTimeout, httpx.PoolTimeout)
 
 
@@ -236,12 +239,19 @@ class Dispatcher:
         for route in routes:
             if route not in self.models or route == "meterless/auto":
                 raise blocked(f"{route}: no pinned route billing profile", "rates")
-            request_bound(self.models[route], "", "", MAX_OUTPUT_TOKENS)
+            request_bound(self.models[route], "", "", self.output_cap(route))
 
-    def call(self, *, logical_id, role, model, system, user, max_tokens=MAX_OUTPUT_TOKENS):
+    def output_cap(self, model):
+        """The largest max_tokens a route may be sent: the app ceiling or the route's verified bound, whichever is lower."""
+        profile = self.models.get(model)
+        policy = profile.dispatch_policy if profile else None
+        return min(policy.max_output_tokens, MAX_OUTPUT_TOKENS) if policy else MAX_OUTPUT_TOKENS
+
+    def call(self, *, logical_id, role, model, system, user, max_tokens=None):
         profile = self.models.get(model)
         if profile is None or model == "meterless/auto":
             raise blocked(f"{model}: no pinned route billing profile; router aliases cannot bound spending", "rates")
+        max_tokens = self.output_cap(model) if max_tokens is None else max_tokens
         bound, reserved, input_rate, output_rate, sources = request_bound(profile, system, user, max_tokens)
         for attempt in range(1, MAX_TRANSPORT_RETRIES + 2):
             record = DispatchRecord(operation_id=str(uuid.uuid4()), logical_id=logical_id, attempt=attempt, role=role,
@@ -307,7 +317,8 @@ class Dispatcher:
                                               or record.actual_usd > reserved) else "completed"
                 if record.state == "completed" and result.get("requires_review") is True:
                     record.state, record.error_type = "unknown", "RuntimeReviewRequired"
-                elif record.state == "completed" and result.get("finish_reason") not in (None, "stop"):
+                elif (record.state == "completed" and result.get("finish_reason") not in (None, "stop")
+                      and not (result.get("finish_reason") == "length" and role in TRUNCATABLE_ROLES)):
                     record.state, record.error_type = "unknown", "NonStopFinish"
             self.ckpt.finish(self.run_id, record, self.budget, result)
             self._event(record)

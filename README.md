@@ -8,9 +8,11 @@ An agent that helps solo founders turn an AI SaaS idea into a costed technology 
 
 ## Quick start (no credentials, no network)
 
+Code blocks in this README contain commands only, so they can be pasted into zsh or bash as they are. On Windows, activate with `.venv\Scripts\Activate.ps1`.
+
 ```bash
 git clone <repo> && cd <repo>
-python -m venv .venv && . .venv/bin/activate      # Windows: .venv\Scripts\Activate.ps1
+python -m venv .venv && . .venv/bin/activate
 pip install -r requirements.txt
 cp .env.example .env
 SAMPLE_MODE=true python run.py --input input_examples/example_1.json --output result.json
@@ -45,7 +47,7 @@ Requires Zetaris (Docker Desktop / WSL2) and Meterless Nightshift running locall
 | `METERLESS_BASE_URL`, `METERLESS_RUNTIME_TOKEN` | from the Nightshift Console | All inference |
 | `METERLESS_MODEL` | `nvidia/nemotron-3.5-lightning-30b-a3b` | Planner route (NVIDIA proof). Needs a verified profile in `routes.selected.json`; `meterless/auto` is refused |
 | `METERLESS_CRITIC_MODEL` | `nvidia/nemotron-3-ultra-550b-a55b` | Critic route (NVIDIA proof), same rule |
-| `METERLESS_NO_THINKING_ROLES` | `Planner,Critic` | Thinking off for these roles. Reasoning counts toward the 1,024-token cap; with it on, the Planner returned empty answers and the Critic hit the cap. An **empty value means no roles** and turns the Planner default off |
+| `METERLESS_NO_THINKING_ROLES` | `Planner,Critic` | Thinking off for these roles. Reasoning counts toward the output cap; with it on, the Planner returned empty answers and the Critic hit the cap. An **empty value means no roles** and turns the Planner default off |
 | `METERLESS_NO_THINKING_MODELS` | `nvidia/nemotron-3.5-lightning-30b-a3b,nvidia/nemotron-3-ultra-550b-a55b` | Thinking off for these routes wherever they are used, including as candidates. Without it, Lightning (Example 3) and Ultra (Example 1) each hit the 1,024-token cap as a candidate and the run stopped `partial`; listing both also keeps their comparison like for like |
 | `METERLESS_REQUEST_TIMEOUT_S` | `150` | Read timeout per request (default 60); Ultra has needed more |
 | `METERLESS_OPEN_MODEL` | leave unset | Optional override of the open-source candidate; a route that is not offered or has no price row stops the run |
@@ -90,10 +92,12 @@ Expect `SELECT 1`, `read_models` (the model row count), `GET /v1/models` (the ro
 
 **6. Start the evidence publisher and the UI from the same terminal (each session).** The app writes measured results back to Zetaris through the publisher, and Streamlit must share its throwaway token, so start both from one shell:
 
+Use your own bindings file in `--bindings` (the same file as `ZETARIS_BINDINGS_FILE`; for example `data/localstack/openrouter/bindings-wide2.json`).
+
 ```bash
 export SOURCE_INGEST_TOKEN=$(python -c "import secrets;print(secrets.token_hex(16))") SOURCE_INGEST_URL=http://127.0.0.1:8766
 python scripts/serve_source_ingest.py --storage data/source_examples/localstack.json \
-    --bindings data/localstack/bindings.json --port 8766 &   # the same bindings file as ZETARIS_BINDINGS_FILE
+    --bindings data/localstack/bindings.json --port 8766 &
 python -m streamlit run streamlit_app.py
 ```
 
@@ -115,7 +119,7 @@ If port 8766 is taken (a publisher is already running), stop it with `pkill -f s
 | "Price data not found" (red, sidebar) | No bindings file | Set `ZETARIS_BINDINGS_FILE` in `.env` (step 4), restart Streamlit |
 | `needs_input` · "evaluation not approved" | Approval box not ticked | New run, tick approval, Run |
 | `partial` · "evidence record(s) were not written back" | Publisher not running, or Streamlit started without its token | Step 6 from one terminal; replay the run with the `retry_evidence.py` command the UI shows |
-| `partial` · "operation … unknown; further spending stopped" | A model with thinking on used the whole 1,024-token output cap | Check both thinking settings in `.env` (step 3), restart Streamlit, New run |
+| `partial` · "operation … unknown; further spending stopped" | The Planner or Critic used the whole output cap (often with thinking on), or a response came back without usage or under another model | Check both thinking settings in `.env` (step 3), restart Streamlit, New run. A candidate or repair answer cut at the cap no longer stops the run: it is kept as measured, its tokens are a lower bound and its quality checks fail |
 | `needs_input` · "pricing unavailable" / `SetupIncomplete` | Zetaris, bindings or `.env` problem | Run step 5 and fix the first FAIL |
 | Only Ultra and Lightning as candidates | Nightshift's OpenRouter provider not connected | Step 2; step 5 should then show about 111 routes |
 | "No candidate covers …" for an audio-out feature | No offered route produces audio | Expected; the totals name the feature as unknown |
@@ -130,10 +134,12 @@ Three levels, from no accounts to a bounded live run. The step numbers are those
 
 ```bash
 python -m venv .venv && . .venv/bin/activate && pip install -r requirements.txt
-(cd app/engines/hmem/reference && npm ci)          # Node 20+; needed for the real H-MEM test
-python -m pytest -q -rs                             # 595 passed, 8 skipped (the 8 are the shelved retrospective)
-python scripts/check_sample_examples.py             # three PASS lines
+(cd app/engines/hmem/reference && npm ci)
+python -m pytest -q -rs
+python scripts/check_sample_examples.py
 ```
+
+The `npm ci` step needs Node 20+ and is required for the real H-MEM test. Expected: 595 passed and 8 skipped (the shelved retrospective), then three PASS lines.
 
 Per step (`-rs` shows skips; a skipped H-MEM test means Step 7 is **not** confirmed):
 
@@ -153,25 +159,25 @@ Per step (`-rs` shows skips; a skipped H-MEM test means Step 7 is **not** confir
 
 ### Level 2: read-only live (no model completions)
 
-Needs Zetaris running in Docker, a LocalStack container named `cost-optimizer-localstack` on the same Docker network (port 4566 published, your `LOCALSTACK_AUTH_TOKEN` set), Nightshift running, and `.env` filled in from `.env.example`. Starting Zetaris and LocalStack is not scripted here; follow the Participant Setup Guide. Run in this order, replacing `<...>` with each command's printed output:
+Needs Zetaris running in Docker, a LocalStack container named `cost-optimizer-localstack` on the same Docker network (port 4566 published, your `LOCALSTACK_AUTH_TOKEN` set), Nightshift running, and `.env` filled in from `.env.example`. Starting Zetaris and LocalStack is not scripted here; follow the Participant Setup Guide. Run in this order, replacing `<SNAPSHOT_DIR>` and `<BUNDLE_DIR>` with the paths the collect and bundle commands print. Discovery sends no completion. The first `register_sources.py` is a dry run; the second applies it and should report `status: pass`. The Zetaris check should pass with 0 completions, and the projection preview ends `needs_input` with 0 dispatches. `ZETARIS_BINDINGS_FILE` can instead be set once in `.env`; `smoke_live.py` checks Zetaris, discovery and H-MEM.
 
 ```bash
-python scripts/collect_sources.py --output-dir data/localstack/openrouter/catalog            # prints snapshot_dir
-python scripts/discover_source_routes.py --output data/localstack/discovery.json            # free; no completion
+python scripts/collect_sources.py --output-dir data/localstack/openrouter/catalog
+python scripts/discover_source_routes.py --output data/localstack/discovery.json
 python scripts/prepare_source_bundle.py --catalog <SNAPSHOT_DIR> --route-map data/source_examples/routes.selected.json \
     --discovery data/localstack/discovery.json --include-discovered --brief input_examples/example_3.json \
-    --output-dir data/localstack/openrouter/bundles                                          # prints bundle_dir
-python scripts/register_sources.py --bundle <BUNDLE_DIR> --storage data/source_examples/localstack.json   # dry run
+    --output-dir data/localstack/openrouter/bundles
+python scripts/register_sources.py --bundle <BUNDLE_DIR> --storage data/source_examples/localstack.json
 python scripts/register_sources.py --bundle <BUNDLE_DIR> --storage data/source_examples/localstack.json --apply \
-    --bindings-output data/localstack/bindings.json --report data/localstack/registration.json            # status pass
+    --bindings-output data/localstack/bindings.json --report data/localstack/registration.json
 python scripts/check_zetaris_sources.py --bindings data/localstack/bindings.json \
     --catalog-id nvidia/nemotron-3-ultra-550b-a55b --round-trip --storage data/source_examples/localstack.json \
-    --run-id verify-001 --output-dir data/localstack/verify-001                              # status pass, 0 completions
+    --run-id verify-001 --output-dir data/localstack/verify-001
 python scripts/check_m08_gate.py --bindings data/localstack/bindings.json --output data/localstack/gate.json
-export ZETARIS_BINDINGS_FILE=$PWD/data/localstack/bindings.json   # or set it once in .env
+export ZETARIS_BINDINGS_FILE=$PWD/data/localstack/bindings.json
 python scripts/check_openrouter_projection.py --input input_examples/example_3.json \
-    --bindings data/localstack/bindings.json --output-dir data/localstack/preview-001        # needs_input, 0 dispatches
-python scripts/smoke_live.py                                                                 # Zetaris, discovery, H-MEM
+    --bindings data/localstack/bindings.json --output-dir data/localstack/preview-001
+python scripts/smoke_live.py
 ```
 
 What to look for:
@@ -186,21 +192,15 @@ What to look for:
 
 Confirms Steps 4, 6 and 8 together: the Planner, Critic and candidates through the dispatcher, with the evidence round trip. Use a fresh run ID each time.
 
-```bash
-# 1. a request: copy input_examples/example_3.json, set a new "run_id", "sampling_profile": "validation",
-#    "evaluation_approved": true and "max_spend_usd": "0.50" (save as data/localstack/r5/request.json)
+1. Make a request: copy `input_examples/example_3.json` to `data/localstack/r5/request.json` and set a new `"run_id"`, `"sampling_profile": "validation"`, `"evaluation_approved": true` and `"max_spend_usd": "0.50"`.
+2. Start the evidence publisher with a throwaway token (never put it in `.env`; `SOURCE_INGEST_URL` may live there), run, then stop the publisher. The role routes, thinking and timeout settings come from `.env`. Replace `data/localstack/bindings.json` with your bindings file if it lives elsewhere. To use the UI instead of `run.py`, start `python -m streamlit run streamlit_app.py` from the same shell.
 
-# 2. start the evidence publisher with a throwaway token (never put it in .env; SOURCE_INGEST_URL can live in .env)
+```bash
 export SOURCE_INGEST_TOKEN=$(python -c "import secrets;print(secrets.token_hex(16))") SOURCE_INGEST_URL=http://127.0.0.1:8766
 python scripts/serve_source_ingest.py --storage data/source_examples/localstack.json \
     --bindings data/localstack/bindings.json --port 8766 &
-
-# 3. run (the role routes, thinking and timeout settings come from .env as in the Settings table)
 SAMPLE_MODE=false RUNS_DB=$PWD/data/localstack/r5/runs.db \
 python run.py --input data/localstack/r5/request.json --output data/localstack/r5/pack.json
-# or the UI, from this same shell: python -m streamlit run streamlit_app.py
-
-# 4. stop the publisher
 pkill -f serve_source_ingest.py
 ```
 
@@ -222,7 +222,7 @@ Current request/pack schema is **1.1**. An input marked `1.0`, or without a vers
 
 Both build fields (`brief.features_v1` and `brief.constraints`) can be omitted. Build costs then remain unknown and approaches are not ranked without a build scope. Value defaults and founder estimates receive per-field `assumed` provenance unless evidence is explicitly declared; nulls remain `unknown`, and metadata alone cannot promote an omitted default to verified. The new `brief.monthly_ai_budget_usd` (optional) and `brief.switch_threshold_usd` (default $100) survive request/pack export. The switch threshold feeds stage tables/model selection; the monthly ceiling is recorded with an explicit limitation until aggregate budget-fit analysis (R9).
 
-Paid execution uses [the shared dispatcher](app/dispatch.py). Planner, candidates, Critic, repair and diagnostics all require explicit output limits (at most 1,024 tokens), a pinned route's verified USD-per-million rates and a cited `dispatch_policy` bounding prompt bytes, token overhead and completion tokens including hidden reasoning. Planner/Critic routes need their own billing profiles; `meterless/auto` cannot be priced safely. Missing/unverified rates or bounds produce a partial result and an evidence gap before paid dispatch. Sample placeholder data deliberately has no such policy. In live mode only routes with a verified profile are executed; the rest are projected only.
+Paid execution uses [the shared dispatcher](app/dispatch.py). Planner, candidates, Critic, repair and diagnostics all require explicit output limits (at most 2,048 tokens, or the route policy's `max_output_tokens` if lower), a pinned route's verified USD-per-million rates and a cited `dispatch_policy` bounding prompt bytes, token overhead and completion tokens including hidden reasoning. Planner/Critic routes need their own billing profiles; `meterless/auto` cannot be priced safely. Missing/unverified rates or bounds produce a partial result and an evidence gap before paid dispatch. A candidate or repair answer that stops at the cap (`finish_reason: length`) completes with its measured charge, is marked truncated (output tokens a lower bound, quality checks failed) and does not stop the run; a Planner or Critic answer cut at the cap still stops further spending. Sample placeholder data deliberately has no such policy. In live mode only routes with a verified profile are executed; the rest are projected only.
 
 Every attempt transactionally claims money and a slot in SQLite before entering the adapter. Charges are computed from measured usage at the applicable full input/output tariff; production cache/batch discounts are not assumed. Packs and CLI results distinguish known `spend_usd` from unresolved `reserved_spend_usd`; packs also expose `operations`, retry counts and selected samples. Unknown outcomes retain reservations and stop further spending. A usage/billing-bound overrun records the full known charge, even above the approved ceiling, and stops; the software cannot undo a runtime's violated limit. Only known pre-dispatch connect/connect-timeout/pool failures may retry, with another receipt/reservation/slot. Read/write timeouts, HTTP errors, malformed responses, missing usage and unpriced resolved identities are never automatically replayed. Correlation IDs do not imply provider idempotency. Existing run IDs are refused on restart; unresolved operations require external reconciliation, not a new automatic attempt.
 
@@ -336,7 +336,7 @@ The offline suite covers contracts, Decimal economics, durable dispatch, source 
 - Economics are modeled estimates from entered assumptions and the rates in the price snapshots, not financial advice. Small samples throughout; no claim about a model's quality beyond the measured tasks.
 - Sample-mode prices, intelligence scores and market references are unverified placeholders. Live catalog prices are dated market references, not billing evidence; the two verified $0 profiles assume a free NVIDIA Developer Program key and are for prototyping only.
 - Audio is priced from per-second conversions, not measured; audio and image inputs are never sent to a model. No offered route produces audio, and audio-input candidates have no cited conversion rate, so audio feature costs are unknown, as are image costs. Never zero.
-- Thinking is off for the Planner, Critic and both measured Nemotron models (with it on they exceeded the 1,024-token output cap), so measured tokens describe answers without reasoning.
+- Thinking is off for the Planner, Critic and both measured Nemotron models (with it on they exceeded the then 1,024-token output cap), so measured tokens describe answers without reasoning.
 - Estimated tokens include the brief's assumed production system prompt, which evaluation calls do not send; measured rows may understate an app that sends one.
 - Prompt caching, batch API and output reuse are projections for a production setup, not measured in our runs.
 - The self-host break-even is not shown: it needs a cited throughput figure for the selected open-model variant.

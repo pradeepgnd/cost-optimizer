@@ -3120,7 +3120,8 @@
         "audio_input_tokens": null,
         "audio_output_tokens": null,
         "basis": "estimated",
-        "method": "4/3 words rule (instructions + example)"
+        "method": "4/3 words rule (instructions + example)",
+        "truncated": false
       },
       "samples": [],
       "measured_mean": null,
@@ -3141,7 +3142,8 @@
         "audio_input_tokens": null,
         "audio_output_tokens": null,
         "basis": "estimated",
-        "method": "4/3 words rule (instructions + example)"
+        "method": "4/3 words rule (instructions + example)",
+        "truncated": false
       },
       "samples": [],
       "measured_mean": null,
@@ -3162,7 +3164,8 @@
         "audio_input_tokens": null,
         "audio_output_tokens": null,
         "basis": "estimated",
-        "method": "4/3 words rule (instructions + example)"
+        "method": "4/3 words rule (instructions + example)",
+        "truncated": false
       },
       "samples": [],
       "measured_mean": null,
@@ -3183,7 +3186,8 @@
         "audio_input_tokens": null,
         "audio_output_tokens": null,
         "basis": "estimated",
-        "method": "4/3 words rule (instructions + example)"
+        "method": "4/3 words rule (instructions + example)",
+        "truncated": false
       },
       "samples": [],
       "measured_mean": null,
@@ -3204,7 +3208,8 @@
         "audio_input_tokens": null,
         "audio_output_tokens": null,
         "basis": "estimated",
-        "method": "4/3 words rule (instructions + example)"
+        "method": "4/3 words rule (instructions + example)",
+        "truncated": false
       },
       "samples": [],
       "measured_mean": null,
@@ -3225,7 +3230,8 @@
         "audio_input_tokens": null,
         "audio_output_tokens": null,
         "basis": "estimated",
-        "method": "4/3 words rule (instructions + example)"
+        "method": "4/3 words rule (instructions + example)",
+        "truncated": false
       },
       "samples": [],
       "measured_mean": null,
@@ -3742,7 +3748,7 @@
     }
   ],
   "memory_ids": [
-    "4bfd199025b30d1d8703ee55d6d92a1db699d25544952681799d4a61ca9c9c1f:mem-255"
+    "4bfd199025b30d1d8703ee55d6d92a1db699d25544952681799d4a61ca9c9c1f:mem-353"
   ],
   "evidence_gaps": [
     {

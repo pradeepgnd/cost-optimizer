@@ -350,3 +350,24 @@ def test_an_unproven_planner_or_critic_route_still_stops_before_any_call(run):
     assert pack.status != RunState.complete and inf.calls == []
     pack, inf, _, _ = run(data=Data(unverified={FR}), req=_req(run_id="planner-unproven"))
     assert pack.status != RunState.complete and not [c for c in inf.calls if c["role"] == "Planner"]
+
+
+def test_a_sample_cut_at_the_token_cap_is_measured_as_a_lower_bound_and_fails_its_checks(run):
+    class CutMid(FakeNightshift):
+        def complete(self, **kwargs):
+            result = super().complete(**kwargs)
+            if kwargs["role"] == "Analyst" and kwargs["model"] == MID:
+                result["finish_reason"] = "length"
+            return result
+    pack, inf, events, _ = run(inf=CutMid())
+    assert pack.status == RunState.complete and pack.unpublished_evidence_ids == []
+    cut = next(r for r in pack.feature_runs if r.model_id == MID and not r.is_repair)
+    assert all(s.truncated and s.finish_reason == "length" for s in cut.samples)
+    assert cut.measured_mean.truncated and cut.measured_mean.basis == "measured"
+    assert cut.rubric.machine and not any(cut.rubric.machine.values())
+    whole = next(r for r in pack.feature_runs if r.model_id == FR and not r.is_repair)
+    assert not whole.measured_mean.truncated and not any(s.truncated for s in whole.samples)
+    rows = [r for t in pack.stage_tables for r in t.rows if r.model_id == MID]
+    assert rows and all(r.lower_bound and any("token cap" in w for w in r.warnings) for r in rows)
+    assert any("cut at the" in l and MID in l for l in pack.limitations)
+    assert any("cut at the" in (e.get("output_summary") or "") for e in events if e.get("action") == "run_feature")

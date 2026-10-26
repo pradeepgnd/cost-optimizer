@@ -32,7 +32,7 @@ from app.economics import (SIZE_MULTIPLIER, build_ledger, estimate_feature_token
 from app.rubric import evaluate, json_fields_requested, parse_json_object
 from app.trace import Trace
 from app.dispatch import (Budget, Checkpoints, Dispatcher, DuplicateRun, StopRun,
-                          MAX_DISPATCHES, MAX_OUTPUT_TOKENS, measured_usage, request_bound)
+                          MAX_DISPATCHES, measured_usage, request_bound)
 
 MAX_CANDIDATE_GENERATIONS = MAX_DISPATCHES  # compatibility name; the cap now includes every role and retry
 SAMPLES_PER_PAIR = 2                      # 07 §7 call budget; 1 when 2 would not fit under the cap
@@ -76,7 +76,8 @@ def _mean_usage(usages: list[TokenUsage]) -> TokenUsage:
     return TokenUsage(input_tokens=sum((u.input_tokens for u in usages), Decimal("0")) / n,
                       output_tokens=sum((u.output_tokens for u in usages), Decimal("0")) / n,
                       reasoning_tokens=None if None in reasoning else sum(reasoning, Decimal("0")) / n,
-                      basis="measured", method=f"mean of {len(usages)} API usage samples")
+                      basis="measured", method=f"mean of {len(usages)} API usage samples",
+                      truncated=any(u.truncated for u in usages))
 
 
 class Controller:
@@ -136,7 +137,7 @@ class Controller:
     def _call(self, role: str, model: str, system: str, user: str, budget: Budget,
               max_tokens: Optional[int] = None, logical_id: Optional[str] = None):
         return self.dispatcher.call(logical_id=logical_id or role.lower(), role=role, model=model,
-                                    system=system, user=user, max_tokens=MAX_OUTPUT_TOKENS if max_tokens is None else max_tokens)
+                                    system=system, user=user, max_tokens=max_tokens)
 
     # -------------------------------------------------------------- run
 
@@ -775,21 +776,32 @@ class Controller:
     def _execute(self, f: FeatureProfile, m: ModelProfile, est, budget: Budget, ref: str,
                  max_tokens: Optional[int] = None) -> FeatureSample:
         role = "Revision" if ref.endswith("/repair") else "Analyst"
-        res = self._call(role, m.model_id, self._prompt(f), f.example_input, budget, max_tokens=max_tokens, logical_id=ref)
+        cap = self.dispatcher.output_cap(m.model_id) if max_tokens is None else max_tokens
+        res = self._call(role, m.model_id, self._prompt(f), f.example_input, budget, max_tokens=cap, logical_id=ref)
         usage, why = _measured_usage(res.get("usage") or {})
         if why:
             self.limitations.append(f"{f.feature_id} on {m.model_id}: {why}; its cost uses the estimate.")
+        truncated = res.get("finish_reason") == "length"
+        if truncated:
+            if usage is not None:
+                usage = usage.model_copy(update={"truncated": True,
+                                                 "method": f"{usage.method}; output stopped at the {cap}-token cap (lower bound)"})
+            note = (f"{f.feature_id} on {m.model_id}: the answer was cut at the {cap}-token cap; its output tokens are a "
+                    "lower bound and its quality checks fail.")
+            if note not in self.limitations:
+                self.limitations.append(note)
         s = FeatureSample(output_ref=ref, output_text=res["text"], usage=usage, raw_usage=res.get("usage") or {},
                           latency_s=res.get("elapsed_s"), requested_model=res.get("requested_model"),
                           resolved_model=res.get("resolved_model"), route_id=res.get("route_id"),
                           receipt_id=res.get("receipt_id"), provider=res.get("provider"),
-                          provider_kind=res.get("provider_kind"),
-                          max_tokens=MAX_OUTPUT_TOKENS if max_tokens is None else max_tokens)
+                          provider_kind=res.get("provider_kind"), max_tokens=cap,
+                          finish_reason=res.get("finish_reason"), truncated=truncated)
         self.trace.event("Analyst", "run_feature", model=res.get("resolved_model"), requested_model=res.get("requested_model"),
                          route_id=res.get("route_id"), execution_kind=res["execution_kind"], input_summary=ref,
                          output_summary="usage unavailable" if usage is None else
                          f"measured {usage.input_tokens} in / {usage.output_tokens} out"
-                         + ("" if usage.reasoning_tokens is None else f" (incl. {usage.reasoning_tokens} reasoning)"))
+                         + ("" if usage.reasoning_tokens is None else f" (incl. {usage.reasoning_tokens} reasoning)")
+                         + (f"; cut at the {cap}-token cap" if truncated else ""))
         self._publish_evidence({"id": ref, "run_id": self.run_id, "project_id": self.project_id,
             "kind": "feature_sample", "payload": {"feature_id": f.feature_id, "model_id": m.model_id,
                 "configuration": {"system_prompt": self._prompt(f), "max_tokens": s.max_tokens}, **s.model_dump(mode="json")}})
@@ -822,7 +834,8 @@ class Controller:
             run.measured_mean = _mean_usage(usages)
             if run.estimated is not None and run.estimated.output_tokens:
                 run.output_gap_ratio = (run.measured_mean.output_tokens / run.estimated.output_tokens).quantize(Decimal("0.01"))
-        run.rubric = evaluate(f, run.model_id, [s.output_text for s in samples], req.human_reviews)
+        run.rubric = evaluate(f, run.model_id, [s.output_text for s in samples], req.human_reviews,
+                              truncated=[s.truncated for s in samples])
 
     def _sample(self, brief, candidates, runs, budget: Budget, req: RunRequest):
         """Run each executable feature's example input on each candidate. Sample mode executes nothing."""
@@ -862,6 +875,7 @@ class Controller:
                     "rubric": [c.description for c in features[r.feature_id].rubric_checks],
                     "estimated_output_tokens": None if r.estimated is None else str(r.estimated.output_tokens),
                     "measured_output_tokens": None if r.measured_mean is None else str(r.measured_mean.output_tokens),
+                    "output_cut_at_token_cap": any(s.truncated for s in r.samples),
                     "output_excerpt": r.samples[0].output_text[:1200]} for r in executed]
         system = ("You review outputs of AI features. Only FLAG issues; never pass, fail or score an output. Finding kinds: "
                   "unsupported_claim (a claim not supported by the input), token_gap (estimated vs measured tokens differ "

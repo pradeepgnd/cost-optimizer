@@ -50,7 +50,7 @@
           "max_prompt_bytes": 100000,
           "prompt_tokens_per_byte": "1",
           "prompt_overhead_tokens": 2048,
-          "max_output_tokens": 1024,
+          "max_output_tokens": 2048,
           "completion_limit_includes_reasoning": true,
           "billing_mode": "input_output_only",
           "source": {
@@ -113,7 +113,7 @@
           "max_prompt_bytes": 100000,
           "prompt_tokens_per_byte": "1",
           "prompt_overhead_tokens": 2048,
-          "max_output_tokens": 1024,
+          "max_output_tokens": 2048,
           "completion_limit_includes_reasoning": true,
           "billing_mode": "input_output_only",
           "source": {

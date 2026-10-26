@@ -493,7 +493,11 @@ def stage_cost_row(feature: FeatureProfile, model: ModelProfile, stage: Stage, t
     else:
         pairs.append(_lever("output_reuse", "no output reuse rate given", applies=False))
     _validate_cost(with_levers)
-    lower_bound = effective.basis == "estimated" or audio_estimated or with_levers is None
+    # A cut measurement understates the uncapped answer; with an output cap applied, the capped request is the cost.
+    cut = effective is tokens and tokens.truncated
+    if cut:
+        warnings.append("Measured output stopped at the token cap; cost is a lower bound.")
+    lower_bound = effective.basis == "estimated" or audio_estimated or with_levers is None or cut
     row["token_basis"] = "estimated" if audio_estimated else effective.basis
     if audio_estimated and effective is not tokens:
         warnings.append("Effective request audio tokens estimated from per-second conversion, not measured.")

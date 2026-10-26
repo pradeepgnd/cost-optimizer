@@ -4418,7 +4418,8 @@
         "audio_input_tokens": null,
         "audio_output_tokens": null,
         "basis": "estimated",
-        "method": "4/3 words rule (instructions + example)"
+        "method": "4/3 words rule (instructions + example)",
+        "truncated": false
       },
       "samples": [],
       "measured_mean": null,
@@ -4439,7 +4440,8 @@
         "audio_input_tokens": null,
         "audio_output_tokens": null,
         "basis": "estimated",
-        "method": "4/3 words rule (instructions + example)"
+        "method": "4/3 words rule (instructions + example)",
+        "truncated": false
       },
       "samples": [],
       "measured_mean": null,
@@ -4460,7 +4462,8 @@
         "audio_input_tokens": null,
         "audio_output_tokens": null,
         "basis": "estimated",
-        "method": "4/3 words rule (instructions + example)"
+        "method": "4/3 words rule (instructions + example)",
+        "truncated": false
       },
       "samples": [],
       "measured_mean": null,
@@ -4481,7 +4484,8 @@
         "audio_input_tokens": null,
         "audio_output_tokens": null,
         "basis": "estimated",
-        "method": "4/3 words rule (instructions + example)"
+        "method": "4/3 words rule (instructions + example)",
+        "truncated": false
       },
       "samples": [],
       "measured_mean": null,
@@ -4502,7 +4506,8 @@
         "audio_input_tokens": null,
         "audio_output_tokens": null,
         "basis": "estimated",
-        "method": "4/3 words rule (instructions + example)"
+        "method": "4/3 words rule (instructions + example)",
+        "truncated": false
       },
       "samples": [],
       "measured_mean": null,
@@ -4523,7 +4528,8 @@
         "audio_input_tokens": null,
         "audio_output_tokens": null,
         "basis": "estimated",
-        "method": "4/3 words rule (instructions + example)"
+        "method": "4/3 words rule (instructions + example)",
+        "truncated": false
       },
       "samples": [],
       "measured_mean": null,
@@ -4544,7 +4550,8 @@
         "audio_input_tokens": null,
         "audio_output_tokens": null,
         "basis": "estimated",
-        "method": "4/3 words rule (instructions + example)"
+        "method": "4/3 words rule (instructions + example)",
+        "truncated": false
       },
       "samples": [],
       "measured_mean": null,
@@ -4565,7 +4572,8 @@
         "audio_input_tokens": null,
         "audio_output_tokens": null,
         "basis": "estimated",
-        "method": "4/3 words rule (instructions + example)"
+        "method": "4/3 words rule (instructions + example)",
+        "truncated": false
       },
       "samples": [],
       "measured_mean": null,
@@ -4586,7 +4594,8 @@
         "audio_input_tokens": null,
         "audio_output_tokens": null,
         "basis": "estimated",
-        "method": "4/3 words rule (instructions + example)"
+        "method": "4/3 words rule (instructions + example)",
+        "truncated": false
       },
       "samples": [],
       "measured_mean": null,
@@ -4907,7 +4916,7 @@
     }
   ],
   "memory_ids": [
-    "4f35d102bd4e9a4729cd9d2a1dfabba42540dc401d2fabea586c9b77d06be4e2:mem-213"
+    "4f35d102bd4e9a4729cd9d2a1dfabba42540dc401d2fabea586c9b77d06be4e2:mem-241"
   ],
   "evidence_gaps": [
     {

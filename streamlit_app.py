@@ -10,6 +10,7 @@ from __future__ import annotations
 import json
 import os
 
+import altair as alt
 import pandas as pd
 import streamlit as st
 from dotenv import load_dotenv
@@ -19,6 +20,77 @@ from app import ui_service as svc
 st.set_page_config(page_title="AI SaaS Cost Advisor", layout="wide")
 if not os.getenv("COST_ADVISOR_NO_DOTENV"):
     load_dotenv()   # the same settings run.py reads; values are never displayed
+
+# Colors and type come from .streamlit/config.toml; this adds only the hero, step cards, pill tabs and metric cards.
+STYLE = """
+<style>
+.block-container {padding-top: 2.5rem; max-width: 1280px;}
+h1, h2, h3 {letter-spacing: -0.04em;}
+.ca-hero {position: relative; overflow: hidden; padding: 3rem 2.5rem 2.6rem; margin-bottom: 1.5rem; border-radius: 30px;
+  border: 1px solid #1f1f1f; background: radial-gradient(120% 140% at 85% -10%, rgba(140,255,46,.16) 0%,
+  rgba(140,255,46,0) 45%), linear-gradient(180deg, #0d0d0d 0%, #050505 100%);}
+.ca-eyebrow {display: inline-flex; align-items: center; gap: .5rem; padding: .35rem .85rem; border-radius: 999px;
+  border: 1px solid rgba(140,255,46,.35); background: rgba(140,255,46,.08); color: #8cff2e; font-size: .72rem;
+  font-weight: 700; letter-spacing: .2em; text-transform: uppercase;}
+.ca-eyebrow::before {content: ""; width: 6px; height: 6px; border-radius: 50%; background: #8cff2e;
+  box-shadow: 0 0 10px #8cff2e;}
+.ca-hero h1 {font-size: clamp(2.1rem, 4.2vw, 3.6rem); line-height: 1.05; font-weight: 800; margin: 1.1rem 0 .9rem;
+  padding: 0; max-width: 18ch; color: #f5f5f2;}
+.ca-hero .ca-accent {color: #8cff2e;}
+.ca-hero p {color: rgba(255,255,255,.65); font-size: 1.05rem; max-width: 60ch; margin: 0;}
+.ca-pills {display: flex; flex-wrap: wrap; gap: .5rem; margin-top: 1.6rem;}
+.ca-pills span {padding: .4rem .9rem; border-radius: 999px; background: #171717; border: 1px solid #262626;
+  color: #c8c8c0; font-size: .82rem; font-weight: 600;}
+.ca-step {display: flex; align-items: center; gap: .85rem; margin: .2rem 0 .9rem;}
+.ca-step b {display: inline-grid; place-items: center; min-width: 2.1rem; height: 2.1rem; border-radius: 12px;
+  background: #8cff2e; color: #050505; font-weight: 800; font-size: .95rem;}
+.ca-step div {font-size: 1.3rem; font-weight: 700; letter-spacing: -0.02em;}
+.ca-step small {display: block; color: rgba(255,255,255,.55); font-size: .85rem; font-weight: 500; letter-spacing: 0;}
+.ca-brand {font-size: 1.15rem; font-weight: 800; letter-spacing: -0.03em; margin-bottom: .2rem;}
+.ca-brand span {color: #8cff2e;}
+div[data-testid="stVerticalBlockBorderWrapper"] {border-radius: 24px; background: #0d0d0d;}
+div[data-testid="stMetric"] {background: #0d0d0d; border: 1px solid #1f1f1f; border-radius: 20px; padding: 1rem 1.2rem;}
+div[data-testid="stMetricLabel"] p {text-transform: uppercase; letter-spacing: .14em; font-size: .7rem;
+  color: rgba(255,255,255,.55); font-weight: 700;}
+div[data-testid="stTabs"] [role="tablist"] {gap: .35rem; padding: .35rem; border-radius: 999px; background: #0d0d0d;
+  border: 1px solid #1f1f1f; width: fit-content; max-width: 100%; overflow-x: auto; margin-bottom: 1rem;}
+div[data-testid="stTab"] {border-radius: 999px; padding: .5rem 1.1rem; transition: background .15s;}
+div[data-testid="stTab"]:hover {background: #171717;}
+div[data-testid="stTab"][aria-selected="true"] {background: #8cff2e;}
+div[data-testid="stTab"][aria-selected="true"] p {color: #050505; font-weight: 700;}
+button[data-testid="stBaseButton-primary"] p {color: #050505; font-weight: 800;}
+@media (max-width: 640px) {.ca-hero {padding: 2rem 1.25rem; border-radius: 24px;}}
+</style>
+"""
+
+
+def style():
+    st.markdown(STYLE, unsafe_allow_html=True)
+
+
+def hero():
+    st.markdown("""<div class="ca-hero"><span class="ca-eyebrow">AI SaaS Cost Advisor</span>
+<h1>Know what your AI features cost <span class="ca-accent">at every stage.</span></h1>
+<p>Turn an AI SaaS idea into a costed model stack by feature and growth stage, using measured tokens where a model
+was run and dated market prices. Estimates, not advice.</p>
+<div class="ca-pills"><span>Measured vs estimated tokens</span><span>Cost by growth stage</span>
+<span>Deterministic quality checks</span><span>Full trace</span></div></div>""", unsafe_allow_html=True)
+
+
+def step(number: int, title: str, hint: str = ""):
+    st.markdown(f'<div class="ca-step"><b>{number:02d}</b><div>{title}'
+                + (f"<small>{hint}</small>" if hint else "") + "</div></div>", unsafe_allow_html=True)
+
+
+def stage_chart(frame: pd.DataFrame, series: str, value: str):
+    """Monthly cost per stage, one line per series; stages stay in growth order (a plain line chart sorts them A-Z)."""
+    order = list(dict.fromkeys(frame["stage"]))
+    chart = alt.Chart(frame.dropna(subset=[value])).mark_line(point=True, strokeWidth=2.5).encode(
+        x=alt.X("stage:N", sort=order, title=None, axis=alt.Axis(labelAngle=0)),
+        y=alt.Y(f"{value}:Q", title="USD per month"),
+        color=alt.Color(f"{series}:N", title=None, legend=alt.Legend(orient="bottom", columns=2, labelLimit=460)),
+        tooltip=["stage", series, alt.Tooltip(f"{value}:Q", format=",.2f")])
+    st.altair_chart(chart, width="stretch")
 
 
 def num(value):
@@ -35,7 +107,7 @@ def banner(pack: dict | None, sample: bool):
 
 def sidebar() -> tuple[str, bool]:
     with st.sidebar:
-        st.header("AI SaaS Cost Advisor")
+        st.markdown('<div class="ca-brand">Cost<span>.</span>Advisor</div>', unsafe_allow_html=True)
         mode = st.radio("Mode", ["Sample (offline)", "Live (Nightshift + Zetaris)"], key="mode")
         sample = mode.startswith("Sample")
         st.caption("Sample makes zero network calls." if sample else
@@ -61,41 +133,44 @@ def sidebar() -> tuple[str, bool]:
 def form(example: str, sample: bool, bindings: str):
     template = svc.load_template(example)
     brief = template["brief"]
-    st.subheader("1. Idea and features")
     key = lambda name: f"{example}:{name}"
-    idea = st.text_area("Product idea", brief["product_concept"], key=key("idea"), height=90)
-    user = st.text_input("Target user", brief["target_user"], key=key("user"))
-    rows = pd.DataFrame([{"feature_id": f["feature_id"], "description": f["description"], "example_input": f["example_input"],
-                          "mode": f["mode"], "modality": ", ".join(f["modality"]),
-                          "uses_per_user_month": str(f["uses_per_user_month"])} for f in brief["ai_features"]])
-    st.caption("2 to 5 AI features. Modality: any of " + ", ".join(svc.MODALITIES) + " (comma-separated). "
-               "Usage values are assumptions. Audio and image features are priced, not executed.")
-    features = st.data_editor(rows, num_rows="dynamic", width="stretch", key=key("features"),
-                              column_config={"mode": st.column_config.SelectboxColumn(options=["interactive", "background"])})
-    st.markdown("**Growth stages** (assumed)")
-    stages = st.data_editor(pd.DataFrame(brief["growth_stages"])[["name", "active_users"]], num_rows="dynamic",
-                            width="stretch", key=key("stages"))
-    left, right = st.columns(2)
-    threshold = left.text_input("Switch threshold (USD/month)", str(brief.get("switch_threshold_usd", "100")), key=key("thr"))
-    ceiling = right.text_input("Monthly AI budget ceiling (USD, optional)", brief.get("monthly_ai_budget_usd") or "", key=key("ceil"))
-    usage = brief.get("usage") or {}
-    left, right = st.columns(2)
-    price = left.text_input("Price per paying user per month (USD, optional)", str(usage.get("subscription_price_usd") or ""),
-                            key=key("price"), help="With the paying fraction, gives revenue per stage. Assumed.")
-    fraction = right.text_input("Paying fraction of active users (0 to 1, optional)", str(usage.get("paying_fraction") or ""),
-                               key=key("fraction"), help="e.g. 0.08 for 8% of active users paying. Assumed.")
-    st.subheader("2. Candidate models (optional)")
-    options = svc.candidate_options(sample, bindings)
-    picks = st.multiselect("Choose up to 3, at most one per tier (frontier, mid-tier, open-source). Leave empty to let "
-                           "the app choose per feature.", list(options), format_func=lambda mid: options.get(mid, mid),
-                           max_selections=3, key=f"picks:{'sample' if sample else 'live'}")
-    if picks:
-        st.caption("Your picks replace the automatic choice for every feature. A pick that can't handle a feature's "
-                   "modality is skipped for that feature; two picks in the same tier stop the run with a message.")
-    st.subheader("3. Evaluation spend")
-    approved = st.checkbox("I approve measured evaluation runs (live mode only; sample mode runs nothing)",
-                           value=False, key=key("approved"))
-    max_spend = st.text_input("Maximum evaluation spend (USD)", "0.50", key=key("spend"))
+    with st.container(border=True):
+        step(1, "Idea and features", "What you are building and the AI features in it")
+        idea = st.text_area("Product idea", brief["product_concept"], key=key("idea"), height=90)
+        user = st.text_input("Target user", brief["target_user"], key=key("user"))
+        rows = pd.DataFrame([{"feature_id": f["feature_id"], "description": f["description"], "example_input": f["example_input"],
+                              "mode": f["mode"], "modality": ", ".join(f["modality"]),
+                              "uses_per_user_month": str(f["uses_per_user_month"])} for f in brief["ai_features"]])
+        st.caption("2 to 5 AI features. Modality: any of " + ", ".join(svc.MODALITIES) + " (comma-separated). "
+                   "Usage values are assumptions. Audio and image features are priced, not executed.")
+        features = st.data_editor(rows, num_rows="dynamic", width="stretch", key=key("features"),
+                                  column_config={"mode": st.column_config.SelectboxColumn(options=["interactive", "background"])})
+        st.markdown("**Growth stages** (assumed)")
+        stages = st.data_editor(pd.DataFrame(brief["growth_stages"])[["name", "active_users"]], num_rows="dynamic",
+                                width="stretch", key=key("stages"))
+        left, right = st.columns(2)
+        threshold = left.text_input("Switch threshold (USD/month)", str(brief.get("switch_threshold_usd", "100")), key=key("thr"))
+        ceiling = right.text_input("Monthly AI budget ceiling (USD, optional)", brief.get("monthly_ai_budget_usd") or "", key=key("ceil"))
+        usage = brief.get("usage") or {}
+        left, right = st.columns(2)
+        price = left.text_input("Price per paying user per month (USD, optional)", str(usage.get("subscription_price_usd") or ""),
+                                key=key("price"), help="With the paying fraction, gives revenue per stage. Assumed.")
+        fraction = right.text_input("Paying fraction of active users (0 to 1, optional)", str(usage.get("paying_fraction") or ""),
+                                   key=key("fraction"), help="e.g. 0.08 for 8% of active users paying. Assumed.")
+    with st.container(border=True):
+        step(2, "Candidate models", "Optional: leave empty to let the app choose per feature")
+        options = svc.candidate_options(sample, bindings)
+        picks = st.multiselect("Choose up to 3, at most one per tier (frontier, mid-tier, open-source). Leave empty to let "
+                               "the app choose per feature.", list(options), format_func=lambda mid: options.get(mid, mid),
+                               max_selections=3, key=f"picks:{'sample' if sample else 'live'}")
+        if picks:
+            st.caption("Your picks replace the automatic choice for every feature. A pick that can't handle a feature's "
+                       "modality is skipped for that feature; two picks in the same tier stop the run with a message.")
+    with st.container(border=True):
+        step(3, "Evaluation spend", "Approve measured runs and cap what they may spend")
+        approved = st.checkbox("I approve measured evaluation runs (live mode only; sample mode runs nothing)",
+                               value=False, key=key("approved"))
+        max_spend = st.text_input("Maximum evaluation spend (USD)", "0.50", key=key("spend"))
     return template, idea, user, features, stages, threshold, ceiling, approved, max_spend, picks, price, fraction
 
 
@@ -151,13 +226,13 @@ def totals_view(pack: dict):
     compare = pd.DataFrame([{"stage": t["stage"], "choice": label((t["scenario"], t["model_id"])),
                              "USD": num(t["monthly_usd"])} for t in scoped if t["scenario"] != "recommended"])
     if not compare.empty:
-        order = list(dict.fromkeys(compare["stage"]))
-        st.line_chart(compare.pivot_table(index="stage", columns="choice", values="USD", aggfunc="first").reindex(order))
+        stage_chart(compare, "choice", "USD")
     st.divider()
 
 
 def results(pack: dict):
     status = pack["status"]
+    step(4, "Results", f"Run {pack['run_id']}")
     cols = st.columns(4)
     cols[0].metric("Status", status)
     cols[1].metric("Mode", pack["execution_mode"])
@@ -187,8 +262,7 @@ def results(pack: dict):
             frame = pd.DataFrame(rows)
             pick = st.selectbox("Feature", list(dict.fromkeys(frame["feature"])), key="cost_feature")
             subset = frame[frame["feature"] == pick]
-            order = list(dict.fromkeys(subset["stage"]))
-            st.line_chart(subset.pivot_table(index="stage", columns="model", values="monthly USD", aggfunc="first").reindex(order))
+            stage_chart(subset, "model", "monthly USD")
             st.dataframe(subset.drop(columns="feature"), width="stretch", hide_index=True)
             st.caption(f"Priced at the {label}. 'measured' rows use token counts from real model runs; 'estimated' rows "
                        "are projected only (the model was not run). Lower bound: some lines, such as reasoning, are not "
@@ -246,9 +320,9 @@ def results(pack: dict):
 
 
 def main():
+    style()
     example, sample, bindings = sidebar()
-    st.title("AI SaaS Cost Advisor")
-    st.caption("Turn an AI SaaS idea into a costed model stack by feature and growth stage. Estimates, not advice.")
+    hero()
     state = st.session_state
     state.setdefault("run_id", svc.new_run_id())
     stored = svc.load_result(state["run_id"])
@@ -264,7 +338,7 @@ def main():
     parsed, problem = svc.validate(request)
     if problem:
         st.error("Fix the inputs: " + problem)
-    left, right = st.columns([1, 1])
+    left, right, _ = st.columns([1, 1, 8], gap="small")
     if not sample and not approved:
         st.warning("Approval is not ticked: a live run will read prices and pick candidates, then stop before any "
                    "model request (status needs_input). Tick the approval box above to measure.")
