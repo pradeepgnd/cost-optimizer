@@ -1,13 +1,22 @@
-# H-MEM engine integration (W03, Pradeep)
+# H-MEM reference integration
 
-The Meterless Engine requirement is satisfied only by the sponsor's reference running for real. This folder holds the Python wrapper (`bridge.py`, done) and the Node side (`bridge.mjs`, **to do**).
+The unmodified Meterless H-MEM TypeScript reference and conformance suite are vendored from [revision 1742dec](https://github.com/Meterless/Meterless/tree/1742dec56a66e58eef9dda2d2b865823758ca8cd/engines/hmem), recorded in `PINNED_REVISION`. Its Apache 2.0 licence is copied to `LICENSE`. The reference is deterministic, model-free and JSON-file backed; upstream labels it a reference, not a production library.
 
-## To do, in order
+## Clean-clone setup
 
-1. Clone the Meterless repository, check out the `templates/agentathon-starter` path, and record the commit hash in `PINNED_REVISION`.
-2. Vendor or `npm install` the reference under `reference/` so a fresh clone needs only `npm ci` in this folder. Do not copy the starter's optional direct-model provider example; our inference goes through Nightshift.
-3. Write `bridge.mjs`: read one JSON object from stdin `{operation, project_scope, payload, storage}`, call the reference's memory acquisition/retrieval/audit functions, write one JSON object to stdout `{status, engine_revision, memory_ids, context, audit_refs}`. Per-project storage under `storage/<project_scope>/`. Support `--selftest` (remember → recall → audit round trip on a temp scope, exit 0, print `{"status":"ok"}`); it must work offline.
-4. `tests/test_hmem_engine.py` (already stubbed) must pass: save a confirmed constraint, start a new process, recall it with its memory ID, confirm a different project cannot see it. This is the test the README points judges to.
-5. Keep human logs on stderr; stdout is JSON only.
+Use Node 20 or newer and run from the project root:
 
-Dreaming/sleep operations are out of scope. Disclose exactly which services are used in the sponsor explanation.
+```bash
+cd app/engines/hmem/reference
+npm ci
+npm test
+./node_modules/.bin/tsx ../conformance/runner.ts
+cd ../../../..
+.venv/bin/python -m pytest -q -rs tests/test_hmem_engine.py tests/test_sample_memory.py
+```
+
+`npm ci` installs the exact development tooling locked in `reference/package-lock.json`; the reference has no runtime provider dependency. The bridge uses local `tsx` only to load the vendored TypeScript and never calls a model. Runtime files live under `HMEM_STORAGE_DIR` or ignored `storage/`. Project IDs are validated and hashed into separate directories. Keep that storage private and backed up if using it beyond a demonstration; the upstream JSON store is not a concurrent production database.
+
+`bridge.mjs` accepts one JSON request on stdin and emits exactly one JSON response on stdout. It calls H-MEM `add`, `query` and `ledger.all` and returns `status`, `engine_revision`, `memory_ids`, structured `context`, and `audit_refs`. `node bridge.mjs --selftest` creates a disposable scope and checks save, new-instance recall, isolation and audit. Errors go to stderr. The Python wrapper enforces a 20-second timeout and verifies revision/response shape. Sample mode delegates to the same bridge. Dreaming and sleep operations are outside M07.
+
+See [M07 manual checks](../../../docs/14-M07-Manual-Testing.md). M11 still needs proof that explicitly accepted memory changes a later application decision; current controller behavior does not establish that.

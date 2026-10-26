@@ -89,8 +89,11 @@ def main() -> int:
         return 4
 
     Path(args.output).write_text(pack.model_dump_json(indent=2), encoding="utf-8")
-    trace.event("Controller", "complete", status=pack.status.value, output_summary=f"spend={pack.spend_usd} gaps={len(pack.evidence_gaps)}")
-    trace.final({"status": pack.status.value, "output": args.output, "trace": str(trace.path), "execution_mode": mode})
+    trace.event("Controller", "complete", status=pack.status.value,
+                output_summary=f"spent={pack.spend_usd} held={pack.reserved_spend_usd} dispatches={pack.dispatch_count} gaps={len(pack.evidence_gaps)}")
+    trace.final({"status": pack.status.value, "output": args.output, "trace": str(trace.path), "execution_mode": mode,
+                 "readiness": pack.readiness.model_dump(mode="json"), "spend_usd": str(pack.spend_usd),
+                 "reserved_spend_usd": str(pack.reserved_spend_usd), "dispatch_count": pack.dispatch_count})
     return 0
 
 

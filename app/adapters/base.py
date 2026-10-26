@@ -29,6 +29,14 @@ class DataLayer(ABC):
     @abstractmethod
     def write_evidence(self, record: dict) -> SourceRef: ...
 
+    def read_evidence(self, record_id: str) -> tuple[dict, SourceRef]:
+        """Read published evidence through this same data layer; never infer publication from a local write."""
+        raise NotImplementedError
+
+    def read_catalog(self, catalog_id: str) -> tuple[Any, SourceRef]:
+        """Read one pinned public catalog row for a separately labeled serving scenario."""
+        raise NotImplementedError
+
 
 class InferenceResult(dict):
     """Keys: text, requested_model, resolved_model, route_id, usage, elapsed_s, execution_kind."""

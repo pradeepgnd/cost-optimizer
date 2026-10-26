@@ -13,17 +13,41 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Optional
 
-_SECRET_KEYS = re.compile(r"(token|api[_-]?key|secret|password|authorization)", re.I)
-_SECRET_SHAPE = re.compile(r"\b(sk-[A-Za-z0-9_\-]{12,}|[A-Za-z0-9_\-]{40,})\b")
+_SECRET_KEYS = re.compile(r"(token|api[_-]?key|secret|password|authorization|credential|cookie)", re.I)
+_SECRET_SHAPE = re.compile(r"\bsk-[A-Za-z0-9_\-]{12,}\b|\bBearer\s+[^\s,;\"']+", re.I)
+_SECRET_ASSIGNMENT = re.compile(
+    r"\b((?:[\w-]*(?:token|api[_-]?key|secret|password|authorization|credential)[\w-]*)\s*[=:]\s*)"
+    r"[\"']?[^\s,;\"']+[\"']?", re.I,
+)
+_TOKEN_COUNTS = {
+    "prompt_tokens", "completion_tokens", "total_tokens", "input_tokens", "output_tokens",
+    "cached_tokens", "reasoning_tokens", "audio_tokens", "text_tokens", "accepted_prediction_tokens",
+    "rejected_prediction_tokens", "cache_read_input_tokens", "cache_creation_input_tokens", "max_tokens",
+}
+_TOKEN_DETAILS = {"prompt_tokens_details", "completion_tokens_details", "input_tokens_details", "output_tokens_details"}
+
+
+def _mask_text(value: str) -> str:
+    # Explicit credentials also catch short/non-standard tokens in exception strings.
+    secrets = sorted((v for k, v in os.environ.items() if _SECRET_KEYS.search(k) and len(v) >= 4), key=len, reverse=True)
+    for secret in secrets:
+        value = value.replace(secret, "...redacted")
+    value = _SECRET_SHAPE.sub("...redacted", value)
+    return _SECRET_ASSIGNMENT.sub(r"\1...redacted", value)
 
 
 def _mask(v: Any) -> Any:
     if isinstance(v, dict):
-        return {k: ("...redacted" if _SECRET_KEYS.search(k) else _mask(x)) for k, x in v.items()}
-    if isinstance(v, list):
+        result = {}
+        for k, x in v.items():
+            usage_count = k in _TOKEN_COUNTS and type(x) is int and x >= 0
+            usage_details = k in _TOKEN_DETAILS and isinstance(x, dict)
+            result[k] = "...redacted" if _SECRET_KEYS.search(str(k)) and not (usage_count or usage_details) else _mask(x)
+        return result
+    if isinstance(v, (list, tuple)):
         return [_mask(x) for x in v]
     if isinstance(v, str):
-        return _SECRET_SHAPE.sub("...redacted", v)
+        return _mask_text(v)
     return v
 
 
@@ -43,6 +67,7 @@ class Trace:
               route_id: Optional[str] = None, retry_count: int = 0,
               evidence_ids: Optional[list[str]] = None, query_id: Optional[str] = None,
               memory_ids: Optional[list[str]] = None, execution_kind: Optional[str] = None,
+              operation_id: Optional[str] = None,
               extra: Optional[dict] = None) -> dict:
         self.seq += 1
         ev = {
@@ -52,8 +77,8 @@ class Trace:
             "execution_mode": self.execution_mode,
             "agent_name": agent_name,
             "action": action,
-            "input_summary": input_summary[:500],
-            "output_summary": output_summary[:500],
+            "input_summary": _mask_text(input_summary)[:500],
+            "output_summary": _mask_text(output_summary)[:500],
             "target_agent": target_agent,
             "model": model,
             "requested_model": requested_model,
@@ -64,6 +89,7 @@ class Trace:
             "query_id": query_id,
             "memory_ids": memory_ids or [],
             "execution_kind": execution_kind,
+            "operation_id": operation_id,
         }
         if extra:
             ev["extra"] = _mask(extra)
@@ -71,13 +97,13 @@ class Trace:
         with self.path.open("a", encoding="utf-8") as f:
             f.write(json.dumps(ev, ensure_ascii=False, default=str) + "\n")
         if self.echo:
-            tgt = f" -> {target_agent}" if target_agent else ""
-            mdl = f" (model: {model})" if model else ""
-            print(f"[INFO] run_id={self.run_id} {agent_name} {action}{tgt} {status}{mdl}: {output_summary[:120]}",
+            tgt = f" -> {ev['target_agent']}" if ev['target_agent'] else ""
+            mdl = f" (model: {ev['model']})" if ev['model'] else ""
+            print(f"[INFO] run_id={ev['run_id']} {ev['agent_name']} {ev['action']}{tgt} {ev['status']}{mdl}: {ev['output_summary'][:120]}",
                   file=sys.stderr, flush=True)
         return ev
 
     def final(self, payload: dict) -> None:
         """Documented final-result event so stdout-only callers can parse a single line."""
-        line = json.dumps({"event": "final_result", "run_id": self.run_id, **_mask(payload)}, default=str)
+        line = json.dumps(_mask({"event": "final_result", "run_id": self.run_id, **payload}), default=str)
         print(line, flush=True)

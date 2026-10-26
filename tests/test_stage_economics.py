@@ -1,4 +1,5 @@
 from decimal import Decimal
+import pytest
 from app.contracts import *
 from app.economics import (build_ledger, cost_per_call, detect_switch_points, estimate_feature_tokens, estimate_tokens,
                            operating_ledger, recommend_model_stack, stage_cost_row, stage_cost_table)
@@ -202,6 +203,216 @@ def test_long_context_cliff_is_a_whole_request_surcharge_warning():
     norate = stage_cost_row(_feature(), _model(lc_in=None), STAGE, _tok(i=150000))
     assert _lever(norate, "long_context_cliff").applies and _lever(norate, "long_context_cliff").monthly_delta_usd is None
     assert norate.lower_bound
+
+
+# ---------------------------------------------------------------- M02 lever interactions
+
+def _cap(i=1, o=100, mid="f"):
+    return OutputCapRerun(feature_id="plan", model_id=mid, critic_flagged=True, rerun=_tok(i=i, o=o, reasoning=0))
+
+
+def _combination(*levers, supported=True, verified=True):
+    return {"levers": list(levers), "supported": supported,
+            "source": {"source_set": "pricing_snapshots", "record_id": "synthetic-combination-terms",
+                       "version": "fixture-1", "origin_url": "https://example.test/fixture-terms",
+                       "verified_at": "2026-10-25", "status": "verified" if verified else "unverified"}}
+
+
+def _with_combinations(model, *combinations):
+    data = model.model_dump()
+    data["terms"]["lever_combinations"] = list(combinations)
+    return ModelProfile.model_validate(data)
+
+
+def test_combined_batch_cap_cost_is_positive_and_exact():
+    row = stage_cost_row(_feature(mode="background"), _model(), STAGE,
+                         _tok(i=1, o=1000, reasoning=0), output_cap=_cap())
+    assert row._exact_with_levers == Decimal("1.1055")
+    assert row.monthly_with_levers_usd == Decimal("1.11")
+    assert [line.lever for line in row.levers] == [
+        "output_cap", "long_context_cliff", "prompt_caching", "batch_api", "output_reuse"]
+
+
+def test_cap_uses_measured_input_as_well_as_output():
+    row = stage_cost_row(_feature(), _model(), STAGE, _tok(), output_cap=_cap(i=2000, o=300))
+    assert row._exact_with_levers == Decimal("28.6")
+    assert _lever(row, "output_cap").monthly_delta_usd == Decimal("6.60")
+
+
+def test_long_context_is_recomputed_from_capped_request():
+    row = stage_cost_row(_feature(), _model(), STAGE, _tok(), output_cap=_cap(i=150000))
+    assert _lever(row, "long_context_cliff").applies
+    assert row._exact_with_levers == Decimal("3303.3")
+
+
+def test_cap_can_move_effective_request_below_long_context_threshold():
+    row = stage_cost_row(_feature(), _model(lc_in=None, lc_out=None), STAGE,
+                         _tok(i=150000), output_cap=_cap(i=1000))
+    assert not _lever(row, "long_context_cliff").applies
+    assert row._exact_with_levers == Decimal("13.2")
+
+
+@pytest.mark.parametrize("supported,verified", [(False, True), (True, False), (None, None)])
+def test_cache_batch_without_supported_cited_combination_uses_cheaper_standalone(supported, verified):
+    model = _model()
+    if supported is not None:
+        model = _with_combinations(model, _combination("prompt_caching", "batch_api", supported=supported, verified=verified))
+    row = stage_cost_row(_feature(mode="background", prefix=2000), model,
+                         Stage(name="Traction", active_users=5000), _tok(i=3000))
+    assert row._exact_with_levers == Decimal("1100")
+    assert _lever(row, "batch_api").applies and not _lever(row, "prompt_caching").applies
+    assert "combination" in _lever(row, "prompt_caching").reason.lower()
+
+
+def test_cache_batch_with_cited_compatibility_combines_sequential_deltas():
+    model = _with_combinations(_model(), _combination("prompt_caching", "batch_api"))
+    row = stage_cost_row(_feature(mode="background", prefix=2000), model,
+                         Stage(name="Traction", active_users=5000), _tok(i=3000))
+    assert row._exact_with_levers == Decimal("705.74")
+    assert _lever(row, "prompt_caching").monthly_delta_usd == Decimal("-788.52")
+    assert _lever(row, "batch_api").monthly_delta_usd == Decimal("-705.74")
+    assert "synthetic-combination-terms" in row.rate_ids
+
+
+def test_long_context_batch_requires_compatibility_and_discounts_surcharged_text():
+    feature = _feature(mode="background")
+    baseline = stage_cost_row(feature, _model(), STAGE, _tok(i=150000))
+    assert not _lever(baseline, "batch_api").applies
+    model = _with_combinations(_model(), _combination("long_context_cliff", "batch_api"))
+    row = stage_cost_row(feature, model, STAGE, _tok(i=150000), output_cap=_cap(i=150000))
+    assert row._exact_with_levers == Decimal("1651.65")
+
+
+def test_long_context_cache_needs_tier_specific_cache_prices():
+    model = _with_combinations(_model(), _combination("long_context_cliff", "prompt_caching"))
+    row = stage_cost_row(_feature(prefix=2000), model, Stage(name="Traction", active_users=5000), _tok(i=150000))
+    assert not _lever(row, "prompt_caching").applies
+    assert "rate unknown" in _lever(row, "prompt_caching").reason
+
+
+def test_long_context_cache_uses_explicit_tier_prices():
+    model = _with_combinations(_model(), _combination("long_context_cliff", "prompt_caching"))
+    model.rates += [_r(RateCategory.long_context_cached_input_tokens, "2"),
+                    _r(RateCategory.long_context_cache_write_tokens, "25")]
+    row = stage_cost_row(_feature(prefix=2000), model, Stage(name="Traction", active_users=5000), _tok(i=150000))
+    expected = Decimal("55000") * (Decimal("150000") * 20 + Decimal("500") * 30) / 1000000
+    expected += Decimal("2000") * (Decimal("8760") * 25 + Decimal("46240") * 2 - Decimal("55000") * 20) / 1000000
+    assert row._exact_with_levers == expected
+    assert _lever(row, "prompt_caching").applies
+
+
+def test_batch_text_discount_does_not_discount_audio_charges():
+    feature = _feature(mode="background").model_copy(update={"modality": ["text", "audio_out"],
+                                                             "audio_seconds_per_use": Decimal("3")})
+    row = stage_cost_row(feature, _model(), STAGE, _tok())
+    assert row._exact_with_levers == Decimal("16.28")  # text $22 / 2 + audio $5.28
+    assert _lever(row, "batch_api").monthly_delta_usd == Decimal("-11")
+
+
+def test_output_reuse_rechecks_cache_ttl_at_paid_call_volume():
+    feature = _feature(prefix=2000).model_copy(update={"output_reuse_rate": Decimal("0.9")})
+    row = stage_cost_row(feature, _model(), Stage(name="Traction", active_users=5000), _tok(i=3000))
+    assert row._exact_with_levers == Decimal("220")  # 5,500 paid calls; below 8,760 TTL windows
+    assert _lever(row, "output_reuse").monthly_delta_usd == Decimal("-1191.48")
+    assert "paid" in _lever(row, "output_reuse").reason.lower()
+
+
+def test_output_reuse_fill_uses_effective_capped_batch_cost_and_stays_one_time():
+    feature = _reuse("0.9", distinct=1000, mode="background")
+    row = stage_cost_row(feature, _model(), STAGE, _tok(i=1, o=1000, reasoning=0), output_cap=_cap())
+    assert row._exact_with_levers == Decimal("0.11055")
+    assert _lever(row, "output_reuse").one_time_usd == Decimal("1.11")
+
+
+@pytest.mark.parametrize("users,reuse", [(0, "0.9"), (100, "1")])
+def test_zero_paid_volume_stays_zero_with_all_discount_levers(users, reuse):
+    feature = _reuse(reuse, distinct=1000, mode="background")
+    row = stage_cost_row(feature, _model(), Stage(name="Zero", active_users=users),
+                         _tok(i=1, o=1000, reasoning=0), output_cap=_cap())
+    assert row._exact_with_levers == 0 and row.monthly_with_levers_usd == 0
+
+
+def test_missing_long_context_price_cannot_qualify_a_cheap_model():
+    models = [_model(), _model("cheap", "open_source", p_in="1", p_out="2", threshold=100, lc_in=None)]
+    table = stage_cost_table(_feature(), models, TOKENS, rubric_results=_results(ALL_PASS))
+    cheap = [row for row in table.rows if row.model_id == "cheap"]
+    assert all(row.monthly_with_levers_usd is None and row.cost_per_use_usd is None and row.revenue_share is None for row in cheap)
+    assert not table.switch_points and not table.pending_switch_points
+    for original in (table, StageCostTable.model_validate_json(table.model_dump_json())):
+        assert {entry.model_id for entry in recommend_model_stack(_feature(), original, models, _results(ALL_PASS))} == {"f"}
+
+
+def test_negative_calculation_is_rejected_instead_of_clamped():
+    model = _model()
+    model.rates[0] = model.rates[0].model_copy(update={"usd_per_unit": Decimal("-100")})
+    with pytest.raises(ValueError):
+        stage_cost_row(_feature(), model, STAGE, _tok())
+
+
+@pytest.mark.parametrize("retry_rate", [Decimal("-0.1"), Decimal("NaN"), Decimal("Infinity")])
+def test_retry_rate_must_be_finite_and_nonnegative(retry_rate):
+    with pytest.raises(ValueError):
+        stage_cost_row(_feature(), _model(), STAGE, _tok(), retry_rate=retry_rate)
+
+
+def test_pairwise_compatibility_does_not_imply_three_way_compatibility():
+    pairs = [_combination("prompt_caching", "batch_api"),
+             _combination("prompt_caching", "long_context_cliff"),
+             _combination("batch_api", "long_context_cliff")]
+    model = _with_combinations(_model(), *pairs)
+    model.rates += [_r(RateCategory.long_context_cached_input_tokens, "2"),
+                    _r(RateCategory.long_context_cache_write_tokens, "25")]
+    feature, stage = _feature(mode="background", prefix=2000), Stage(name="Traction", active_users=5000)
+    pair_only = stage_cost_row(feature, model, stage, _tok(i=150000))
+    assert pair_only._exact_with_levers == Decimal("82912.5")
+    assert not _lever(pair_only, "prompt_caching").applies
+    all_three = _with_combinations(model, *pairs, _combination("prompt_caching", "batch_api", "long_context_cliff"))
+    row = stage_cost_row(feature, all_three, stage, _tok(i=150000))
+    assert row._exact_with_levers == Decimal("82123.98")
+    assert all(_lever(row, name).applies for name in ("prompt_caching", "batch_api", "long_context_cliff"))
+
+
+@pytest.mark.parametrize("field,bad", [("verified_at", None), ("verified_at", "undated"), ("origin_url", None)])
+def test_combination_needs_a_real_date_and_citation(field, bad):
+    combination = _combination("prompt_caching", "batch_api")
+    combination["source"][field] = bad
+    model = _with_combinations(_model(), combination)
+    row = stage_cost_row(_feature(mode="background", prefix=2000), model,
+                         Stage(name="Traction", active_users=5000), _tok(i=3000))
+    assert row._exact_with_levers == Decimal("1100")
+    assert not _lever(row, "prompt_caching").applies
+
+
+def test_unrelated_cap_cannot_change_the_feature_price():
+    cap = _cap(mid="another-model")
+    row = stage_cost_row(_feature(), _model(), STAGE, _tok(), output_cap=cap)
+    assert not _lever(row, "output_cap").applies and row._exact_with_levers == Decimal("22")
+
+
+@pytest.mark.parametrize("background,reuse", [(False, None), (True, None), (True, "0.9"), (True, "1")])
+def test_exact_deltas_telescope_without_rounding_intermediate_values(background, reuse):
+    feature = _reuse(reuse, mode="background" if background else "interactive").model_copy(
+        update={"static_prefix_tokens": 2000})
+    model = _with_combinations(_model(), _combination("prompt_caching", "batch_api"))
+    row = stage_cost_row(feature, model, Stage(name="Traction", active_users=5000),
+                         _tok(i=3000, o=1000, reasoning=0), output_cap=_cap(i=3000))
+    assert row._exact_gross + sum((line._exact_monthly_delta or Decimal(0) for line in row.levers), Decimal(0)) == row._exact_with_levers
+
+
+def test_combination_contract_rejects_duplicate_or_conflicting_rules():
+    combination = _combination("prompt_caching", "batch_api")
+    with pytest.raises(ValueError):
+        _with_combinations(_model(), combination, {**combination, "supported": False})
+    with pytest.raises(ValueError):
+        _with_combinations(_model(), _combination("batch_api", "batch_api"))
+
+
+def test_unknown_long_context_prices_stay_unknown_for_output_reuse_and_fill():
+    row = stage_cost_row(_reuse("0.9", distinct=1000), _model(lc_in=None), STAGE, _tok(i=150000))
+    reuse = _lever(row, "output_reuse")
+    assert row.monthly_with_levers_usd is None and reuse.monthly_delta_usd is None and reuse.one_time_usd is None
+    assert "required fill tariff unknown" in reuse.reason
+    assert "distinct_outputs not given" not in reuse.reason
 
 
 # ---------------------------------------------------------------- switch points

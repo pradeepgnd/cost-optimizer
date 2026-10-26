@@ -1,12 +1,14 @@
 # CLAUDE.md — project rules for Claude Code
 
-LLM Cost Intelligence · Open Agent Hackathon 2026 · Track: The Agent That Can Explain Why
+AI SaaS Cost Advisor · Open Agent Hackathon 2026 · Track: The Agent That Can Explain Why
 Team: Narin (integration/deployment owner, primary contact), Pradeep, Meena, Isioma, Shrie.
 Submission closes 27 Oct 2026, 23:45 UTC (6:45 p.m. Chicago). This repository becomes public before then: write nothing here you would not publish.
 
 ## What this project is
 
-A decision agent that helps a founder choose an AI-assisted development approach and model configuration before building. It joins the founder's brief, cited pricing and executed task evidence into a sourced recommendation with two cost ledgers (build-phase and operating, never summed) and an explicit evidence-gaps list. Design documents: `Planning/` (PRD, architecture, implementation plan, `06-Retrospective-Case-Study-Design.md`).
+An agent that turns a founder's AI SaaS idea into a costed model stack by feature and growth stage. The operating ledger is primary: compare frontier, mid-tier and Nemotron candidates using measured API usage and deterministic checks plus human review. The build-approach ledger is secondary; the two ledgers are never summed. Unknown evidence stays explicit, and the Critic flags issues rather than grading candidates.
+
+`Planning/07-Realignment-v4.md` (v4.1) is authoritative. Earlier PRD/architecture/plan requirements apply only where not contradicted by `07`. The retrospective, sealed-actuals evaluation and dev-spec tasks T1–T6 are historical/shelved; retain their existing access protections. Active gap work follows `docs/09-v4-Gap-Implementation-Guide.md`, with incremental results in `docs/evidence/v4-release-checklist.md`. A plan or green offline suite is not proof of live sponsor readiness.
 
 ## Map of the code
 
@@ -18,6 +20,7 @@ A decision agent that helps a founder choose an AI-assisted development approach
 - `app/engines/hmem/` → Meterless H-MEM bridge. A Python dict is never an acceptable substitute.
 - `app/trace.py` → JSONL trace in the organizer's format. Never invent `confidence` or events.
 - `tests/` → run before every commit.
+- `scripts/check_sample_examples.py` → repeatable offline CLI check of all three examples, with fresh databases and retained packs/traces. It disables dotenv loading and blocks Python sockets; real engine offline behavior is verified separately in M07.
 
 ## Non-negotiable rules
 
@@ -34,4 +37,4 @@ A decision agent that helps a founder choose an AI-assisted development approach
 
 ## Environment
 
-Windows host, PowerShell, Python 3.13 venv at `.venv`. Activate with `.\.venv\Scripts\Activate.ps1`. Sample run: `$env:SAMPLE_MODE="true"; python run.py --input input_examples\example_1.json --output output.json`. Regenerate example outputs after any behaviour change.
+Use the configured `.venv`. Windows/PowerShell activation: `.\.venv\Scripts\Activate.ps1`; macOS/Linux: `source .venv/bin/activate`. Record the actual Python/runtime versions in test evidence. Repeatable offline check: `python scripts/check_sample_examples.py`; it prints the retained artifact directory. A normal sample run is `$env:SAMPLE_MODE="true"; python run.py --input input_examples\example_1.json --output output.json` in PowerShell. Use isolated databases and fresh run IDs when comparing changes; never erase a real run database to make a rerun pass. Regenerate example outputs after product behavior changes.

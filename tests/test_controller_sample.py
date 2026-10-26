@@ -22,6 +22,8 @@ def test_sample_run_estimates_everything_and_fabricates_nothing(tmp_path):
     p, pack, logs = _run("input_examples/example_3.json", tmp_path, {"ZETARIS_API_KEY": "", "METERLESS_RUNTIME_TOKEN": ""})
     assert p.returncode == 0, p.stderr
     assert pack["execution_mode"] == "sample" and pack["status"] == "complete"
+    assert pack["readiness"]["scope"] == "sponsor_integration" and pack["readiness"]["status"] == "not_verified"
+    assert json.loads(p.stdout.splitlines()[-1])["readiness"] == pack["readiness"]
     assert pack["limitations"][0].startswith("SAMPLE/OFFLINE")
     runs = pack["feature_runs"]
     assert len(runs) == 2 * 3 and all(not r["executed"] and r["samples"] == [] and r["rubric"] is None for r in runs)
@@ -74,11 +76,11 @@ def test_unapproved_returns_needs_input_with_estimates_and_no_paid_work(tmp_path
     assert pack["questions"] and pack["spend_usd"] == "0" and pack["stage_tables"]
     assert all(not r["executed"] for r in pack["feature_runs"])
 
-def test_brief_without_ai_features_needs_input_but_keeps_build_panel(tmp_path):
+def test_brief_without_ai_features_is_invalid_before_dispatch(tmp_path):
     payload = _example(3); payload["run_id"] = "no-features"; payload["brief"]["ai_features"] = []
-    _, pack, _ = _run(None, tmp_path, payload=payload)
-    assert pack["status"] == "needs_input" and pack["build_ledgers"]
-    assert any("AI features" in q for q in pack["questions"]) and pack["stage_tables"] == []
+    p, error, logs = _run(None, tmp_path, payload=payload)
+    assert p.returncode == 2 and error["code"] == "INVALID_INPUT"
+    assert "2–5 AI features" in error["message"] and not logs.exists()
 
 def test_no_sealed_read_before_freeze(tmp_path):
     _, _, logs = _run("input_examples/example_3.json", tmp_path)

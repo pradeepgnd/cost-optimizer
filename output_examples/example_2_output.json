@@ -1,8 +1,41 @@
 {
+  "schema_version": "1.1",
   "run_id": "example-2",
   "project_id": "proj-idea-b-agent-micropayments",
   "execution_mode": "sample",
   "status": "complete",
+  "readiness": {
+    "scope": "sponsor_integration",
+    "checks": [
+      {
+        "name": "zetaris_roundtrip",
+        "status": "not_verified",
+        "required": true,
+        "detail": "Requires sourced reads and evidence write/readback (M06)."
+      },
+      {
+        "name": "hmem_persistence",
+        "status": "not_verified",
+        "required": true,
+        "detail": "Requires pinned-engine restart, recall, isolation and audit (M07)."
+      },
+      {
+        "name": "nightshift_candidates",
+        "status": "not_verified",
+        "required": true,
+        "detail": "Requires identified, usage-bearing candidate executions (M08)."
+      },
+      {
+        "name": "nemotron_feature",
+        "status": "not_verified",
+        "required": true,
+        "detail": "Requires a working feature with corroborated Nemotron identity (M08)."
+      }
+    ],
+    "status": "not_verified"
+  },
+  "monthly_ai_budget_usd": null,
+  "switch_threshold_usd": "100",
   "reasons": [],
   "candidate_shortlist": [
     {
@@ -25,7 +58,7 @@
         "label": "market reference (OpenRouter, 2026-10-25)"
       },
       "price_per_intelligence_point_usd": "0.142857",
-      "price_per_intelligence_point_label": "USD per 1M tokens per intelligence point: market reference (OpenRouter, 2026-10-25) list price blended 3:1 input:output ÷ PLACEHOLDER intelligence index score (2026-10-25); reference only, not used in costs",
+      "price_per_intelligence_point_label": "USD per 1M tokens per intelligence point: market reference (OpenRouter, 2026-10-25) list price blended 3:1 input:output \u00f7 PLACEHOLDER intelligence index score (2026-10-25); reference only, not used in costs",
       "selected": true,
       "reason": "top-ranked eligible route in its tier (intelligence score, then market usage rank, then snapshot order)"
     },
@@ -49,7 +82,7 @@
         "label": "market reference (OpenRouter, 2026-10-25)"
       },
       "price_per_intelligence_point_usd": "0.096774",
-      "price_per_intelligence_point_label": "USD per 1M tokens per intelligence point: market reference (OpenRouter, 2026-10-25) list price blended 3:1 input:output ÷ PLACEHOLDER intelligence index score (2026-10-25); reference only, not used in costs",
+      "price_per_intelligence_point_label": "USD per 1M tokens per intelligence point: market reference (OpenRouter, 2026-10-25) list price blended 3:1 input:output \u00f7 PLACEHOLDER intelligence index score (2026-10-25); reference only, not used in costs",
       "selected": false,
       "reason": "ranked below sample/frontier-placeholder"
     },
@@ -73,7 +106,7 @@
         "label": "market reference (OpenRouter, 2026-10-25)"
       },
       "price_per_intelligence_point_usd": "0.036364",
-      "price_per_intelligence_point_label": "USD per 1M tokens per intelligence point: market reference (OpenRouter, 2026-10-25) list price blended 3:1 input:output ÷ PLACEHOLDER intelligence index score (2026-10-25); reference only, not used in costs",
+      "price_per_intelligence_point_label": "USD per 1M tokens per intelligence point: market reference (OpenRouter, 2026-10-25) list price blended 3:1 input:output \u00f7 PLACEHOLDER intelligence index score (2026-10-25); reference only, not used in costs",
       "selected": true,
       "reason": "top-ranked eligible route in its tier (intelligence score, then market usage rank, then snapshot order)"
     },
@@ -97,7 +130,7 @@
         "label": "market reference (OpenRouter, 2026-10-25)"
       },
       "price_per_intelligence_point_usd": "0.006250",
-      "price_per_intelligence_point_label": "USD per 1M tokens per intelligence point: market reference (OpenRouter, 2026-10-25) list price blended 3:1 input:output ÷ PLACEHOLDER intelligence index score (2026-10-25); reference only, not used in costs",
+      "price_per_intelligence_point_label": "USD per 1M tokens per intelligence point: market reference (OpenRouter, 2026-10-25) list price blended 3:1 input:output \u00f7 PLACEHOLDER intelligence index score (2026-10-25); reference only, not used in costs",
       "selected": true,
       "reason": "the required open-source (Nemotron) route; always a candidate, regardless of score"
     }
@@ -276,22 +309,6 @@
           "gross_monthly_usd": "580.25",
           "levers": [
             {
-              "lever": "prompt_caching",
-              "applies": false,
-              "reason": "static prefix 0 tokens is below provider minimum 1024",
-              "monthly_delta_usd": null,
-              "one_time_usd": null,
-              "label": "projected (production setup)"
-            },
-            {
-              "lever": "batch_api",
-              "applies": false,
-              "reason": "feature is interactive",
-              "monthly_delta_usd": null,
-              "one_time_usd": null,
-              "label": "projected (production setup)"
-            },
-            {
               "lever": "output_cap",
               "applies": false,
               "reason": "no critic finding that output exceeds what the rubric needs",
@@ -306,6 +323,22 @@
               "monthly_delta_usd": null,
               "one_time_usd": null,
               "label": null
+            },
+            {
+              "lever": "prompt_caching",
+              "applies": false,
+              "reason": "static prefix 0 tokens is below provider minimum 1024",
+              "monthly_delta_usd": null,
+              "one_time_usd": null,
+              "label": "projected (production setup)"
+            },
+            {
+              "lever": "batch_api",
+              "applies": false,
+              "reason": "feature is interactive",
+              "monthly_delta_usd": null,
+              "one_time_usd": null,
+              "label": "projected (production setup)"
             },
             {
               "lever": "output_reuse",
@@ -373,22 +406,6 @@
           "gross_monthly_usd": "5802.50",
           "levers": [
             {
-              "lever": "prompt_caching",
-              "applies": false,
-              "reason": "static prefix 0 tokens is below provider minimum 1024",
-              "monthly_delta_usd": null,
-              "one_time_usd": null,
-              "label": "projected (production setup)"
-            },
-            {
-              "lever": "batch_api",
-              "applies": false,
-              "reason": "feature is interactive",
-              "monthly_delta_usd": null,
-              "one_time_usd": null,
-              "label": "projected (production setup)"
-            },
-            {
               "lever": "output_cap",
               "applies": false,
               "reason": "no critic finding that output exceeds what the rubric needs",
@@ -403,6 +420,22 @@
               "monthly_delta_usd": null,
               "one_time_usd": null,
               "label": null
+            },
+            {
+              "lever": "prompt_caching",
+              "applies": false,
+              "reason": "static prefix 0 tokens is below provider minimum 1024",
+              "monthly_delta_usd": null,
+              "one_time_usd": null,
+              "label": "projected (production setup)"
+            },
+            {
+              "lever": "batch_api",
+              "applies": false,
+              "reason": "feature is interactive",
+              "monthly_delta_usd": null,
+              "one_time_usd": null,
+              "label": "projected (production setup)"
             },
             {
               "lever": "output_reuse",
@@ -470,22 +503,6 @@
           "gross_monthly_usd": "58025.00",
           "levers": [
             {
-              "lever": "prompt_caching",
-              "applies": false,
-              "reason": "static prefix 0 tokens is below provider minimum 1024",
-              "monthly_delta_usd": null,
-              "one_time_usd": null,
-              "label": "projected (production setup)"
-            },
-            {
-              "lever": "batch_api",
-              "applies": false,
-              "reason": "feature is interactive",
-              "monthly_delta_usd": null,
-              "one_time_usd": null,
-              "label": "projected (production setup)"
-            },
-            {
               "lever": "output_cap",
               "applies": false,
               "reason": "no critic finding that output exceeds what the rubric needs",
@@ -500,6 +517,22 @@
               "monthly_delta_usd": null,
               "one_time_usd": null,
               "label": null
+            },
+            {
+              "lever": "prompt_caching",
+              "applies": false,
+              "reason": "static prefix 0 tokens is below provider minimum 1024",
+              "monthly_delta_usd": null,
+              "one_time_usd": null,
+              "label": "projected (production setup)"
+            },
+            {
+              "lever": "batch_api",
+              "applies": false,
+              "reason": "feature is interactive",
+              "monthly_delta_usd": null,
+              "one_time_usd": null,
+              "label": "projected (production setup)"
             },
             {
               "lever": "output_reuse",
@@ -567,22 +600,6 @@
           "gross_monthly_usd": "580250.00",
           "levers": [
             {
-              "lever": "prompt_caching",
-              "applies": false,
-              "reason": "static prefix 0 tokens is below provider minimum 1024",
-              "monthly_delta_usd": null,
-              "one_time_usd": null,
-              "label": "projected (production setup)"
-            },
-            {
-              "lever": "batch_api",
-              "applies": false,
-              "reason": "feature is interactive",
-              "monthly_delta_usd": null,
-              "one_time_usd": null,
-              "label": "projected (production setup)"
-            },
-            {
               "lever": "output_cap",
               "applies": false,
               "reason": "no critic finding that output exceeds what the rubric needs",
@@ -597,6 +614,22 @@
               "monthly_delta_usd": null,
               "one_time_usd": null,
               "label": null
+            },
+            {
+              "lever": "prompt_caching",
+              "applies": false,
+              "reason": "static prefix 0 tokens is below provider minimum 1024",
+              "monthly_delta_usd": null,
+              "one_time_usd": null,
+              "label": "projected (production setup)"
+            },
+            {
+              "lever": "batch_api",
+              "applies": false,
+              "reason": "feature is interactive",
+              "monthly_delta_usd": null,
+              "one_time_usd": null,
+              "label": "projected (production setup)"
             },
             {
               "lever": "output_reuse",
@@ -664,22 +697,6 @@
           "gross_monthly_usd": "116.05",
           "levers": [
             {
-              "lever": "prompt_caching",
-              "applies": false,
-              "reason": "static prefix 0 tokens is below provider minimum 1024",
-              "monthly_delta_usd": null,
-              "one_time_usd": null,
-              "label": "projected (production setup)"
-            },
-            {
-              "lever": "batch_api",
-              "applies": false,
-              "reason": "feature is interactive",
-              "monthly_delta_usd": null,
-              "one_time_usd": null,
-              "label": "projected (production setup)"
-            },
-            {
               "lever": "output_cap",
               "applies": false,
               "reason": "no critic finding that output exceeds what the rubric needs",
@@ -694,6 +711,22 @@
               "monthly_delta_usd": null,
               "one_time_usd": null,
               "label": null
+            },
+            {
+              "lever": "prompt_caching",
+              "applies": false,
+              "reason": "static prefix 0 tokens is below provider minimum 1024",
+              "monthly_delta_usd": null,
+              "one_time_usd": null,
+              "label": "projected (production setup)"
+            },
+            {
+              "lever": "batch_api",
+              "applies": false,
+              "reason": "feature is interactive",
+              "monthly_delta_usd": null,
+              "one_time_usd": null,
+              "label": "projected (production setup)"
             },
             {
               "lever": "output_reuse",
@@ -759,22 +792,6 @@
           "gross_monthly_usd": "1160.50",
           "levers": [
             {
-              "lever": "prompt_caching",
-              "applies": false,
-              "reason": "static prefix 0 tokens is below provider minimum 1024",
-              "monthly_delta_usd": null,
-              "one_time_usd": null,
-              "label": "projected (production setup)"
-            },
-            {
-              "lever": "batch_api",
-              "applies": false,
-              "reason": "feature is interactive",
-              "monthly_delta_usd": null,
-              "one_time_usd": null,
-              "label": "projected (production setup)"
-            },
-            {
               "lever": "output_cap",
               "applies": false,
               "reason": "no critic finding that output exceeds what the rubric needs",
@@ -789,6 +806,22 @@
               "monthly_delta_usd": null,
               "one_time_usd": null,
               "label": null
+            },
+            {
+              "lever": "prompt_caching",
+              "applies": false,
+              "reason": "static prefix 0 tokens is below provider minimum 1024",
+              "monthly_delta_usd": null,
+              "one_time_usd": null,
+              "label": "projected (production setup)"
+            },
+            {
+              "lever": "batch_api",
+              "applies": false,
+              "reason": "feature is interactive",
+              "monthly_delta_usd": null,
+              "one_time_usd": null,
+              "label": "projected (production setup)"
             },
             {
               "lever": "output_reuse",
@@ -854,22 +887,6 @@
           "gross_monthly_usd": "11605.00",
           "levers": [
             {
-              "lever": "prompt_caching",
-              "applies": false,
-              "reason": "static prefix 0 tokens is below provider minimum 1024",
-              "monthly_delta_usd": null,
-              "one_time_usd": null,
-              "label": "projected (production setup)"
-            },
-            {
-              "lever": "batch_api",
-              "applies": false,
-              "reason": "feature is interactive",
-              "monthly_delta_usd": null,
-              "one_time_usd": null,
-              "label": "projected (production setup)"
-            },
-            {
               "lever": "output_cap",
               "applies": false,
               "reason": "no critic finding that output exceeds what the rubric needs",
@@ -884,6 +901,22 @@
               "monthly_delta_usd": null,
               "one_time_usd": null,
               "label": null
+            },
+            {
+              "lever": "prompt_caching",
+              "applies": false,
+              "reason": "static prefix 0 tokens is below provider minimum 1024",
+              "monthly_delta_usd": null,
+              "one_time_usd": null,
+              "label": "projected (production setup)"
+            },
+            {
+              "lever": "batch_api",
+              "applies": false,
+              "reason": "feature is interactive",
+              "monthly_delta_usd": null,
+              "one_time_usd": null,
+              "label": "projected (production setup)"
             },
             {
               "lever": "output_reuse",
@@ -949,22 +982,6 @@
           "gross_monthly_usd": "116050.00",
           "levers": [
             {
-              "lever": "prompt_caching",
-              "applies": false,
-              "reason": "static prefix 0 tokens is below provider minimum 1024",
-              "monthly_delta_usd": null,
-              "one_time_usd": null,
-              "label": "projected (production setup)"
-            },
-            {
-              "lever": "batch_api",
-              "applies": false,
-              "reason": "feature is interactive",
-              "monthly_delta_usd": null,
-              "one_time_usd": null,
-              "label": "projected (production setup)"
-            },
-            {
               "lever": "output_cap",
               "applies": false,
               "reason": "no critic finding that output exceeds what the rubric needs",
@@ -979,6 +996,22 @@
               "monthly_delta_usd": null,
               "one_time_usd": null,
               "label": null
+            },
+            {
+              "lever": "prompt_caching",
+              "applies": false,
+              "reason": "static prefix 0 tokens is below provider minimum 1024",
+              "monthly_delta_usd": null,
+              "one_time_usd": null,
+              "label": "projected (production setup)"
+            },
+            {
+              "lever": "batch_api",
+              "applies": false,
+              "reason": "feature is interactive",
+              "monthly_delta_usd": null,
+              "one_time_usd": null,
+              "label": "projected (production setup)"
             },
             {
               "lever": "output_reuse",
@@ -1044,22 +1077,6 @@
           "gross_monthly_usd": "14.41",
           "levers": [
             {
-              "lever": "prompt_caching",
-              "applies": false,
-              "reason": "provider cache minimum or TTL unknown",
-              "monthly_delta_usd": null,
-              "one_time_usd": null,
-              "label": "projected (production setup)"
-            },
-            {
-              "lever": "batch_api",
-              "applies": false,
-              "reason": "feature is interactive",
-              "monthly_delta_usd": null,
-              "one_time_usd": null,
-              "label": "projected (production setup)"
-            },
-            {
               "lever": "output_cap",
               "applies": false,
               "reason": "no critic finding that output exceeds what the rubric needs",
@@ -1074,6 +1091,22 @@
               "monthly_delta_usd": null,
               "one_time_usd": null,
               "label": null
+            },
+            {
+              "lever": "prompt_caching",
+              "applies": false,
+              "reason": "provider cache minimum or TTL unknown",
+              "monthly_delta_usd": null,
+              "one_time_usd": null,
+              "label": "projected (production setup)"
+            },
+            {
+              "lever": "batch_api",
+              "applies": false,
+              "reason": "feature is interactive",
+              "monthly_delta_usd": null,
+              "one_time_usd": null,
+              "label": "projected (production setup)"
             },
             {
               "lever": "output_reuse",
@@ -1138,22 +1171,6 @@
           "gross_monthly_usd": "144.10",
           "levers": [
             {
-              "lever": "prompt_caching",
-              "applies": false,
-              "reason": "provider cache minimum or TTL unknown",
-              "monthly_delta_usd": null,
-              "one_time_usd": null,
-              "label": "projected (production setup)"
-            },
-            {
-              "lever": "batch_api",
-              "applies": false,
-              "reason": "feature is interactive",
-              "monthly_delta_usd": null,
-              "one_time_usd": null,
-              "label": "projected (production setup)"
-            },
-            {
               "lever": "output_cap",
               "applies": false,
               "reason": "no critic finding that output exceeds what the rubric needs",
@@ -1168,6 +1185,22 @@
               "monthly_delta_usd": null,
               "one_time_usd": null,
               "label": null
+            },
+            {
+              "lever": "prompt_caching",
+              "applies": false,
+              "reason": "provider cache minimum or TTL unknown",
+              "monthly_delta_usd": null,
+              "one_time_usd": null,
+              "label": "projected (production setup)"
+            },
+            {
+              "lever": "batch_api",
+              "applies": false,
+              "reason": "feature is interactive",
+              "monthly_delta_usd": null,
+              "one_time_usd": null,
+              "label": "projected (production setup)"
             },
             {
               "lever": "output_reuse",
@@ -1232,22 +1265,6 @@
           "gross_monthly_usd": "1441.00",
           "levers": [
             {
-              "lever": "prompt_caching",
-              "applies": false,
-              "reason": "provider cache minimum or TTL unknown",
-              "monthly_delta_usd": null,
-              "one_time_usd": null,
-              "label": "projected (production setup)"
-            },
-            {
-              "lever": "batch_api",
-              "applies": false,
-              "reason": "feature is interactive",
-              "monthly_delta_usd": null,
-              "one_time_usd": null,
-              "label": "projected (production setup)"
-            },
-            {
               "lever": "output_cap",
               "applies": false,
               "reason": "no critic finding that output exceeds what the rubric needs",
@@ -1262,6 +1279,22 @@
               "monthly_delta_usd": null,
               "one_time_usd": null,
               "label": null
+            },
+            {
+              "lever": "prompt_caching",
+              "applies": false,
+              "reason": "provider cache minimum or TTL unknown",
+              "monthly_delta_usd": null,
+              "one_time_usd": null,
+              "label": "projected (production setup)"
+            },
+            {
+              "lever": "batch_api",
+              "applies": false,
+              "reason": "feature is interactive",
+              "monthly_delta_usd": null,
+              "one_time_usd": null,
+              "label": "projected (production setup)"
             },
             {
               "lever": "output_reuse",
@@ -1326,22 +1359,6 @@
           "gross_monthly_usd": "14410.00",
           "levers": [
             {
-              "lever": "prompt_caching",
-              "applies": false,
-              "reason": "provider cache minimum or TTL unknown",
-              "monthly_delta_usd": null,
-              "one_time_usd": null,
-              "label": "projected (production setup)"
-            },
-            {
-              "lever": "batch_api",
-              "applies": false,
-              "reason": "feature is interactive",
-              "monthly_delta_usd": null,
-              "one_time_usd": null,
-              "label": "projected (production setup)"
-            },
-            {
               "lever": "output_cap",
               "applies": false,
               "reason": "no critic finding that output exceeds what the rubric needs",
@@ -1356,6 +1373,22 @@
               "monthly_delta_usd": null,
               "one_time_usd": null,
               "label": null
+            },
+            {
+              "lever": "prompt_caching",
+              "applies": false,
+              "reason": "provider cache minimum or TTL unknown",
+              "monthly_delta_usd": null,
+              "one_time_usd": null,
+              "label": "projected (production setup)"
+            },
+            {
+              "lever": "batch_api",
+              "applies": false,
+              "reason": "feature is interactive",
+              "monthly_delta_usd": null,
+              "one_time_usd": null,
+              "label": "projected (production setup)"
             },
             {
               "lever": "output_reuse",
@@ -1510,22 +1543,6 @@
           "gross_monthly_usd": "26.57",
           "levers": [
             {
-              "lever": "prompt_caching",
-              "applies": false,
-              "reason": "static prefix 0 tokens is below provider minimum 1024",
-              "monthly_delta_usd": null,
-              "one_time_usd": null,
-              "label": "projected (production setup)"
-            },
-            {
-              "lever": "batch_api",
-              "applies": true,
-              "reason": "background feature; 50% off input and output (after caching)",
-              "monthly_delta_usd": "-13.28",
-              "one_time_usd": null,
-              "label": "projected (production setup)"
-            },
-            {
               "lever": "output_cap",
               "applies": false,
               "reason": "no critic finding that output exceeds what the rubric needs",
@@ -1540,6 +1557,22 @@
               "monthly_delta_usd": null,
               "one_time_usd": null,
               "label": null
+            },
+            {
+              "lever": "prompt_caching",
+              "applies": false,
+              "reason": "static prefix 0 tokens is below provider minimum 1024",
+              "monthly_delta_usd": null,
+              "one_time_usd": null,
+              "label": "projected (production setup)"
+            },
+            {
+              "lever": "batch_api",
+              "applies": true,
+              "reason": "background feature; 50.0% off text input and output after any eligible caching; audio unchanged",
+              "monthly_delta_usd": "-13.28",
+              "one_time_usd": null,
+              "label": "projected (production setup)"
             },
             {
               "lever": "output_reuse",
@@ -1566,7 +1599,8 @@
           "warnings": [
             "Rates are not verified.",
             "Tokens estimated (4/3 words rule), not measured.",
-            "Estimated output tokens exclude any hidden reasoning tokens; cost is a lower bound."
+            "Estimated output tokens exclude any hidden reasoning tokens; cost is a lower bound.",
+            "Rounded line amounts may differ from the rounded total; totals use unrounded Decimal values."
           ]
         },
         {
@@ -1607,22 +1641,6 @@
           "gross_monthly_usd": "265.65",
           "levers": [
             {
-              "lever": "prompt_caching",
-              "applies": false,
-              "reason": "static prefix 0 tokens is below provider minimum 1024",
-              "monthly_delta_usd": null,
-              "one_time_usd": null,
-              "label": "projected (production setup)"
-            },
-            {
-              "lever": "batch_api",
-              "applies": true,
-              "reason": "background feature; 50% off input and output (after caching)",
-              "monthly_delta_usd": "-132.83",
-              "one_time_usd": null,
-              "label": "projected (production setup)"
-            },
-            {
               "lever": "output_cap",
               "applies": false,
               "reason": "no critic finding that output exceeds what the rubric needs",
@@ -1637,6 +1655,22 @@
               "monthly_delta_usd": null,
               "one_time_usd": null,
               "label": null
+            },
+            {
+              "lever": "prompt_caching",
+              "applies": false,
+              "reason": "static prefix 0 tokens is below provider minimum 1024",
+              "monthly_delta_usd": null,
+              "one_time_usd": null,
+              "label": "projected (production setup)"
+            },
+            {
+              "lever": "batch_api",
+              "applies": true,
+              "reason": "background feature; 50.0% off text input and output after any eligible caching; audio unchanged",
+              "monthly_delta_usd": "-132.83",
+              "one_time_usd": null,
+              "label": "projected (production setup)"
             },
             {
               "lever": "output_reuse",
@@ -1663,7 +1697,8 @@
           "warnings": [
             "Rates are not verified.",
             "Tokens estimated (4/3 words rule), not measured.",
-            "Estimated output tokens exclude any hidden reasoning tokens; cost is a lower bound."
+            "Estimated output tokens exclude any hidden reasoning tokens; cost is a lower bound.",
+            "Rounded line amounts may differ from the rounded total; totals use unrounded Decimal values."
           ]
         },
         {
@@ -1704,22 +1739,6 @@
           "gross_monthly_usd": "2656.50",
           "levers": [
             {
-              "lever": "prompt_caching",
-              "applies": false,
-              "reason": "static prefix 0 tokens is below provider minimum 1024",
-              "monthly_delta_usd": null,
-              "one_time_usd": null,
-              "label": "projected (production setup)"
-            },
-            {
-              "lever": "batch_api",
-              "applies": true,
-              "reason": "background feature; 50% off input and output (after caching)",
-              "monthly_delta_usd": "-1328.25",
-              "one_time_usd": null,
-              "label": "projected (production setup)"
-            },
-            {
               "lever": "output_cap",
               "applies": false,
               "reason": "no critic finding that output exceeds what the rubric needs",
@@ -1734,6 +1753,22 @@
               "monthly_delta_usd": null,
               "one_time_usd": null,
               "label": null
+            },
+            {
+              "lever": "prompt_caching",
+              "applies": false,
+              "reason": "static prefix 0 tokens is below provider minimum 1024",
+              "monthly_delta_usd": null,
+              "one_time_usd": null,
+              "label": "projected (production setup)"
+            },
+            {
+              "lever": "batch_api",
+              "applies": true,
+              "reason": "background feature; 50.0% off text input and output after any eligible caching; audio unchanged",
+              "monthly_delta_usd": "-1328.25",
+              "one_time_usd": null,
+              "label": "projected (production setup)"
             },
             {
               "lever": "output_reuse",
@@ -1801,22 +1836,6 @@
           "gross_monthly_usd": "26565.00",
           "levers": [
             {
-              "lever": "prompt_caching",
-              "applies": false,
-              "reason": "static prefix 0 tokens is below provider minimum 1024",
-              "monthly_delta_usd": null,
-              "one_time_usd": null,
-              "label": "projected (production setup)"
-            },
-            {
-              "lever": "batch_api",
-              "applies": true,
-              "reason": "background feature; 50% off input and output (after caching)",
-              "monthly_delta_usd": "-13282.50",
-              "one_time_usd": null,
-              "label": "projected (production setup)"
-            },
-            {
               "lever": "output_cap",
               "applies": false,
               "reason": "no critic finding that output exceeds what the rubric needs",
@@ -1831,6 +1850,22 @@
               "monthly_delta_usd": null,
               "one_time_usd": null,
               "label": null
+            },
+            {
+              "lever": "prompt_caching",
+              "applies": false,
+              "reason": "static prefix 0 tokens is below provider minimum 1024",
+              "monthly_delta_usd": null,
+              "one_time_usd": null,
+              "label": "projected (production setup)"
+            },
+            {
+              "lever": "batch_api",
+              "applies": true,
+              "reason": "background feature; 50.0% off text input and output after any eligible caching; audio unchanged",
+              "monthly_delta_usd": "-13282.50",
+              "one_time_usd": null,
+              "label": "projected (production setup)"
             },
             {
               "lever": "output_reuse",
@@ -1898,22 +1933,6 @@
           "gross_monthly_usd": "5.31",
           "levers": [
             {
-              "lever": "prompt_caching",
-              "applies": false,
-              "reason": "static prefix 0 tokens is below provider minimum 1024",
-              "monthly_delta_usd": null,
-              "one_time_usd": null,
-              "label": "projected (production setup)"
-            },
-            {
-              "lever": "batch_api",
-              "applies": true,
-              "reason": "background feature; 50% off input and output (after caching)",
-              "monthly_delta_usd": "-2.66",
-              "one_time_usd": null,
-              "label": "projected (production setup)"
-            },
-            {
               "lever": "output_cap",
               "applies": false,
               "reason": "no critic finding that output exceeds what the rubric needs",
@@ -1928,6 +1947,22 @@
               "monthly_delta_usd": null,
               "one_time_usd": null,
               "label": null
+            },
+            {
+              "lever": "prompt_caching",
+              "applies": false,
+              "reason": "static prefix 0 tokens is below provider minimum 1024",
+              "monthly_delta_usd": null,
+              "one_time_usd": null,
+              "label": "projected (production setup)"
+            },
+            {
+              "lever": "batch_api",
+              "applies": true,
+              "reason": "background feature; 50.0% off text input and output after any eligible caching; audio unchanged",
+              "monthly_delta_usd": "-2.66",
+              "one_time_usd": null,
+              "label": "projected (production setup)"
             },
             {
               "lever": "output_reuse",
@@ -1952,7 +1987,8 @@
           "warnings": [
             "Rates are not verified.",
             "Tokens estimated (4/3 words rule), not measured.",
-            "Estimated output tokens exclude any hidden reasoning tokens; cost is a lower bound."
+            "Estimated output tokens exclude any hidden reasoning tokens; cost is a lower bound.",
+            "Rounded line amounts may differ from the rounded total; totals use unrounded Decimal values."
           ]
         },
         {
@@ -1993,22 +2029,6 @@
           "gross_monthly_usd": "53.13",
           "levers": [
             {
-              "lever": "prompt_caching",
-              "applies": false,
-              "reason": "static prefix 0 tokens is below provider minimum 1024",
-              "monthly_delta_usd": null,
-              "one_time_usd": null,
-              "label": "projected (production setup)"
-            },
-            {
-              "lever": "batch_api",
-              "applies": true,
-              "reason": "background feature; 50% off input and output (after caching)",
-              "monthly_delta_usd": "-26.57",
-              "one_time_usd": null,
-              "label": "projected (production setup)"
-            },
-            {
               "lever": "output_cap",
               "applies": false,
               "reason": "no critic finding that output exceeds what the rubric needs",
@@ -2023,6 +2043,22 @@
               "monthly_delta_usd": null,
               "one_time_usd": null,
               "label": null
+            },
+            {
+              "lever": "prompt_caching",
+              "applies": false,
+              "reason": "static prefix 0 tokens is below provider minimum 1024",
+              "monthly_delta_usd": null,
+              "one_time_usd": null,
+              "label": "projected (production setup)"
+            },
+            {
+              "lever": "batch_api",
+              "applies": true,
+              "reason": "background feature; 50.0% off text input and output after any eligible caching; audio unchanged",
+              "monthly_delta_usd": "-26.57",
+              "one_time_usd": null,
+              "label": "projected (production setup)"
             },
             {
               "lever": "output_reuse",
@@ -2047,7 +2083,8 @@
           "warnings": [
             "Rates are not verified.",
             "Tokens estimated (4/3 words rule), not measured.",
-            "Estimated output tokens exclude any hidden reasoning tokens; cost is a lower bound."
+            "Estimated output tokens exclude any hidden reasoning tokens; cost is a lower bound.",
+            "Rounded line amounts may differ from the rounded total; totals use unrounded Decimal values."
           ]
         },
         {
@@ -2088,22 +2125,6 @@
           "gross_monthly_usd": "531.30",
           "levers": [
             {
-              "lever": "prompt_caching",
-              "applies": false,
-              "reason": "static prefix 0 tokens is below provider minimum 1024",
-              "monthly_delta_usd": null,
-              "one_time_usd": null,
-              "label": "projected (production setup)"
-            },
-            {
-              "lever": "batch_api",
-              "applies": true,
-              "reason": "background feature; 50% off input and output (after caching)",
-              "monthly_delta_usd": "-265.65",
-              "one_time_usd": null,
-              "label": "projected (production setup)"
-            },
-            {
               "lever": "output_cap",
               "applies": false,
               "reason": "no critic finding that output exceeds what the rubric needs",
@@ -2118,6 +2139,22 @@
               "monthly_delta_usd": null,
               "one_time_usd": null,
               "label": null
+            },
+            {
+              "lever": "prompt_caching",
+              "applies": false,
+              "reason": "static prefix 0 tokens is below provider minimum 1024",
+              "monthly_delta_usd": null,
+              "one_time_usd": null,
+              "label": "projected (production setup)"
+            },
+            {
+              "lever": "batch_api",
+              "applies": true,
+              "reason": "background feature; 50.0% off text input and output after any eligible caching; audio unchanged",
+              "monthly_delta_usd": "-265.65",
+              "one_time_usd": null,
+              "label": "projected (production setup)"
             },
             {
               "lever": "output_reuse",
@@ -2183,22 +2220,6 @@
           "gross_monthly_usd": "5313.00",
           "levers": [
             {
-              "lever": "prompt_caching",
-              "applies": false,
-              "reason": "static prefix 0 tokens is below provider minimum 1024",
-              "monthly_delta_usd": null,
-              "one_time_usd": null,
-              "label": "projected (production setup)"
-            },
-            {
-              "lever": "batch_api",
-              "applies": true,
-              "reason": "background feature; 50% off input and output (after caching)",
-              "monthly_delta_usd": "-2656.50",
-              "one_time_usd": null,
-              "label": "projected (production setup)"
-            },
-            {
               "lever": "output_cap",
               "applies": false,
               "reason": "no critic finding that output exceeds what the rubric needs",
@@ -2213,6 +2234,22 @@
               "monthly_delta_usd": null,
               "one_time_usd": null,
               "label": null
+            },
+            {
+              "lever": "prompt_caching",
+              "applies": false,
+              "reason": "static prefix 0 tokens is below provider minimum 1024",
+              "monthly_delta_usd": null,
+              "one_time_usd": null,
+              "label": "projected (production setup)"
+            },
+            {
+              "lever": "batch_api",
+              "applies": true,
+              "reason": "background feature; 50.0% off text input and output after any eligible caching; audio unchanged",
+              "monthly_delta_usd": "-2656.50",
+              "one_time_usd": null,
+              "label": "projected (production setup)"
             },
             {
               "lever": "output_reuse",
@@ -2278,22 +2315,6 @@
           "gross_monthly_usd": "0.71",
           "levers": [
             {
-              "lever": "prompt_caching",
-              "applies": false,
-              "reason": "provider cache minimum or TTL unknown",
-              "monthly_delta_usd": null,
-              "one_time_usd": null,
-              "label": "projected (production setup)"
-            },
-            {
-              "lever": "batch_api",
-              "applies": false,
-              "reason": "provider batch availability unknown",
-              "monthly_delta_usd": null,
-              "one_time_usd": null,
-              "label": "projected (production setup)"
-            },
-            {
               "lever": "output_cap",
               "applies": false,
               "reason": "no critic finding that output exceeds what the rubric needs",
@@ -2308,6 +2329,22 @@
               "monthly_delta_usd": null,
               "one_time_usd": null,
               "label": null
+            },
+            {
+              "lever": "prompt_caching",
+              "applies": false,
+              "reason": "provider cache minimum or TTL unknown",
+              "monthly_delta_usd": null,
+              "one_time_usd": null,
+              "label": "projected (production setup)"
+            },
+            {
+              "lever": "batch_api",
+              "applies": false,
+              "reason": "provider batch availability unknown",
+              "monthly_delta_usd": null,
+              "one_time_usd": null,
+              "label": "projected (production setup)"
             },
             {
               "lever": "output_reuse",
@@ -2371,22 +2408,6 @@
           "gross_monthly_usd": "7.11",
           "levers": [
             {
-              "lever": "prompt_caching",
-              "applies": false,
-              "reason": "provider cache minimum or TTL unknown",
-              "monthly_delta_usd": null,
-              "one_time_usd": null,
-              "label": "projected (production setup)"
-            },
-            {
-              "lever": "batch_api",
-              "applies": false,
-              "reason": "provider batch availability unknown",
-              "monthly_delta_usd": null,
-              "one_time_usd": null,
-              "label": "projected (production setup)"
-            },
-            {
               "lever": "output_cap",
               "applies": false,
               "reason": "no critic finding that output exceeds what the rubric needs",
@@ -2401,6 +2422,22 @@
               "monthly_delta_usd": null,
               "one_time_usd": null,
               "label": null
+            },
+            {
+              "lever": "prompt_caching",
+              "applies": false,
+              "reason": "provider cache minimum or TTL unknown",
+              "monthly_delta_usd": null,
+              "one_time_usd": null,
+              "label": "projected (production setup)"
+            },
+            {
+              "lever": "batch_api",
+              "applies": false,
+              "reason": "provider batch availability unknown",
+              "monthly_delta_usd": null,
+              "one_time_usd": null,
+              "label": "projected (production setup)"
             },
             {
               "lever": "output_reuse",
@@ -2464,22 +2501,6 @@
           "gross_monthly_usd": "71.06",
           "levers": [
             {
-              "lever": "prompt_caching",
-              "applies": false,
-              "reason": "provider cache minimum or TTL unknown",
-              "monthly_delta_usd": null,
-              "one_time_usd": null,
-              "label": "projected (production setup)"
-            },
-            {
-              "lever": "batch_api",
-              "applies": false,
-              "reason": "provider batch availability unknown",
-              "monthly_delta_usd": null,
-              "one_time_usd": null,
-              "label": "projected (production setup)"
-            },
-            {
               "lever": "output_cap",
               "applies": false,
               "reason": "no critic finding that output exceeds what the rubric needs",
@@ -2494,6 +2515,22 @@
               "monthly_delta_usd": null,
               "one_time_usd": null,
               "label": null
+            },
+            {
+              "lever": "prompt_caching",
+              "applies": false,
+              "reason": "provider cache minimum or TTL unknown",
+              "monthly_delta_usd": null,
+              "one_time_usd": null,
+              "label": "projected (production setup)"
+            },
+            {
+              "lever": "batch_api",
+              "applies": false,
+              "reason": "provider batch availability unknown",
+              "monthly_delta_usd": null,
+              "one_time_usd": null,
+              "label": "projected (production setup)"
             },
             {
               "lever": "output_reuse",
@@ -2557,22 +2594,6 @@
           "gross_monthly_usd": "710.60",
           "levers": [
             {
-              "lever": "prompt_caching",
-              "applies": false,
-              "reason": "provider cache minimum or TTL unknown",
-              "monthly_delta_usd": null,
-              "one_time_usd": null,
-              "label": "projected (production setup)"
-            },
-            {
-              "lever": "batch_api",
-              "applies": false,
-              "reason": "provider batch availability unknown",
-              "monthly_delta_usd": null,
-              "one_time_usd": null,
-              "label": "projected (production setup)"
-            },
-            {
               "lever": "output_cap",
               "applies": false,
               "reason": "no critic finding that output exceeds what the rubric needs",
@@ -2587,6 +2608,22 @@
               "monthly_delta_usd": null,
               "one_time_usd": null,
               "label": null
+            },
+            {
+              "lever": "prompt_caching",
+              "applies": false,
+              "reason": "provider cache minimum or TTL unknown",
+              "monthly_delta_usd": null,
+              "one_time_usd": null,
+              "label": "projected (production setup)"
+            },
+            {
+              "lever": "batch_api",
+              "applies": false,
+              "reason": "provider batch availability unknown",
+              "monthly_delta_usd": null,
+              "one_time_usd": null,
+              "label": "projected (production setup)"
             },
             {
               "lever": "output_reuse",
@@ -2711,22 +2748,6 @@
           "gross_monthly_usd": "1.89",
           "levers": [
             {
-              "lever": "prompt_caching",
-              "applies": false,
-              "reason": "static prefix 0 tokens is below provider minimum 1024",
-              "monthly_delta_usd": null,
-              "one_time_usd": null,
-              "label": "projected (production setup)"
-            },
-            {
-              "lever": "batch_api",
-              "applies": false,
-              "reason": "feature is interactive",
-              "monthly_delta_usd": null,
-              "one_time_usd": null,
-              "label": "projected (production setup)"
-            },
-            {
               "lever": "output_cap",
               "applies": false,
               "reason": "no critic finding that output exceeds what the rubric needs",
@@ -2741,6 +2762,22 @@
               "monthly_delta_usd": null,
               "one_time_usd": null,
               "label": null
+            },
+            {
+              "lever": "prompt_caching",
+              "applies": false,
+              "reason": "static prefix 0 tokens is below provider minimum 1024",
+              "monthly_delta_usd": null,
+              "one_time_usd": null,
+              "label": "projected (production setup)"
+            },
+            {
+              "lever": "batch_api",
+              "applies": false,
+              "reason": "feature is interactive",
+              "monthly_delta_usd": null,
+              "one_time_usd": null,
+              "label": "projected (production setup)"
             },
             {
               "lever": "output_reuse",
@@ -2808,22 +2845,6 @@
           "gross_monthly_usd": "18.95",
           "levers": [
             {
-              "lever": "prompt_caching",
-              "applies": false,
-              "reason": "static prefix 0 tokens is below provider minimum 1024",
-              "monthly_delta_usd": null,
-              "one_time_usd": null,
-              "label": "projected (production setup)"
-            },
-            {
-              "lever": "batch_api",
-              "applies": false,
-              "reason": "feature is interactive",
-              "monthly_delta_usd": null,
-              "one_time_usd": null,
-              "label": "projected (production setup)"
-            },
-            {
               "lever": "output_cap",
               "applies": false,
               "reason": "no critic finding that output exceeds what the rubric needs",
@@ -2838,6 +2859,22 @@
               "monthly_delta_usd": null,
               "one_time_usd": null,
               "label": null
+            },
+            {
+              "lever": "prompt_caching",
+              "applies": false,
+              "reason": "static prefix 0 tokens is below provider minimum 1024",
+              "monthly_delta_usd": null,
+              "one_time_usd": null,
+              "label": "projected (production setup)"
+            },
+            {
+              "lever": "batch_api",
+              "applies": false,
+              "reason": "feature is interactive",
+              "monthly_delta_usd": null,
+              "one_time_usd": null,
+              "label": "projected (production setup)"
             },
             {
               "lever": "output_reuse",
@@ -2905,22 +2942,6 @@
           "gross_monthly_usd": "189.48",
           "levers": [
             {
-              "lever": "prompt_caching",
-              "applies": false,
-              "reason": "static prefix 0 tokens is below provider minimum 1024",
-              "monthly_delta_usd": null,
-              "one_time_usd": null,
-              "label": "projected (production setup)"
-            },
-            {
-              "lever": "batch_api",
-              "applies": false,
-              "reason": "feature is interactive",
-              "monthly_delta_usd": null,
-              "one_time_usd": null,
-              "label": "projected (production setup)"
-            },
-            {
               "lever": "output_cap",
               "applies": false,
               "reason": "no critic finding that output exceeds what the rubric needs",
@@ -2935,6 +2956,22 @@
               "monthly_delta_usd": null,
               "one_time_usd": null,
               "label": null
+            },
+            {
+              "lever": "prompt_caching",
+              "applies": false,
+              "reason": "static prefix 0 tokens is below provider minimum 1024",
+              "monthly_delta_usd": null,
+              "one_time_usd": null,
+              "label": "projected (production setup)"
+            },
+            {
+              "lever": "batch_api",
+              "applies": false,
+              "reason": "feature is interactive",
+              "monthly_delta_usd": null,
+              "one_time_usd": null,
+              "label": "projected (production setup)"
             },
             {
               "lever": "output_reuse",
@@ -3002,22 +3039,6 @@
           "gross_monthly_usd": "1894.75",
           "levers": [
             {
-              "lever": "prompt_caching",
-              "applies": false,
-              "reason": "static prefix 0 tokens is below provider minimum 1024",
-              "monthly_delta_usd": null,
-              "one_time_usd": null,
-              "label": "projected (production setup)"
-            },
-            {
-              "lever": "batch_api",
-              "applies": false,
-              "reason": "feature is interactive",
-              "monthly_delta_usd": null,
-              "one_time_usd": null,
-              "label": "projected (production setup)"
-            },
-            {
               "lever": "output_cap",
               "applies": false,
               "reason": "no critic finding that output exceeds what the rubric needs",
@@ -3032,6 +3053,22 @@
               "monthly_delta_usd": null,
               "one_time_usd": null,
               "label": null
+            },
+            {
+              "lever": "prompt_caching",
+              "applies": false,
+              "reason": "static prefix 0 tokens is below provider minimum 1024",
+              "monthly_delta_usd": null,
+              "one_time_usd": null,
+              "label": "projected (production setup)"
+            },
+            {
+              "lever": "batch_api",
+              "applies": false,
+              "reason": "feature is interactive",
+              "monthly_delta_usd": null,
+              "one_time_usd": null,
+              "label": "projected (production setup)"
             },
             {
               "lever": "output_reuse",
@@ -3099,22 +3136,6 @@
           "gross_monthly_usd": "0.38",
           "levers": [
             {
-              "lever": "prompt_caching",
-              "applies": false,
-              "reason": "static prefix 0 tokens is below provider minimum 1024",
-              "monthly_delta_usd": null,
-              "one_time_usd": null,
-              "label": "projected (production setup)"
-            },
-            {
-              "lever": "batch_api",
-              "applies": false,
-              "reason": "feature is interactive",
-              "monthly_delta_usd": null,
-              "one_time_usd": null,
-              "label": "projected (production setup)"
-            },
-            {
               "lever": "output_cap",
               "applies": false,
               "reason": "no critic finding that output exceeds what the rubric needs",
@@ -3129,6 +3150,22 @@
               "monthly_delta_usd": null,
               "one_time_usd": null,
               "label": null
+            },
+            {
+              "lever": "prompt_caching",
+              "applies": false,
+              "reason": "static prefix 0 tokens is below provider minimum 1024",
+              "monthly_delta_usd": null,
+              "one_time_usd": null,
+              "label": "projected (production setup)"
+            },
+            {
+              "lever": "batch_api",
+              "applies": false,
+              "reason": "feature is interactive",
+              "monthly_delta_usd": null,
+              "one_time_usd": null,
+              "label": "projected (production setup)"
             },
             {
               "lever": "output_reuse",
@@ -3194,22 +3231,6 @@
           "gross_monthly_usd": "3.79",
           "levers": [
             {
-              "lever": "prompt_caching",
-              "applies": false,
-              "reason": "static prefix 0 tokens is below provider minimum 1024",
-              "monthly_delta_usd": null,
-              "one_time_usd": null,
-              "label": "projected (production setup)"
-            },
-            {
-              "lever": "batch_api",
-              "applies": false,
-              "reason": "feature is interactive",
-              "monthly_delta_usd": null,
-              "one_time_usd": null,
-              "label": "projected (production setup)"
-            },
-            {
               "lever": "output_cap",
               "applies": false,
               "reason": "no critic finding that output exceeds what the rubric needs",
@@ -3224,6 +3245,22 @@
               "monthly_delta_usd": null,
               "one_time_usd": null,
               "label": null
+            },
+            {
+              "lever": "prompt_caching",
+              "applies": false,
+              "reason": "static prefix 0 tokens is below provider minimum 1024",
+              "monthly_delta_usd": null,
+              "one_time_usd": null,
+              "label": "projected (production setup)"
+            },
+            {
+              "lever": "batch_api",
+              "applies": false,
+              "reason": "feature is interactive",
+              "monthly_delta_usd": null,
+              "one_time_usd": null,
+              "label": "projected (production setup)"
             },
             {
               "lever": "output_reuse",
@@ -3289,22 +3326,6 @@
           "gross_monthly_usd": "37.90",
           "levers": [
             {
-              "lever": "prompt_caching",
-              "applies": false,
-              "reason": "static prefix 0 tokens is below provider minimum 1024",
-              "monthly_delta_usd": null,
-              "one_time_usd": null,
-              "label": "projected (production setup)"
-            },
-            {
-              "lever": "batch_api",
-              "applies": false,
-              "reason": "feature is interactive",
-              "monthly_delta_usd": null,
-              "one_time_usd": null,
-              "label": "projected (production setup)"
-            },
-            {
               "lever": "output_cap",
               "applies": false,
               "reason": "no critic finding that output exceeds what the rubric needs",
@@ -3319,6 +3340,22 @@
               "monthly_delta_usd": null,
               "one_time_usd": null,
               "label": null
+            },
+            {
+              "lever": "prompt_caching",
+              "applies": false,
+              "reason": "static prefix 0 tokens is below provider minimum 1024",
+              "monthly_delta_usd": null,
+              "one_time_usd": null,
+              "label": "projected (production setup)"
+            },
+            {
+              "lever": "batch_api",
+              "applies": false,
+              "reason": "feature is interactive",
+              "monthly_delta_usd": null,
+              "one_time_usd": null,
+              "label": "projected (production setup)"
             },
             {
               "lever": "output_reuse",
@@ -3384,22 +3421,6 @@
           "gross_monthly_usd": "378.95",
           "levers": [
             {
-              "lever": "prompt_caching",
-              "applies": false,
-              "reason": "static prefix 0 tokens is below provider minimum 1024",
-              "monthly_delta_usd": null,
-              "one_time_usd": null,
-              "label": "projected (production setup)"
-            },
-            {
-              "lever": "batch_api",
-              "applies": false,
-              "reason": "feature is interactive",
-              "monthly_delta_usd": null,
-              "one_time_usd": null,
-              "label": "projected (production setup)"
-            },
-            {
               "lever": "output_cap",
               "applies": false,
               "reason": "no critic finding that output exceeds what the rubric needs",
@@ -3414,6 +3435,22 @@
               "monthly_delta_usd": null,
               "one_time_usd": null,
               "label": null
+            },
+            {
+              "lever": "prompt_caching",
+              "applies": false,
+              "reason": "static prefix 0 tokens is below provider minimum 1024",
+              "monthly_delta_usd": null,
+              "one_time_usd": null,
+              "label": "projected (production setup)"
+            },
+            {
+              "lever": "batch_api",
+              "applies": false,
+              "reason": "feature is interactive",
+              "monthly_delta_usd": null,
+              "one_time_usd": null,
+              "label": "projected (production setup)"
             },
             {
               "lever": "output_reuse",
@@ -3479,22 +3516,6 @@
           "gross_monthly_usd": "0.05",
           "levers": [
             {
-              "lever": "prompt_caching",
-              "applies": false,
-              "reason": "provider cache minimum or TTL unknown",
-              "monthly_delta_usd": null,
-              "one_time_usd": null,
-              "label": "projected (production setup)"
-            },
-            {
-              "lever": "batch_api",
-              "applies": false,
-              "reason": "feature is interactive",
-              "monthly_delta_usd": null,
-              "one_time_usd": null,
-              "label": "projected (production setup)"
-            },
-            {
               "lever": "output_cap",
               "applies": false,
               "reason": "no critic finding that output exceeds what the rubric needs",
@@ -3509,6 +3530,22 @@
               "monthly_delta_usd": null,
               "one_time_usd": null,
               "label": null
+            },
+            {
+              "lever": "prompt_caching",
+              "applies": false,
+              "reason": "provider cache minimum or TTL unknown",
+              "monthly_delta_usd": null,
+              "one_time_usd": null,
+              "label": "projected (production setup)"
+            },
+            {
+              "lever": "batch_api",
+              "applies": false,
+              "reason": "feature is interactive",
+              "monthly_delta_usd": null,
+              "one_time_usd": null,
+              "label": "projected (production setup)"
             },
             {
               "lever": "output_reuse",
@@ -3572,22 +3609,6 @@
           "gross_monthly_usd": "0.52",
           "levers": [
             {
-              "lever": "prompt_caching",
-              "applies": false,
-              "reason": "provider cache minimum or TTL unknown",
-              "monthly_delta_usd": null,
-              "one_time_usd": null,
-              "label": "projected (production setup)"
-            },
-            {
-              "lever": "batch_api",
-              "applies": false,
-              "reason": "feature is interactive",
-              "monthly_delta_usd": null,
-              "one_time_usd": null,
-              "label": "projected (production setup)"
-            },
-            {
               "lever": "output_cap",
               "applies": false,
               "reason": "no critic finding that output exceeds what the rubric needs",
@@ -3602,6 +3623,22 @@
               "monthly_delta_usd": null,
               "one_time_usd": null,
               "label": null
+            },
+            {
+              "lever": "prompt_caching",
+              "applies": false,
+              "reason": "provider cache minimum or TTL unknown",
+              "monthly_delta_usd": null,
+              "one_time_usd": null,
+              "label": "projected (production setup)"
+            },
+            {
+              "lever": "batch_api",
+              "applies": false,
+              "reason": "feature is interactive",
+              "monthly_delta_usd": null,
+              "one_time_usd": null,
+              "label": "projected (production setup)"
             },
             {
               "lever": "output_reuse",
@@ -3665,22 +3702,6 @@
           "gross_monthly_usd": "5.23",
           "levers": [
             {
-              "lever": "prompt_caching",
-              "applies": false,
-              "reason": "provider cache minimum or TTL unknown",
-              "monthly_delta_usd": null,
-              "one_time_usd": null,
-              "label": "projected (production setup)"
-            },
-            {
-              "lever": "batch_api",
-              "applies": false,
-              "reason": "feature is interactive",
-              "monthly_delta_usd": null,
-              "one_time_usd": null,
-              "label": "projected (production setup)"
-            },
-            {
               "lever": "output_cap",
               "applies": false,
               "reason": "no critic finding that output exceeds what the rubric needs",
@@ -3695,6 +3716,22 @@
               "monthly_delta_usd": null,
               "one_time_usd": null,
               "label": null
+            },
+            {
+              "lever": "prompt_caching",
+              "applies": false,
+              "reason": "provider cache minimum or TTL unknown",
+              "monthly_delta_usd": null,
+              "one_time_usd": null,
+              "label": "projected (production setup)"
+            },
+            {
+              "lever": "batch_api",
+              "applies": false,
+              "reason": "feature is interactive",
+              "monthly_delta_usd": null,
+              "one_time_usd": null,
+              "label": "projected (production setup)"
             },
             {
               "lever": "output_reuse",
@@ -3758,22 +3795,6 @@
           "gross_monthly_usd": "52.25",
           "levers": [
             {
-              "lever": "prompt_caching",
-              "applies": false,
-              "reason": "provider cache minimum or TTL unknown",
-              "monthly_delta_usd": null,
-              "one_time_usd": null,
-              "label": "projected (production setup)"
-            },
-            {
-              "lever": "batch_api",
-              "applies": false,
-              "reason": "feature is interactive",
-              "monthly_delta_usd": null,
-              "one_time_usd": null,
-              "label": "projected (production setup)"
-            },
-            {
               "lever": "output_cap",
               "applies": false,
               "reason": "no critic finding that output exceeds what the rubric needs",
@@ -3788,6 +3809,22 @@
               "monthly_delta_usd": null,
               "one_time_usd": null,
               "label": null
+            },
+            {
+              "lever": "prompt_caching",
+              "applies": false,
+              "reason": "provider cache minimum or TTL unknown",
+              "monthly_delta_usd": null,
+              "one_time_usd": null,
+              "label": "projected (production setup)"
+            },
+            {
+              "lever": "batch_api",
+              "applies": false,
+              "reason": "feature is interactive",
+              "monthly_delta_usd": null,
+              "one_time_usd": null,
+              "label": "projected (production setup)"
             },
             {
               "lever": "output_reuse",
@@ -4061,9 +4098,11 @@
       ]
     },
     "reasons": [
+      "No build scope provided; build costs are unknown, not zero.",
       "devops_capacity is assumed, and it decides which approaches are eligible; no build ranking until it is stated."
     ],
     "questions": [
+      "Build panel: optionally add build features and constraints to compare build approaches.",
       "Build panel: what DevOps work can the founder take on? none: 2 eligible (app-builder-credits, replit-agent); basic: 3 eligible (app-builder-credits, replit-agent, ide-agent-own-hosting); full: 4 eligible (app-builder-credits, replit-agent, ide-agent-own-hosting, api-only-custom)."
     ]
   },
@@ -4259,7 +4298,11 @@
       "version": "sample-2",
       "origin_url": null,
       "verified_at": null,
-      "status": "unverified"
+      "status": "unverified",
+      "transport_ref": null,
+      "query_id": null,
+      "content_sha256": null,
+      "snapshot_id": null
     },
     {
       "source_set": "pricing_snapshots",
@@ -4267,7 +4310,11 @@
       "version": "sample-2",
       "origin_url": null,
       "verified_at": null,
-      "status": "unverified"
+      "status": "unverified",
+      "transport_ref": null,
+      "query_id": null,
+      "content_sha256": null,
+      "snapshot_id": null
     },
     {
       "source_set": "pricing_snapshots",
@@ -4275,7 +4322,11 @@
       "version": "sample-2",
       "origin_url": null,
       "verified_at": null,
-      "status": "unverified"
+      "status": "unverified",
+      "transport_ref": null,
+      "query_id": null,
+      "content_sha256": null,
+      "snapshot_id": null
     },
     {
       "source_set": "pricing_snapshots",
@@ -4283,7 +4334,11 @@
       "version": "sample-2",
       "origin_url": null,
       "verified_at": null,
-      "status": "unverified"
+      "status": "unverified",
+      "transport_ref": null,
+      "query_id": null,
+      "content_sha256": null,
+      "snapshot_id": null
     },
     {
       "source_set": "pricing_snapshots",
@@ -4291,7 +4346,11 @@
       "version": "sample-3",
       "origin_url": null,
       "verified_at": null,
-      "status": "unverified"
+      "status": "unverified",
+      "transport_ref": null,
+      "query_id": null,
+      "content_sha256": null,
+      "snapshot_id": null
     },
     {
       "source_set": "pricing_snapshots",
@@ -4299,7 +4358,11 @@
       "version": "sample-5",
       "origin_url": null,
       "verified_at": null,
-      "status": "unverified"
+      "status": "unverified",
+      "transport_ref": null,
+      "query_id": null,
+      "content_sha256": null,
+      "snapshot_id": null
     },
     {
       "source_set": "pricing_snapshots",
@@ -4307,7 +4370,11 @@
       "version": "sample-3",
       "origin_url": null,
       "verified_at": null,
-      "status": "unverified"
+      "status": "unverified",
+      "transport_ref": null,
+      "query_id": null,
+      "content_sha256": null,
+      "snapshot_id": null
     },
     {
       "source_set": "pricing_snapshots",
@@ -4315,7 +4382,11 @@
       "version": "sample-3",
       "origin_url": null,
       "verified_at": null,
-      "status": "unverified"
+      "status": "unverified",
+      "transport_ref": null,
+      "query_id": null,
+      "content_sha256": null,
+      "snapshot_id": null
     }
   ],
   "memory_ids": [],
@@ -4351,6 +4422,31 @@
       "note": "see founder brief provenance"
     },
     {
+      "field": "target_user",
+      "status": "assumed",
+      "note": "see founder brief provenance"
+    },
+    {
+      "field": "quality_needs",
+      "status": "assumed",
+      "note": "see founder brief provenance"
+    },
+    {
+      "field": "usage",
+      "status": "assumed",
+      "note": "see founder brief provenance"
+    },
+    {
+      "field": "monthly_ai_budget_usd",
+      "status": "unknown",
+      "note": "see founder brief provenance"
+    },
+    {
+      "field": "switch_threshold_usd",
+      "status": "assumed",
+      "note": "see founder brief provenance"
+    },
+    {
       "field": "ai_features:B1_parse_request_to_quote.uses_per_user_month",
       "status": "assumed",
       "note": "founder estimate or default; editable"
@@ -4372,7 +4468,47 @@
     },
     {
       "field": "ai_features:B1_parse_request_to_quote.static_prefix_tokens",
+      "status": "assumed",
+      "note": "founder estimate or default; editable"
+    },
+    {
+      "field": "ai_features:B1_parse_request_to_quote.description",
+      "status": "assumed",
+      "note": "founder estimate or default; editable"
+    },
+    {
+      "field": "ai_features:B1_parse_request_to_quote.example_input",
+      "status": "assumed",
+      "note": "founder estimate or default; editable"
+    },
+    {
+      "field": "ai_features:B1_parse_request_to_quote.mode",
+      "status": "assumed",
+      "note": "founder estimate or default; editable"
+    },
+    {
+      "field": "ai_features:B1_parse_request_to_quote.modality",
+      "status": "assumed",
+      "note": "founder estimate or default; editable"
+    },
+    {
+      "field": "ai_features:B1_parse_request_to_quote.audio_seconds_per_use",
       "status": "unknown",
+      "note": "founder estimate or default; editable"
+    },
+    {
+      "field": "ai_features:B1_parse_request_to_quote.output_reuse_rate",
+      "status": "unknown",
+      "note": "founder estimate or default; editable"
+    },
+    {
+      "field": "ai_features:B1_parse_request_to_quote.distinct_outputs",
+      "status": "unknown",
+      "note": "founder estimate or default; editable"
+    },
+    {
+      "field": "ai_features:B1_parse_request_to_quote.rubric_checks",
+      "status": "assumed",
       "note": "founder estimate or default; editable"
     },
     {
@@ -4392,7 +4528,52 @@
     },
     {
       "field": "ai_features:B2_explain_flagged_transaction.static_prefix_tokens",
+      "status": "assumed",
+      "note": "founder estimate or default; editable"
+    },
+    {
+      "field": "ai_features:B2_explain_flagged_transaction.description",
+      "status": "assumed",
+      "note": "founder estimate or default; editable"
+    },
+    {
+      "field": "ai_features:B2_explain_flagged_transaction.example_input",
+      "status": "assumed",
+      "note": "founder estimate or default; editable"
+    },
+    {
+      "field": "ai_features:B2_explain_flagged_transaction.mode",
+      "status": "assumed",
+      "note": "founder estimate or default; editable"
+    },
+    {
+      "field": "ai_features:B2_explain_flagged_transaction.modality",
+      "status": "assumed",
+      "note": "founder estimate or default; editable"
+    },
+    {
+      "field": "ai_features:B2_explain_flagged_transaction.audio_seconds_per_use",
       "status": "unknown",
+      "note": "founder estimate or default; editable"
+    },
+    {
+      "field": "ai_features:B2_explain_flagged_transaction.revenue_per_use",
+      "status": "unknown",
+      "note": "founder estimate or default; editable"
+    },
+    {
+      "field": "ai_features:B2_explain_flagged_transaction.output_reuse_rate",
+      "status": "unknown",
+      "note": "founder estimate or default; editable"
+    },
+    {
+      "field": "ai_features:B2_explain_flagged_transaction.distinct_outputs",
+      "status": "unknown",
+      "note": "founder estimate or default; editable"
+    },
+    {
+      "field": "ai_features:B2_explain_flagged_transaction.rubric_checks",
+      "status": "assumed",
       "note": "founder estimate or default; editable"
     },
     {
@@ -4412,7 +4593,52 @@
     },
     {
       "field": "ai_features:B3_dispute_or_receipt_summary.static_prefix_tokens",
+      "status": "assumed",
+      "note": "founder estimate or default; editable"
+    },
+    {
+      "field": "ai_features:B3_dispute_or_receipt_summary.description",
+      "status": "assumed",
+      "note": "founder estimate or default; editable"
+    },
+    {
+      "field": "ai_features:B3_dispute_or_receipt_summary.example_input",
+      "status": "assumed",
+      "note": "founder estimate or default; editable"
+    },
+    {
+      "field": "ai_features:B3_dispute_or_receipt_summary.mode",
+      "status": "assumed",
+      "note": "founder estimate or default; editable"
+    },
+    {
+      "field": "ai_features:B3_dispute_or_receipt_summary.modality",
+      "status": "assumed",
+      "note": "founder estimate or default; editable"
+    },
+    {
+      "field": "ai_features:B3_dispute_or_receipt_summary.audio_seconds_per_use",
       "status": "unknown",
+      "note": "founder estimate or default; editable"
+    },
+    {
+      "field": "ai_features:B3_dispute_or_receipt_summary.revenue_per_use",
+      "status": "unknown",
+      "note": "founder estimate or default; editable"
+    },
+    {
+      "field": "ai_features:B3_dispute_or_receipt_summary.output_reuse_rate",
+      "status": "unknown",
+      "note": "founder estimate or default; editable"
+    },
+    {
+      "field": "ai_features:B3_dispute_or_receipt_summary.distinct_outputs",
+      "status": "unknown",
+      "note": "founder estimate or default; editable"
+    },
+    {
+      "field": "ai_features:B3_dispute_or_receipt_summary.rubric_checks",
+      "status": "assumed",
       "note": "founder estimate or default; editable"
     },
     {
@@ -4442,7 +4668,7 @@
       "origin": "rule"
     },
     {
-      "description": "Rework multiplier 1.3–2.5x is assumed, not measured; expected build cost moves with it.",
+      "description": "Rework multiplier 1.3\u20132.5x is assumed, not measured; expected build cost moves with it.",
       "cause_class": "rework",
       "severity": "medium",
       "triggered_by": [
@@ -4532,9 +4758,17 @@
     "Build panel: approaches compared on cited rates; no build executed on any platform."
   ],
   "questions": [
+    "Build panel: optionally add build features and constraints to compare build approaches.",
     "Build panel: what DevOps work can the founder take on? none: 2 eligible (app-builder-credits, replit-agent); basic: 3 eligible (app-builder-credits, replit-agent, ide-agent-own-hosting); full: 4 eligible (app-builder-credits, replit-agent, ide-agent-own-hosting, api-only-custom)."
   ],
   "spend_usd": "0",
-  "trace_path": "logs\\trace-example-2.jsonl",
+  "reserved_spend_usd": "0",
+  "dispatch_count": 0,
+  "transport_retries": 0,
+  "selected_samples_per_pair": 0,
+  "sampling_profile": "production",
+  "operations": [],
+  "unpublished_evidence_ids": [],
+  "trace_path": "logs/trace-example-2.jsonl",
   "disclaimer": "Economics are modeled estimates from entered assumptions and cited rates. They are not financial advice. See evidence_gaps and limitations."
 }

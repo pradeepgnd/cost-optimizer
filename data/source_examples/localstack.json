@@ -1,0 +1,9 @@
+{
+  "backend": "localstack",
+  "bucket": "cost-optimizer-data",
+  "prefix": "cost-optimizer/v4",
+  "region": "us-east-1",
+  "publisher_endpoint": "http://127.0.0.1:4566",
+  "zetaris_endpoint": "http://cost-optimizer-localstack:4566",
+  "namespace": "cost_optimizer_v4"
+}

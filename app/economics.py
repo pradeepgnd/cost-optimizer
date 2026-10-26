@@ -7,12 +7,15 @@ Two ledgers, never summed:
 """
 from __future__ import annotations
 
+from dataclasses import dataclass
+from datetime import datetime
 from decimal import Decimal, ROUND_CEILING, ROUND_HALF_UP
 from typing import Optional
 
 from app.contracts import (
     ApproachProfile, BuildLedger, Checkpoint, CostLine, EvidenceStatus, FeatureItem, FeatureProfile, LeverLine,
-    ModelProfile, ModelStackEntry, OperatingLedger, OutputCapRerun, RateCategory, Risk, RiskCause, RubricResult, Scenario, Stage,
+    ModelPricingTerms, ModelProfile, ModelStackEntry, OpenRouterProjectionTable, OperatingLedger, OutputCapRerun, Rate,
+    RateCategory, Risk, RiskCause, RubricResult, Scenario, SourceRef, Stage,
     StageCostRow, StageCostTable, SwitchPoint, TokenUsage, UsageAssumptions, default_stages,
 )
 
@@ -193,11 +196,15 @@ def estimate_feature_tokens(feature: FeatureProfile) -> Optional[TokenUsage]:
 
 
 def _usd(r) -> Optional[Decimal]:
-    return None if r is None else r.usd_per_unit
+    value = None if r is None else r.usd_per_unit
+    if value is not None and (not value.is_finite() or value < 0):
+        raise ValueError("A pricing rate must be finite and non-negative")
+    return value
 
 
-def _sum_known(xs) -> Decimal:
-    return sum((x for x in xs if x is not None), Decimal("0"))
+def _validate_cost(value: Optional[Decimal]) -> None:
+    if value is not None and (not value.is_finite() or value < 0):
+        raise ValueError("A calculated cost must be finite and non-negative")
 
 
 def _per_call(x: Optional[Decimal]) -> Optional[Decimal]:
@@ -218,22 +225,24 @@ def cost_per_call(tokens: TokenUsage, p_in: Decimal, p_out: Decimal) -> Decimal:
 # Each lever returns (display line, exact delta). Exact deltas feed totals; only the line is rounded.
 
 def _lever(lever, reason, delta=None, applies=True, one_time=None):
-    return LeverLine(lever=lever, applies=applies, reason=reason, monthly_delta_usd=_q(delta), one_time_usd=_q(one_time),
-                     label=PROJECTED if lever in ("prompt_caching", "batch_api", "output_reuse") else None), \
-        (delta if applies else None)
+    line = LeverLine(lever=lever, applies=applies, reason=reason, monthly_delta_usd=_q(delta), one_time_usd=_q(one_time),
+                     label=PROJECTED if lever in ("prompt_caching", "batch_api", "output_reuse") else None)
+    line._exact_monthly_delta = delta if applies else None
+    return line, line._exact_monthly_delta
 
 
-def _output_reuse(feature, cost_after_levers, call_cost_with_retries):
-    """Uses served from a cache of earlier outputs make no call at all, so the share is removed from the cost
-    after the other levers. Filling the cache is a one-time cost, kept off every monthly total."""
+def _output_reuse(feature, before, after, paid_calls, one_time):
+    """Compare full versus reduced paid volume after rechecking production eligibility."""
     r = feature.output_reuse_rate
     if r is None or r == 0:
         return _lever("output_reuse", "no output reuse rate given", applies=False)
-    one_time = None if feature.distinct_outputs is None else feature.distinct_outputs * call_cost_with_retries
+    fill_note = ("one-time cache fill cost unknown (distinct_outputs not given)" if feature.distinct_outputs is None
+                 else f"one-time generation of {feature.distinct_outputs:,} distinct outputs"
+                 + ("; required fill tariff unknown" if one_time is None else ""))
     why = (f"{r * 100:.0f}% of uses served from cached outputs; "
-           + (f"one-time generation of {feature.distinct_outputs:,} distinct outputs" if one_time is not None
-              else "one-time cache fill cost unknown (distinct_outputs not given)"))
-    return _lever("output_reuse", why, -r * cost_after_levers, one_time=one_time)
+           f"{paid_calls} paid calls/month including retries; cache TTL and discount eligibility recomputed; "
+           + fill_note)
+    return _lever("output_reuse", why, None if before is None or after is None else after - before, one_time=one_time)
 
 
 def _caching(feature, model, tokens, calls_eff, rates):
@@ -245,7 +254,7 @@ def _caching(feature, model, tokens, calls_eff, rates):
         return no("provider cache minimum or TTL unknown")
     if prefix < t.cache_min_prefix_tokens:
         return no(f"static prefix {prefix} tokens is below provider minimum {t.cache_min_prefix_tokens}")
-    windows = MONTH_MINUTES / t.cache_ttl_minutes
+    windows = max(Decimal("1"), MONTH_MINUTES / t.cache_ttl_minutes)
     if calls_eff <= windows:
         return no(f"{_q(calls_eff)} calls/month do not repeat within the {t.cache_ttl_minutes}-minute TTL on average")
     if p_read is None or p_write is None:
@@ -255,7 +264,7 @@ def _caching(feature, model, tokens, calls_eff, rates):
     delta = Decimal(prefix) * (writes * p_write + reads * p_read - calls_eff * p_in) / M
     if delta >= 0:
         return no("eligible, but write premium exceeds read discount at this volume")
-    return _lever("prompt_caching", f"{prefix}-token prefix: ~{_q(writes)} writes at write rate, "
+    return _lever("prompt_caching", f"{prefix}-token prefix; uniform traffic assumed: ~{_q(writes)} writes at write rate, "
                                     f"~{_q(reads)} reads at cache-read rate", delta)
 
 
@@ -268,34 +277,99 @@ def _batch(feature, model, base_cost, caching_delta):
         return no("provider offers no batch API" if t.batch_available is False else "provider batch availability unknown")
     if t.batch_discount is None:
         return no("batch discount unknown")
-    return _lever("batch_api", f"background feature; {int(t.batch_discount * 100)}% off input and output (after caching)",
+    return _lever("batch_api", f"background feature; {t.batch_discount * 100}% off text input and output after any eligible caching; audio unchanged",
                   -t.batch_discount * (base_cost + caching_delta))
 
 
-def _output_cap(feature, model, tokens, calls_eff, p_out, cap: Optional[OutputCapRerun]):
-    no = lambda why: _lever("output_cap", why, applies=False)
+def _effective_tokens(feature, model, tokens, cap: Optional[OutputCapRerun]):
+    """Use an accepted fixture/rerun; quality qualification is the caller's responsibility."""
     if cap is None or not cap.critic_flagged:
-        return no("no critic finding that output exceeds what the rubric needs")
+        return tokens, "no critic finding that output exceeds what the rubric needs"
+    if (cap.feature_id, cap.model_id) != (feature.feature_id, model.model_id):
+        return tokens, "capped re-run belongs to another feature or model"
     if cap.rerun.basis != "measured":
-        return no("capped re-run not measured")
+        return tokens, "capped re-run not measured"
     if cap.rerun.output_tokens >= tokens.output_tokens:
-        return no("capped re-run was not shorter")
-    return _lever("output_cap", f"measured re-run with cap: {cap.rerun.output_tokens} vs {tokens.output_tokens} output tokens",
-                  calls_eff * Decimal(cap.rerun.output_tokens - tokens.output_tokens) * p_out / M)
+        return tokens, "capped re-run was not shorter"
+    return cap.rerun, (f"measured re-run with cap: {cap.rerun.input_tokens} vs {tokens.input_tokens} input tokens; "
+                       f"{cap.rerun.output_tokens} vs {tokens.output_tokens} output tokens")
 
 
-def _long_context(model, tokens, calls_eff, rates):
-    thr = model.terms.long_context_threshold_tokens
-    if thr is None or tokens.input_tokens <= thr:
-        return _lever("long_context_cliff", "no provider threshold recorded" if thr is None
-                      else f"input {tokens.input_tokens} <= threshold {thr}", applies=False)
-    lc_in, lc_out = _usd(rates["lc_in"]), _usd(rates["lc_out"])
-    warn = f"WARNING: {tokens.basis} input {tokens.input_tokens} tokens exceeds {thr}; surcharge applies to the whole request"
-    if lc_in is None or lc_out is None:
-        return _lever("long_context_cliff", warn + "; long-context rate unknown")
-    # output tokens already include reasoning tokens
-    return _lever("long_context_cliff", warn, calls_eff * ((lc_in - rates["in"]) * tokens.input_tokens
-                                                          + (lc_out - rates["out"]) * tokens.output_tokens) / M)
+def _combination_source(model, levers):
+    """Only an explicitly supported exact combination with dated, cited evidence qualifies."""
+    for entry in model.terms.lever_combinations:
+        source = entry.source
+        if (set(entry.levers) == set(levers) and entry.supported and source.status == EvidenceStatus.verified
+                and source.verified_at and source.origin_url
+                and source.origin_url.startswith(("https://", "http://"))):
+            try:
+                datetime.fromisoformat(source.verified_at.replace("Z", "+00:00"))
+            except ValueError:
+                continue
+            return source.record_id
+    return None
+
+
+@dataclass
+class _ProductionCost:
+    total: Optional[Decimal]
+    tariff_total: Optional[Decimal]
+    long_context: tuple
+    caching: tuple
+    batch: tuple
+    source_ids: list[str]
+
+
+def _production_cost(feature, model, tokens, calls_eff, rates, audio_call, *, allow_caching=True):
+    """Price one production scenario. Optional discounts never hide a required unknown tariff."""
+    normal_text = cost_per_call(tokens, _usd(rates["in"]), _usd(rates["out"])) * calls_eff
+    threshold = model.terms.long_context_threshold_tokens
+    long = threshold is not None and tokens.input_tokens > threshold
+    if long:
+        p_in, p_out = _usd(rates["lc_in"]), _usd(rates["lc_out"])
+        reason = (f"WARNING: {tokens.basis} input {tokens.input_tokens} tokens exceeds {threshold}; "
+                  "surcharge applies to the whole request")
+        if p_in is None or p_out is None:
+            return _ProductionCost(None, None, _lever("long_context_cliff", reason + "; long-context rate unknown"),
+                                   _lever("prompt_caching", "required tariff unknown", applies=False),
+                                   _lever("batch_api", "required tariff unknown", applies=False), [])
+        text = cost_per_call(tokens, p_in, p_out) * calls_eff
+        context = _lever("long_context_cliff", reason, text - normal_text)
+    else:
+        p_in, p_out = _usd(rates["in"]), _usd(rates["out"])
+        text = normal_text
+        context = _lever("long_context_cliff", "no provider threshold recorded" if threshold is None
+                         else f"input {tokens.input_tokens} <= threshold {threshold}", applies=False)
+    tariff_total = text + audio_call * calls_eff
+    _validate_cost(tariff_total)
+    cache = (_caching(feature, model, tokens, calls_eff,
+                      {"in": p_in, "read": rates["lc_read" if long else "read"],
+                       "write": rates["lc_write" if long else "write"]}) if allow_caching
+             else _lever("prompt_caching", "cache-fill traffic timing unknown; no prompt-cache discount assumed", applies=False))
+    batch = _batch(feature, model, text, Decimal("0"))
+    required = {"long_context_cliff"} if long else set()
+    # Each option is a whole supported scenario, not a sum of unrelated discounts.
+    options = [(tariff_total, False, False, None)]
+    for use_cache, use_batch in ((True, False), (False, True), (True, True)):
+        if (use_cache and not cache[0].applies) or (use_batch and not batch[0].applies):
+            continue
+        levers = required | ({"prompt_caching"} if use_cache else set()) | ({"batch_api"} if use_batch else set())
+        source = _combination_source(model, levers) if len(levers) > 1 else None
+        if len(levers) > 1 and source is None:
+            continue
+        cache_delta = cache[1] if use_cache else Decimal("0")
+        batch_delta = _batch(feature, model, text, cache_delta)[1] if use_batch else Decimal("0")
+        cost = tariff_total + cache_delta + batch_delta
+        _validate_cost(cost)
+        options.append((cost, use_cache, use_batch, source))
+    total, use_cache, use_batch, source = min(options, key=lambda option: option[0])
+    if use_batch:
+        batch = _batch(feature, model, text, cache[1] if use_cache else Decimal("0"))
+    elif batch[0].applies:
+        batch = _lever("batch_api", "not applied: lowest-cost supported combination selected; combined pricing requires verified, dated citation", applies=False)
+    if not use_cache and cache[0].applies:
+        cache = _lever("prompt_caching", "not applied: lowest-cost supported combination selected; combined pricing requires verified, dated citation", applies=False)
+    return _ProductionCost(total, tariff_total, context, cache, batch, [source] if source else [])
 
 
 def stage_cost_row(feature: FeatureProfile, model: ModelProfile, stage: Stage, tokens: Optional[TokenUsage],
@@ -303,9 +377,13 @@ def stage_cost_row(feature: FeatureProfile, model: ModelProfile, stage: Stage, t
     """calls = users × uses × calls_per_use; cost_call = (in·p_in + out·p_out)/1e6, where output already includes
     reasoning; retries shown as their own line; levers applied only when eligible, each as its own line.
     Full Decimal precision throughout; values are rounded only when placed on the row."""
+    if not retry_rate.is_finite() or retry_rate < 0:
+        raise ValueError("retry_rate must be finite and non-negative")
     r = {"in": _rate(model, RateCategory.input_tokens), "out": _rate(model, RateCategory.output_tokens),
          "read": _rate(model, RateCategory.cached_input_tokens), "write": _rate(model, RateCategory.cache_write_tokens),
-         "lc_in": _rate(model, RateCategory.long_context_input_tokens), "lc_out": _rate(model, RateCategory.long_context_output_tokens)}
+         "lc_in": _rate(model, RateCategory.long_context_input_tokens), "lc_out": _rate(model, RateCategory.long_context_output_tokens),
+         "lc_read": _rate(model, RateCategory.long_context_cached_input_tokens),
+         "lc_write": _rate(model, RateCategory.long_context_cache_write_tokens)}
     audio_dirs = [d for d in ("audio_in", "audio_out") if d in feature.modality]
     r.update({d: _rate(model, AUDIO_RATE[d]) for d in audio_dirs})
     rate_ids = [x.source.record_id for x in r.values() if x is not None]
@@ -342,13 +420,14 @@ def stage_cost_row(feature: FeatureProfile, model: ModelProfile, stage: Stage, t
                             levers=[], monthly_with_levers_usd=None, warnings=warnings + [f"Cost unknown, not zero: {'; '.join(unknown)}."])
 
     call = cost_per_call(tokens, p_in, p_out) + sum((n * _usd(r[d]) / M for d, n in audio_tokens.items()), Decimal("0"))
+    _validate_cost(call)
     cin = calls * tokens.input_tokens * p_in / M
     cout = calls * tokens.output_tokens * p_out / M
     creason = None if tokens.reasoning_tokens is None else calls * tokens.reasoning_tokens * p_out / M
     caudio = {d: calls * n * _usd(r[d]) / M for d, n in audio_tokens.items()}
-    # Word-based estimates cannot see hidden reasoning; measured output tokens already include it.
-    lower_bound = tokens.basis == "estimated"
-    if lower_bound:
+    # Baseline lines use original tokens at standard prices. Each lever then compares
+    # consecutive production scenarios; the effective request may have different input too.
+    if tokens.basis == "estimated":
         warnings.append("Estimated output tokens exclude any hidden reasoning tokens; cost is a lower bound.")
     base = calls * call
     retries = base * retry_rate
@@ -359,22 +438,71 @@ def stage_cost_row(feature: FeatureProfile, model: ModelProfile, stage: Stage, t
               for d, c in caudio.items()]
     lines.append(CostLine(name="retries", monthly_usd=_q(retries), note=f"retry_rate {retry_rate} (assumed)"))
     gross = base + retries
+    _validate_cost(gross)
     calls_eff = calls * (1 + retry_rate)
 
-    p = {"in": p_in, "out": p_out, **{k: r[k] for k in ("read", "write", "lc_in", "lc_out")}}
-    caching, cdelta = _caching(feature, model, tokens, calls_eff, p)
-    pairs = [(caching, cdelta), _batch(feature, model, gross, cdelta or Decimal("0")),
-             _output_cap(feature, model, tokens, calls_eff, p_out, output_cap), _long_context(model, tokens, calls_eff, p)]
+    effective, cap_reason = _effective_tokens(feature, model, tokens, output_cap)
+    effective_audio = dict(audio_tokens)
+    effective_unknown = []
+    audio_estimated = False
+    for d in audio_dirs:
+        n, why = _audio_tokens_per_call(feature, model, effective, d)
+        if why:
+            effective_unknown.append(why)
+        else:
+            effective_audio[d] = n
+            audio_estimated |= getattr(effective, AUDIO_FIELD[d]) is None
+    audio_call = sum((n * _usd(r[d]) / M for d, n in effective_audio.items()), Decimal("0"))
+    effective_regular = None if effective_unknown else (cost_per_call(effective, p_in, p_out) + audio_call) * calls_eff
+    _validate_cost(effective_regular)
+    cap_applies = effective is not tokens
+    cap = _lever("output_cap", cap_reason,
+                 None if not cap_applies or effective_regular is None else effective_regular - gross,
+                 applies=cap_applies)
+    if effective_unknown:
+        production = _ProductionCost(None, None, _lever("long_context_cliff", "effective request cost unknown", applies=False),
+                                     _lever("prompt_caching", "effective request cost unknown", applies=False),
+                                     _lever("batch_api", "effective request cost unknown", applies=False), [])
+        warnings.append("Effective request cost unknown: " + "; ".join(effective_unknown))
+    else:
+        production = _production_cost(feature, model, effective, calls_eff, r, audio_call)
+    pairs = [cap, production.long_context, production.caching, production.batch]
+    with_levers = production.total
+    source_ids = production.source_ids[:]
+    reuse = feature.output_reuse_rate
+    if reuse is not None and reuse > 0:
+        paid_calls = calls_eff * (1 - reuse)
+        reused = None if effective_unknown else _production_cost(feature, model, effective, paid_calls, r, audio_call)
+        with_levers = None if reused is None else reused.total
+        one_time = None
+        if feature.distinct_outputs is not None and not effective_unknown:
+            # Filling previously generated outputs is a separate, one-time scenario.
+            # Its timing is unknown, so do not assume prompt-cache hits from monthly traffic.
+            fill = _production_cost(feature, model, effective, Decimal(feature.distinct_outputs) * (1 + retry_rate),
+                                    r, audio_call, allow_caching=False)
+            one_time = fill.total
+            source_ids += fill.source_ids
+        if reused is not None:
+            source_ids += reused.source_ids
+        pairs.append(_output_reuse(feature, production.total, with_levers, paid_calls, one_time))
+    else:
+        pairs.append(_lever("output_reuse", "no output reuse rate given", applies=False))
+    _validate_cost(with_levers)
+    lower_bound = effective.basis == "estimated" or audio_estimated or with_levers is None
+    row["token_basis"] = "estimated" if audio_estimated else effective.basis
+    if audio_estimated and effective is not tokens:
+        warnings.append("Effective request audio tokens estimated from per-second conversion, not measured.")
     for lv, _ in pairs:
         if lv.applies and lv.monthly_delta_usd is None:
-            lower_bound = True
-            warnings.append(f"{lv.lever} applies but its amount is unknown.")
-    before_reuse = gross + _sum_known(d for _, d in pairs)
-    pairs.append(_output_reuse(feature, before_reuse, call * (1 + retry_rate)))
-    with_levers = before_reuse + (pairs[-1][1] or Decimal("0"))
+            warnings.append(f"{lv.lever} applies but its amount is unknown; decision cost remains unknown.")
+    row["rate_ids"] = list(dict.fromkeys(rate_ids + source_ids))
+    if with_levers is not None:
+        displayed_sum = _q(gross) + sum((line.monthly_delta_usd or Decimal("0") for line, _ in pairs), Decimal("0"))
+        if displayed_sum != _q(with_levers):
+            warnings.append("Rounded line amounts may differ from the rounded total; totals use unrounded Decimal values.")
 
     uses = Decimal(stage.active_users) * feature.uses_per_user_month
-    per_use = with_levers / uses if uses else None
+    per_use = with_levers / uses if uses and with_levers is not None else None
     share = None
     if per_use is not None and feature.revenue_per_use is not None:
         if feature.revenue_per_use > 0:
@@ -391,7 +519,7 @@ def stage_cost_row(feature: FeatureProfile, model: ModelProfile, stage: Stage, t
                        cost_per_use_usd=_per_call(per_use),
                        revenue_share=None if share is None else share.quantize(Decimal("0.0001"), rounding=ROUND_HALF_UP),
                        lower_bound=lower_bound, warnings=warnings)
-    out._exact_with_levers, out._exact_share = with_levers, share
+    out._exact_gross, out._exact_with_levers, out._exact_share = gross, with_levers, share
     return out
 
 
@@ -560,3 +688,30 @@ def stage_cost_table(feature: FeatureProfile, models: list[ModelProfile],
     return StageCostTable(feature_id=feature.feature_id, stages=stages, rows=rows, threshold_usd=threshold_usd,
                           switch_points=qualified, pending_switch_points=pending,
                           risks=revenue_share_risks(feature, rows), warnings=warnings)
+
+
+def openrouter_projection_table(feature: FeatureProfile, matched_catalog: list[tuple[ModelProfile, object, SourceRef]],
+                                tokens_by_model: dict[str, TokenUsage], stages: list[Stage]) -> OpenRouterProjectionTable:
+    """Price the same workload as a conditional OpenRouter token scenario, never as an execution tariff."""
+    rows, sources = [], []
+    for model, catalog, source in matched_catalog:
+        if model.market is None or model.market.catalog_id != catalog.catalog_id:
+            raise ValueError("OpenRouter projection catalog mapping mismatch")
+        rates = [Rate(category=category, unit="1M tokens", usd_per_unit=value,
+                      status=source.status if value is not None else EvidenceStatus.unknown, source=source)
+                 for category, value in ((RateCategory.input_tokens, catalog.input_usd_per_m),
+                                         (RateCategory.output_tokens, catalog.output_usd_per_m))]
+        scenario = model.model_copy(deep=True, update={"model_id": f"openrouter/{catalog.catalog_id}", "rates": rates,
+                         "terms": ModelPricingTerms(status=EvidenceStatus.unknown), "dispatch_policy": None,
+                         "source": source})
+        for stage in stages:
+            row = stage_cost_row(feature, scenario, stage,
+                                 tokens_by_model.get(model.model_id, estimate_feature_tokens(feature)))
+            row.lower_bound = True
+            row.warnings.append("OpenRouter listed-token scenario; provider, conditional tariffs and account fees are not verified for this request.")
+            rows.append(row)
+        sources.append(source)
+    return OpenRouterProjectionTable(feature_id=feature.feature_id, rows=rows, sources=sources,
+        warnings=["Hypothetical OpenRouter serving at the pinned catalog list price; not the Nightshift bill or a model recommendation.",
+                  "Measured tokens, when available, came from Nightshift and may differ under OpenRouter tokenization or routing.",
+                  "Account fees, provider selection, conditional tariffs and actual billing remain unverified."])
