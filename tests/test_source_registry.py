@@ -8,9 +8,11 @@ from botocore.exceptions import ClientError
 import httpx
 import pytest
 
-from app.adapters.live_zetaris import ZetarisDataLayer
+from app.adapters.base import SetupIncomplete
+from app.adapters.live_zetaris import ZetarisDataLayer, redact_sql
 from app.source_contracts import SourceBindings, StorageConfig
-from app.source_registry import EvidencePublisher, bundle_plan, put_immutable, register_bundle
+from app.source_registry import (AWS_KEY_ID_ENV, AWS_SECRET_ENV, EvidencePublisher, aws_source_credentials,
+                                 bundle_plan, put_immutable, register_bundle)
 from app.source_snapshots import canonical, digest, json_load
 from tests.test_zetaris_adapter import bundle, response_rows, ROOT
 
@@ -187,3 +189,92 @@ def test_reference_scenario_uses_exact_queried_prices_without_execution_tariff_c
     assert result["row"]["gross_monthly_usd"] == "0.09" and result["source"]["query_id"] == "fixture-query"
     with pytest.raises(ValueError,match="unknown"):
         reference_projection(model.model_copy(update={"input_usd_per_m": None}),ref)
+
+
+# AWS: Zetaris reads S3 file stores only with a key in the table OPTIONS. Fixture values below are
+# shape-valid fakes, never real credentials.
+FAKE_KEY_ID = "AKIAFIXTUREKEY000001"
+FAKE_SECRET = "s" * 36 + "/+=A"
+
+
+def aws_config():
+    return StorageConfig(backend="aws", bucket="fixture-bucket", publisher_endpoint=None, zetaris_endpoint=None)
+
+
+@pytest.fixture
+def aws_key(monkeypatch):
+    monkeypatch.setenv(AWS_KEY_ID_ENV, FAKE_KEY_ID)
+    monkeypatch.setenv(AWS_SECRET_ENV, FAKE_SECRET)
+
+
+def test_aws_dry_run_shows_placeholders_even_when_a_key_is_set(bundle, aws_key):
+    plan = bundle_plan(bundle[0], aws_config())
+    text = json.dumps(plan)
+    assert FAKE_KEY_ID not in text and FAKE_SECRET not in text
+    assert all('AWSACCESSKEYID "<key id>", AWSSECRETACCESSKEY "<secret>"' in t["statement"] for t in plan["tables"])
+
+
+def test_aws_registration_puts_the_key_only_in_create_statements(bundle, aws_key):
+    config, s3 = aws_config(), FakeS3()
+    layer = FakeZetaris(s3, config)
+    report = register_bundle(layer, bundle[0], config, client=s3)
+    creates = [sql for sql in layer.queries if sql.startswith("CREATE LIGHTNING FILESTORE")]
+    assert len(creates) == 3
+    assert all(f'AWSACCESSKEYID "{FAKE_KEY_ID}", AWSSECRETACCESSKEY "{FAKE_SECRET}"' in sql for sql in creates)
+    assert not any(FAKE_SECRET in sql or FAKE_KEY_ID in sql for sql in layer.queries if sql not in creates)
+    assert FAKE_SECRET not in json.dumps(report) and FAKE_KEY_ID not in json.dumps(report)
+    assert not any(FAKE_SECRET.encode() in body for body in s3.objects.values())
+
+
+def test_aws_registration_without_a_key_fails_before_any_publication(bundle, monkeypatch):
+    monkeypatch.delenv(AWS_KEY_ID_ENV, raising=False)
+    monkeypatch.delenv(AWS_SECRET_ENV, raising=False)
+    config, s3 = aws_config(), FakeS3()
+    layer = FakeZetaris(s3, config)
+    with pytest.raises(SetupIncomplete, match=AWS_KEY_ID_ENV):
+        register_bundle(layer, bundle[0], config, client=s3)
+    assert s3.puts == 0 and layer.queries == []
+
+
+@pytest.mark.parametrize("key_id,secret", [
+    (FAKE_KEY_ID, 'x", PATH "s3a://other-bucket/x'),
+    ('AKIA"; DROP DATABASE x', FAKE_SECRET),
+    ("ASIA" + "A" * 16, FAKE_SECRET),  # temporary keys need a session token Zetaris options do not carry
+])
+def test_aws_key_with_the_wrong_shape_is_rejected(monkeypatch, key_id, secret):
+    monkeypatch.setenv(AWS_KEY_ID_ENV, key_id)
+    monkeypatch.setenv(AWS_SECRET_ENV, secret)
+    with pytest.raises(SetupIncomplete, match="malformed"):
+        aws_source_credentials()
+
+
+def test_aws_evidence_table_carries_the_key_and_reads_back(bundle, aws_key):
+    config, s3 = aws_config(), FakeS3()
+    layer = FakeZetaris(s3, config)
+    layer.bindings = SourceBindings.model_validate(register_bundle(layer, bundle[0], config, client=s3)["bindings"])
+    record = {"id": "aws-run/sample", "run_id": "aws-run", "kind": "integration_test_fixture", "payload": {"x": 1}}
+    ref = EvidencePublisher(layer, config, layer.bindings, client=s3).write(record)
+    evidence_create = [sql for sql in layer.queries if sql.startswith("CREATE LIGHTNING FILESTORE TABLE evidence_")]
+    assert len(evidence_create) == 1 and f'AWSSECRETACCESSKEY "{FAKE_SECRET}"' in evidence_create[0]
+    assert layer.read_evidence(record["id"])[0] == record and ref.record_id == record["id"]
+
+
+def test_credentials_never_reach_the_trace_or_configuration_ref(monkeypatch):
+    for name, value in {"ZETARIS_REST_URL": "https://zetaris.test/api/v1.0", "ZETARIS_ORG_ID": "1",
+                        "ZETARIS_API_KEY": "fixture-api-key"}.items():
+        monkeypatch.setenv(name, value)
+    events = []
+    trace = SimpleNamespace(event=lambda *args, **kwargs: events.append((args, kwargs)))
+    layer = ZetarisDataLayer(trace=trace)
+    layer.client = SimpleNamespace(post=lambda url, **kwargs: httpx.Response(
+        200, json={"headers": [], "data": []}, request=httpx.Request("POST", url)))
+    statement = ('CREATE LIGHTNING FILESTORE TABLE t FROM ns FORMAT JSON OPTIONS (PATH "s3a://b/k", '
+                 'AWSACCESSKEYID "{}", AWSSECRETACCESSKEY "{}")')
+    layer._run_sql(statement.format(FAKE_KEY_ID, FAKE_SECRET))
+    other_secret = "t" * 36 + "/+=B"
+    layer._run_sql(statement.format(FAKE_KEY_ID, other_secret))
+    assert events and not any(FAKE_SECRET in repr(e) or FAKE_KEY_ID in repr(e) or other_secret in repr(e) for e in events)
+    refs = {e[1]["extra"]["configuration_ref"] for e in events if e[0][1] == "zetaris_query"}
+    assert len(refs) == 1  # the hash does not depend on the key
+    assert redact_sql(statement.format(FAKE_KEY_ID, FAKE_SECRET)).endswith(
+        'AWSACCESSKEYID "...redacted", AWSSECRETACCESSKEY "...redacted")')

@@ -142,7 +142,7 @@ class StorageConfig(PublicInput):
             raise ValueError("invalid storage prefix")
         if self.backend == "aws":
             if self.publisher_endpoint or self.zetaris_endpoint:
-                raise ValueError("AWS uses its standard endpoint and Zetaris-side credentials; set both custom endpoints to null")
+                raise ValueError("AWS uses its standard endpoint; set both custom endpoints to null")
         else:
             for endpoint in (self.publisher_endpoint, self.zetaris_endpoint):
                 url = urlparse(endpoint or "")

@@ -4,9 +4,30 @@ The [Steps 5–6 manual guide](../docs/12-M05-M06-Manual-Testing.md) documents t
 
 Source manifest schema 1.0 retains raw response files, normalized catalog, quarantined entries, acquisition mode, retrieval time, counts and hashes. Application bundle/bindings schema 1.1 pins dataset/version names, exact IDs/counts and per-row envelope SHA-256. Raw source files are published with the bundle; a release marker is created only after registered data matches. Versioned tables are immutable and no current pointer is automatically promoted. Existing matching sources are reused; conflicts are reported without replacement. Application reads preserve original source URLs/dates/statuses and add separate Zetaris transport/query/hash references.
 
-The source publisher is a separate process. It uses create-only S3 publication and conditional append-only evidence writes with exact readback; the application has no S3 credential requirement. On publication failure, generated output/configuration/rubric/critique/repair evidence remains in a durable SQLite outbox. `scripts/retry_evidence.py` retries publication only, with zero model generations. Its test-fixture mode requires a new test DB and never erases real runs. LocalStack execution has been tested; AWS-side IAM/registration remains unverified.
+The source publisher is a separate process. It uses create-only S3 publication and conditional append-only evidence writes with exact readback; the application has no S3 credential requirement. On publication failure, generated output/configuration/rubric/critique/repair evidence remains in a durable SQLite outbox. `scripts/retry_evidence.py` retries publication only, with zero model generations. Its test-fixture mode requires a new test DB and never erases real runs. LocalStack execution has been tested. On AWS, a probe object was read through Zetaris from the team bucket (below); full bundle registration on AWS is the next check.
 
-All runtime data is read through **Zetaris** (live) or from `data/sample/` (SAMPLE_MODE). Registered files live in the team's Amazon S3 bucket; Zetaris reads them from there. Bucket credentials are Zetaris-side configuration and never appear in this repository.
+All runtime data is read through **Zetaris** (live) or from `data/sample/` (SAMPLE_MODE). Registered files live in the team's Amazon S3 bucket; Zetaris reads them from there. Bucket credentials never appear in this repository.
+
+## AWS bucket and Zetaris access
+
+| Item | Value |
+|---|---|
+| Bucket | `cost-optimizer-oah-k7m2q`, `us-east-1`; Block Public Access on, SSE-S3, versioning, ACLs disabled |
+| Prefix | `cost-optimizer/v4/` (bundles, releases, evidence); probe object `cost-optimizer/v4/probe/connectivity_check.json` |
+| Storage config | [aws.oah.json](source_examples/aws.oah.json) (no credentials) |
+| Zetaris reader | IAM user `zetaris-s3-reader`, inline policy only: `s3:GetBucketLocation` on the bucket, `s3:ListBucket` for prefix `cost-optimizer/v4/`, `s3:GetObject` on `cost-optimizer/v4/*`. No write, delete or other buckets. |
+| Writer | The publisher process, using the operator's own AWS sign-in (`aws login`), never the Zetaris key |
+
+Zetaris reads S3 file stores only with a key in the table `OPTIONS`; per-bucket `fs.s3a` settings in the platform's `spark-defaults.conf` are ignored (checked 26 Oct 2026). Zetaris stores datasource credentials encrypted. The publisher therefore adds the reader key to each `CREATE LIGHTNING FILESTORE TABLE` statement on AWS. It reads the key only from `ZETARIS_S3_ACCESS_KEY_ID` and `ZETARIS_S3_SECRET_ACCESS_KEY` in the publishing terminal, never from `.env`, and dry-run plans, reports and traces show `<key id>` / `<secret>` or `...redacted` instead. Set them for one command and clear them afterwards:
+
+```powershell
+$env:ZETARIS_S3_ACCESS_KEY_ID = Read-Host "zetaris-s3-reader access key ID"
+$env:ZETARIS_S3_SECRET_ACCESS_KEY = Read-Host "secret access key" -MaskInput
+python scripts/register_sources.py --bundle <BUNDLE_DIR> --storage data/source_examples/aws.oah.json --apply --bindings-output <BINDINGS> --report <REPORT>
+Remove-Item Env:ZETARIS_S3_ACCESS_KEY_ID, Env:ZETARIS_S3_SECRET_ACCESS_KEY
+```
+
+To re-register on another Zetaris install, use the same command there; existing matching tables are reused, and a new machine needs its own reader key in the same two variables.
 
 | Source set | Live source name | Sample file | Status | Notes |
 |---|---|---|---|---|
