@@ -66,11 +66,12 @@ try {
 Write-Host "== WSL2 =="
 $wsl = Get-Command wsl.exe -ErrorAction SilentlyContinue
 if ($wsl) {
-  $wslStatus = (& wsl.exe --status 2>&1 | Out-String)
+  # wsl.exe writes UTF-16LE, which arrives with NUL between characters; strip them before matching
+  $wslStatus = (& wsl.exe --status 2>&1 | Out-String) -replace "`0", ""
   $defaultV2 = $wslStatus -match "Default Version:\s*2"
   Add-Check "WSL2" "wsl.exe present" "PASS" "found"
   Add-Check "WSL2" "Default WSL version is 2" ($(if ($defaultV2) {"PASS"} else {"WARN"})) ($wslStatus.Trim() -replace "`r?`n", " | ")
-  $distros = (& wsl.exe -l -v 2>&1 | Out-String)
+  $distros = (& wsl.exe -l -v 2>&1 | Out-String) -replace "`0", ""
   Add-Check "WSL2" "Distributions" "INFO" ($distros.Trim() -replace "`r?`n", " | ")
   $hasDockerDistro = $distros -match "docker-desktop"
   Add-Check "WSL2" "docker-desktop WSL distro registered" ($(if ($hasDockerDistro) {"PASS"} else {"WARN"})) ($(if ($hasDockerDistro) {"present"} else {"not found; Docker Desktop may not be using the WSL2 backend"}))
@@ -150,10 +151,14 @@ if ($ZetarisUrl) {
   }
   if ($ZetarisApiKey -and $ZetarisOrgId) {
     $headers = @{ Authorization = "Bearer $ZetarisApiKey"; "X-Org-ID" = $ZetarisOrgId; "X-Request-ID" = [guid]::NewGuid().ToString(); "Content-Type" = "application/json" }
-    $body = @{ queryId = [guid]::NewGuid().ToString(); sql = "SELECT 1"; limit = 1 } | ConvertTo-Json
+    $body = @{ queryId = [guid]::NewGuid().ToString(); sql = "SELECT 1 AS one"; source = "SqlEditor"; limit = 1 } | ConvertTo-Json
     try {
       $r = Invoke-WebRequest -Uri "$base/sql-editor/sqls/run" -Method POST -Headers $headers -Body $body -TimeoutSec 30 -UseBasicParsing -ErrorAction Stop
-      Add-Check "Zetaris" "SELECT 1 via REST" "PASS" "HTTP $($r.StatusCode); body length $($r.Content.Length). Save the raw body (redact nothing; it contains no secrets) as docs/zetaris_select1_response.json for the adapter author."
+      $sqlResult = $r.Content | ConvertFrom-Json
+      if ($null -eq $sqlResult.data -or @($sqlResult.data).Count -eq 0 -or [string]$sqlResult.data[0][0] -ne "1") {
+        throw "SELECT 1 did not return the expected row containing 1."
+      }
+      Add-Check "Zetaris" "SELECT 1 via REST" "PASS" "HTTP $($r.StatusCode); expected row containing 1 returned."
     } catch {
       Add-Check "Zetaris" "SELECT 1 via REST" "FAIL" "$($_.Exception.Message). Check the installed API reference: body field names (queryId/sql/source/limit) follow the installed schema."
     }
