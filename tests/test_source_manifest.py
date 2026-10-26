@@ -185,3 +185,8 @@ def test_route_map_needs_no_tier_and_pins_no_route():
     count = len(payload["routes"])
     payload["routes"].append({"catalog_id": "lab/x", "route_id": "openrouter/lab/x"})
     assert len(RouteMap.model_validate(payload).routes) == count + 1
+
+
+def test_unset_route_label_is_omitted_so_existing_bundle_ids_do_not_change():
+    mapping = RouteMap.model_validate_json(ROUTES.read_text())
+    assert all("label" not in route for route in mapping.model_dump(mode="json")["routes"])

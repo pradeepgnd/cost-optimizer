@@ -6,9 +6,12 @@ explicit test credentials and a dedicated namespace; no existing data sources ar
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
+import re
 import threading
 
+from app.adapters.base import SetupIncomplete
 from app.adapters.live_zetaris import identifier, record_id, decode_envelope
 from app.adapters.validation import table_rows
 from app.source_contracts import SourceBindings, StorageConfig
@@ -48,13 +51,43 @@ def put_immutable(client, bucket, key, raw):
         return {"key": key, "sha256": digest(raw), "version_id": existing.get("VersionId"), "reused": True}
 
 
-def table_sql(config, table, key):
+AWS_KEY_ID_ENV = "ZETARIS_S3_ACCESS_KEY_ID"
+AWS_SECRET_ENV = "ZETARIS_S3_SECRET_ACCESS_KEY"
+_AWS_KEY_ID = re.compile(r"AKIA[A-Z0-9]{16}")
+_AWS_SECRET = re.compile(r"[A-Za-z0-9/+=]{40}")
+PLACEHOLDER_CREDENTIALS = ("<key id>", "<secret>")
+
+
+def aws_source_credentials():
+    """Read-only S3 key for Zetaris, taken from the publishing process environment only.
+
+    The local Zetaris build reads S3 file stores only with credentials in the table OPTIONS;
+    per-bucket fs.s3a settings in spark-defaults.conf are ignored (verified 2026-10-26).
+    Zetaris stores datasource credentials encrypted. Never put these values in .env or the repo.
+    """
+    key_id = os.getenv(AWS_KEY_ID_ENV, "").strip()
+    secret = os.getenv(AWS_SECRET_ENV, "").strip()
+    if not key_id or not secret:
+        raise SetupIncomplete(f"AWS registration needs {AWS_KEY_ID_ENV} and {AWS_SECRET_ENV} "
+                              "in the publishing process environment (not .env)")
+    # Shape checks also keep the values from breaking out of the SQL string literals.
+    if not _AWS_KEY_ID.fullmatch(key_id) or not _AWS_SECRET.fullmatch(secret):
+        raise SetupIncomplete("AWS registration credentials are malformed; expected a long-lived IAM user access key")
+    return key_id, secret
+
+
+def table_sql(config, table, key, *, credentials=None):
+    """CREATE statement for one file-store table. AWS statements carry placeholders unless real
+    credentials are passed, so previews and reports never contain a key."""
     identifier(table)
-    # No real credentials are ever embedded in a statement or application process.
-    local = (f', s3Endpoint "{config.zetaris_endpoint}", useS3PathStyleAccess "true", '
-             'AWSACCESSKEYID "test", AWSSECRETACCESSKEY "test"') if config.backend == "localstack" else ""
+    if config.backend == "localstack":
+        extra = (f', s3Endpoint "{config.zetaris_endpoint}", useS3PathStyleAccess "true", '
+                 'AWSACCESSKEYID "test", AWSSECRETACCESSKEY "test"')
+    else:
+        key_id, secret = credentials or PLACEHOLDER_CREDENTIALS
+        extra = f', AWSACCESSKEYID "{key_id}", AWSSECRETACCESSKEY "{secret}"'
     return (f'CREATE LIGHTNING FILESTORE TABLE {table} FROM {config.namespace} FORMAT JSON OPTIONS ('
-            f'PATH "s3a://{config.bucket}/{key}", inferSchema "true", multiLine "true"{local})')
+            f'PATH "s3a://{config.bucket}/{key}", inferSchema "true", multiLine "true"{extra})')
 
 
 def ensure_namespace(layer, namespace):
@@ -63,11 +96,13 @@ def ensure_namespace(layer, namespace):
         layer._run_sql(f'CREATE LIGHTNING DATABASE {identifier(namespace)} DESCRIBE BY "Versioned cost advisor sources"')
 
 
-def ensure_table(layer, config, table, key):
+def ensure_table(layer, config, table, key, *, credentials=None):
     available = table_rows(layer._run_sql(f"SHOW LIGHTNING TABLES {config.namespace}", 20_000), 20_000)
     names = {str(row.get("name", "")).lower() for row in available}
     if table.lower() not in names:
-        layer._run_sql(table_sql(config, table, key))
+        if config.backend == "aws" and credentials is None:
+            credentials = aws_source_credentials()
+        layer._run_sql(table_sql(config, table, key, credentials=credentials))
         return "created"
     # Reuse only a source whose physical path/format matches; never PATCH or DROP a conflicting table.
     response = layer.client.get(f"{layer.base}/lightning-database/databases/{config.namespace}/file-store-tables/{table}",
@@ -94,10 +129,13 @@ def bundle_plan(bundle_dir: Path, config: StorageConfig):
             "sha256": manifest["files"][f"{kind}.json"], "expected_rows": manifest["counts"][kind],
             "statement": table_sql(config, table, f"{config.prefix}/bundles/{sid}/{kind}.json")} for kind, table in tables.items()],
         "bindings": bindings.model_dump(mode="json"), "mutations_performed": False,
-        "credential_mode": "LocalStack test credentials" if config.backend == "localstack" else "publisher SDK chain and Zetaris-side credentials"}
+        "credential_mode": "LocalStack test credentials" if config.backend == "localstack" else
+            f"publisher SDK chain for S3 writes; read-only Zetaris key from {AWS_KEY_ID_ENV}/{AWS_SECRET_ENV} in table OPTIONS"}
 
 
 def register_bundle(layer, bundle_dir, config, *, client=None):
+    # Fail before any publication when the Zetaris read key is missing.
+    credentials = aws_source_credentials() if config.backend == "aws" else None
     plan = bundle_plan(bundle_dir, config)
     client = client or storage_client(config)
     manifest = validate_bundle(bundle_dir)
@@ -109,7 +147,7 @@ def register_bundle(layer, bundle_dir, config, *, client=None):
     ensure_namespace(layer, config.namespace)
     registration = []
     for entry in plan["tables"]:
-        state = ensure_table(layer, config, entry["table"], entry["object_key"])
+        state = ensure_table(layer, config, entry["table"], entry["object_key"], credentials=credentials)
         result = table_rows(layer._run_sql(f"SELECT COUNT(*) AS record_count FROM {config.namespace}.{entry['table']}", 2), 1)
         if len(result) != 1 or int(result[0]["record_count"]) != entry["expected_rows"]:
             raise ValueError("registered source row count does not match the pinned bundle")
@@ -139,6 +177,7 @@ class EvidencePublisher:
         if config.namespace != bindings.namespace or not bindings.registered:
             raise ValueError("publisher needs registered bindings for its dedicated namespace")
         self.layer, self.config, self.bindings = layer, config, bindings
+        self.credentials = aws_source_credentials() if config.backend == "aws" else None
         self.client = client or storage_client(config)
         self.lock = threading.Lock()
 
@@ -190,7 +229,7 @@ class EvidencePublisher:
                 except Exception as error:
                     if not _precondition(error) or attempt == 2:
                         raise
-            ensure_table(self.layer, self.config, table, key)
+            ensure_table(self.layer, self.config, table, key, credentials=self.credentials)
             payload, ref = self.layer.read_evidence(rid)
             if canonical(payload) != raw or ref.content_sha256 != row["payload_sha256"]:
                 raise ValueError("published evidence readback differs; publication is not verified")

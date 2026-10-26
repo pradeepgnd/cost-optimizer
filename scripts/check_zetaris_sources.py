@@ -13,6 +13,7 @@ import uuid
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
+from app.adapters.base import SetupIncomplete
 from app.adapters.live_zetaris import ZetarisDataLayer, record_id
 from app.adapters.validation import validate_select_one
 from app.contracts import EvidenceStatus, FeatureProfile, ModelProfile, Rate, RateCategory, Stage, TokenUsage
@@ -20,7 +21,7 @@ from app.economics import stage_cost_row
 from app.source_contracts import SourceBindings, StorageConfig
 from app.source_registry import EvidencePublisher
 from app.source_snapshots import canonical, digest
-from app.trace import Trace
+from app.trace import Trace, _mask
 
 
 def reference_projection(catalog, source):
@@ -112,6 +113,9 @@ def main():
     except Exception as error:
         report.update(status="fail", error_type=type(error).__name__,
                       message="Source check failed; retained artifacts contain successful prior checks. No model was called.")
+        if isinstance(error, SetupIncomplete):
+            # Setup messages name missing settings, never their values; masking is a second guard.
+            report["setup_issue"] = str(_mask(str(error)))[:300]
     finally:
         if layer:
             layer.client.close()

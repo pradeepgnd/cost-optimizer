@@ -15,6 +15,7 @@ app/engines/hmem/storage/
 output.json
 preflight_report.md
 data/sample_evidence_written.jsonl
+# Generated source catalogs, bundles and reports (see data/README.md); never committed
 data/localstack/
 steps-testing.txt
 docs/evidence

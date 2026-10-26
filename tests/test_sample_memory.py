@@ -11,7 +11,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 def test_sample_memory_delegates_offline_and_persists(tmp_path, monkeypatch):
     monkeypatch.setenv("HMEM_STORAGE_DIR", str(tmp_path))
-    monkeypatch.setenv("NODE_OPTIONS", f"--require={ROOT / 'scripts' / 'hmem_network_guard.cjs'}")
+    monkeypatch.setenv("NODE_OPTIONS", f'--require="{(ROOT / "scripts" / "hmem_network_guard.cjs").as_posix()}"')
     assert hmem.offline_bridge_available()
     memory = SampleMemory(bridge_available=True)
     saved = memory.remember_confirmed("sample-project", {"kind": "confirmed_constraint", "text": "use a 300 USD budget"})

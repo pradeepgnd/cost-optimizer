@@ -20,6 +20,12 @@ from app.source_contracts import CatalogModel, RecordEnvelope, SourceBindings
 from app.source_snapshots import canonical, digest, json_load
 
 ADAPTER_REVISION = hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
+_CREDENTIAL_OPTION = re.compile(r'\b(AWSACCESSKEYID|AWSSECRETACCESSKEY)(\s+)"[^"]*"', re.I)
+
+
+def redact_sql(sql: str) -> str:
+    """Mask credential options so source-registration statements never reach traces or hashes."""
+    return _CREDENTIAL_OPTION.sub(r'\1\2"...redacted"', sql)
 
 
 class ZetarisDataLayer(DataLayer):
@@ -60,7 +66,7 @@ class ZetarisDataLayer(DataLayer):
         body = {"queryId": qid, "sql": sql, "source": "SqlEditor", "limit": limit}
         self.last_query_id = qid
         config_ref = hashlib.sha256(json.dumps({"base": self.base, "org": self.org, "limit": limit,
-                                                "source": self.src, "sql": sql}, sort_keys=True).encode()).hexdigest()
+                                                "source": self.src, "sql": redact_sql(sql)}, sort_keys=True).encode()).hexdigest()
         context = {"adapter_revision": ADAPTER_REVISION, "configuration_ref": config_ref}
 
         def event(action, status, **kwargs):

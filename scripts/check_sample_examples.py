@@ -64,7 +64,7 @@ def sample_environment(case_dir: Path) -> dict[str, str]:
     env.update(
         SAMPLE_MODE="true", LOG_DIR=str(case_dir / "logs"),
         RUNS_DB=str(case_dir / "runs.db"), HMEM_STORAGE_DIR=str(case_dir / "memory"),
-        NODE_OPTIONS=f"--require={ROOT / 'scripts' / 'hmem_network_guard.cjs'}",
+        NODE_OPTIONS=f'--require="{(ROOT / "scripts" / "hmem_network_guard.cjs").as_posix()}"',
         PYTHONIOENCODING="utf-8", PYTHONDONTWRITEBYTECODE="1",
     )
     return env
