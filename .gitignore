@@ -10,7 +10,11 @@ logs/*.jsonl
 logs/smoke-*.md
 !logs/.gitkeep
 node_modules/
+app/engines/hmem/storage/
 *.db
 output.json
 preflight_report.md
 data/sample_evidence_written.jsonl
+data/localstack/
+steps-testing.txt
+docs/evidence

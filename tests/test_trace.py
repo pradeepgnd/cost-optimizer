@@ -171,3 +171,74 @@ def test_zetaris_attempt_and_terminal_validate_sql_and_keep_query_id(tmp_path, m
     attempt, terminal = assert_pair(trace, "zetaris_query", "success" if outcome == "success" else "error")
     assert terminal["query_id"] == attempt["query_id"]
     assert "fixture-key" not in trace.path.read_text()
+
+
+@pytest.mark.parametrize("role,expect_off", [("Planner", True), ("Critic", False), ("Analyst", False)])
+def test_thinking_is_off_only_for_the_configured_roles(monkeypatch, live_env, role, expect_off):
+    import app.adapters.live_nightshift as module
+    seen = {}
+
+    def handle(request):
+        seen.update(json.loads(request.content))
+        return httpx.Response(200, json={"id": "c", "model": "nvidia/nemotron-fixture", "choices": [{"message": {"content": "OK"}}],
+                                         "usage": {"prompt_tokens": 1, "completion_tokens": 1}},
+                              headers={"x-request-id": "r"})
+
+    with httpx.Client(transport=httpx.MockTransport(handle)) as client:
+        monkeypatch.setattr(module.httpx, "post", client.post)
+        adapter = module.NightshiftInference()
+        with adapter.dispatch_context("synthetic-fixture-operation"):
+            adapter.complete(role=role, model="route/alias", system="s", user="u", max_tokens=8)
+    assert ("chat_template_kwargs" in seen) is expect_off
+    if expect_off:
+        assert seen["chat_template_kwargs"] == {"enable_thinking": False}
+
+
+def test_thinking_is_off_for_routes_named_in_the_environment(monkeypatch, live_env):
+    import app.adapters.live_nightshift as module
+    monkeypatch.setenv("METERLESS_NO_THINKING_MODELS", " route/slow , other/route ")
+    seen = []
+
+    def handle(request):
+        seen.append(json.loads(request.content))
+        return httpx.Response(200, json={"id": "c", "model": "m", "choices": [{"message": {"content": "OK"}}],
+                                         "usage": {"prompt_tokens": 1, "completion_tokens": 1}}, headers={"x-request-id": "r"})
+
+    with httpx.Client(transport=httpx.MockTransport(handle)) as client:
+        monkeypatch.setattr(module.httpx, "post", client.post)
+        adapter = module.NightshiftInference()
+        with adapter.dispatch_context("synthetic-fixture-operation"):
+            for model in ("route/slow", "route/fast"):
+                adapter.complete(role="Analyst", model=model, system="s", user="u", max_tokens=8)
+    assert seen[0]["chat_template_kwargs"] == {"enable_thinking": False} and "chat_template_kwargs" not in seen[1]
+
+
+@pytest.mark.parametrize("env,passed,expected", [(None, None, 60), ("120", None, 120), ("120", 30, 30)])
+def test_request_timeout_defaults_to_60_and_is_configurable(monkeypatch, live_env, env, passed, expected):
+    import app.adapters.live_nightshift as module
+    monkeypatch.delenv("METERLESS_REQUEST_TIMEOUT_S", raising=False)
+    if env:
+        monkeypatch.setenv("METERLESS_REQUEST_TIMEOUT_S", env)
+    seen = {}
+
+    def post(url, **kwargs):
+        seen["timeout"] = kwargs["timeout"]
+        return httpx.Response(200, json={"id": "c", "model": "m", "choices": [{"message": {"content": "OK"}}],
+                                         "usage": {"prompt_tokens": 1, "completion_tokens": 1}},
+                              headers={"x-request-id": "r"}, request=httpx.Request("POST", url))
+
+    monkeypatch.setattr(module.httpx, "post", post)
+    adapter = module.NightshiftInference()
+    with adapter.dispatch_context("synthetic-fixture-operation"):
+        adapter.complete(role="Analyst", model="route/alias", system="s", user="u", max_tokens=8, timeout_s=passed)
+    assert seen["timeout"] == expected
+
+
+@pytest.mark.parametrize("env,role,off", [(None, "Planner", True), (None, "Critic", False), ("Planner,Critic", "Critic", True),
+                                          ("Planner,Critic", "Analyst", False), ("", "Planner", False)])
+def test_no_thinking_roles_can_be_set_from_the_environment(monkeypatch, live_env, env, role, off):
+    import app.adapters.live_nightshift as module
+    monkeypatch.delenv("METERLESS_NO_THINKING_ROLES", raising=False)
+    if env is not None:
+        monkeypatch.setenv("METERLESS_NO_THINKING_ROLES", env)
+    assert (role in module.NightshiftInference().no_thinking_roles) is off

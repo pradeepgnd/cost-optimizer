@@ -4,18 +4,128 @@
     {
       "catalog_id": "nvidia/nemotron-3-ultra-550b-a55b",
       "route_id": "nvidia/nemotron-3-ultra-550b-a55b",
-      "tier": "frontier"
+      "tier": "frontier",
+      "billing_profile": {
+        "model_id": "nvidia/nemotron-3-ultra-550b-a55b",
+        "provider_label": "nvidia (free Developer Program key; prototyping only; key type confirmed by the project owner 2026-10-26; no per-token tariff published)",
+        "rates": [
+          {
+            "category": "input_tokens",
+            "unit": "1M tokens",
+            "usd_per_unit": "0",
+            "status": "verified",
+            "source": {
+              "source_set": "pricing_snapshots",
+              "record_id": "nvidia/nemotron-3-ultra-550b-a55b#free-developer-program",
+              "version": "nim-docs-2026-08-06+owner-confirmed-2026-10-26",
+              "origin_url": "https://docs.api.nvidia.com/nim/docs/product",
+              "verified_at": "2026-10-26T13:50:00Z",
+              "status": "verified"
+            }
+          },
+          {
+            "category": "output_tokens",
+            "unit": "1M tokens",
+            "usd_per_unit": "0",
+            "status": "verified",
+            "source": {
+              "source_set": "pricing_snapshots",
+              "record_id": "nvidia/nemotron-3-ultra-550b-a55b#free-developer-program",
+              "version": "nim-docs-2026-08-06+owner-confirmed-2026-10-26",
+              "origin_url": "https://docs.api.nvidia.com/nim/docs/product",
+              "verified_at": "2026-10-26T13:50:00Z",
+              "status": "verified"
+            }
+          }
+        ],
+        "source": {
+          "source_set": "pricing_snapshots",
+          "record_id": "nvidia/nemotron-3-ultra-550b-a55b#free-developer-program",
+          "version": "nim-docs-2026-08-06+owner-confirmed-2026-10-26",
+          "origin_url": "https://docs.api.nvidia.com/nim/docs/product",
+          "verified_at": "2026-10-26T13:50:00Z",
+          "status": "verified"
+        },
+        "dispatch_policy": {
+          "max_prompt_bytes": 100000,
+          "prompt_tokens_per_byte": "1",
+          "prompt_overhead_tokens": 2048,
+          "max_output_tokens": 1024,
+          "completion_limit_includes_reasoning": true,
+          "billing_mode": "input_output_only",
+          "source": {
+            "source_set": "pricing_snapshots",
+            "record_id": "r1-probe-2026-10-26:ultra rcpt_req_z20cuec3 (512 cap) and 48-token cap call (completion_tokens 48, finish_reason length); r5-first-run: Lightning measured 945 prompt tokens for a 639-byte prompt (Ultra 141), so overhead raised from 64 to 2048",
+            "version": "observed-2026-10-26",
+            "origin_url": "https://docs.api.nvidia.com/nim/docs/product",
+            "verified_at": "2026-10-26T13:50:00Z",
+            "status": "verified"
+          }
+        }
+      }
     },
     {
       "catalog_id": "nvidia/nemotron-3.5-lightning",
       "route_id": "nvidia/nemotron-3.5-lightning-30b-a3b",
-      "tier": "mid_tier"
-    },
-    {
-      "catalog_id": "nvidia/nemotron-3-super-120b-a12b:free",
-      "route_id": "openrouter/nvidia/nemotron-3-super-120b-a12b:free",
-      "tier": "open_source",
-      "required": true
+      "tier": "mid_tier",
+      "billing_profile": {
+        "model_id": "nvidia/nemotron-3.5-lightning-30b-a3b",
+        "provider_label": "nvidia (free Developer Program key; prototyping only; key type confirmed by the project owner 2026-10-26; no per-token tariff published)",
+        "rates": [
+          {
+            "category": "input_tokens",
+            "unit": "1M tokens",
+            "usd_per_unit": "0",
+            "status": "verified",
+            "source": {
+              "source_set": "pricing_snapshots",
+              "record_id": "nvidia/nemotron-3.5-lightning-30b-a3b#free-developer-program",
+              "version": "nim-docs-2026-08-06+owner-confirmed-2026-10-26",
+              "origin_url": "https://docs.api.nvidia.com/nim/docs/product",
+              "verified_at": "2026-10-26T13:50:00Z",
+              "status": "verified"
+            }
+          },
+          {
+            "category": "output_tokens",
+            "unit": "1M tokens",
+            "usd_per_unit": "0",
+            "status": "verified",
+            "source": {
+              "source_set": "pricing_snapshots",
+              "record_id": "nvidia/nemotron-3.5-lightning-30b-a3b#free-developer-program",
+              "version": "nim-docs-2026-08-06+owner-confirmed-2026-10-26",
+              "origin_url": "https://docs.api.nvidia.com/nim/docs/product",
+              "verified_at": "2026-10-26T13:50:00Z",
+              "status": "verified"
+            }
+          }
+        ],
+        "source": {
+          "source_set": "pricing_snapshots",
+          "record_id": "nvidia/nemotron-3.5-lightning-30b-a3b#free-developer-program",
+          "version": "nim-docs-2026-08-06+owner-confirmed-2026-10-26",
+          "origin_url": "https://docs.api.nvidia.com/nim/docs/product",
+          "verified_at": "2026-10-26T13:50:00Z",
+          "status": "verified"
+        },
+        "dispatch_policy": {
+          "max_prompt_bytes": 100000,
+          "prompt_tokens_per_byte": "1",
+          "prompt_overhead_tokens": 2048,
+          "max_output_tokens": 1024,
+          "completion_limit_includes_reasoning": true,
+          "billing_mode": "input_output_only",
+          "source": {
+            "source_set": "pricing_snapshots",
+            "record_id": "r1-probe-2026-10-26:lightning rcpt_req_i150tjx5 (512 cap: 273 completion tokens for a 3-char answer; 64 cap: empty_response); r5-first-run: Lightning measured 945 prompt tokens for a 639-byte prompt (Ultra 141), so overhead raised from 64 to 2048",
+            "version": "observed-2026-10-26",
+            "origin_url": "https://docs.api.nvidia.com/nim/docs/product",
+            "verified_at": "2026-10-26T13:50:00Z",
+            "status": "verified"
+          }
+        }
+      }
     }
   ]
 }

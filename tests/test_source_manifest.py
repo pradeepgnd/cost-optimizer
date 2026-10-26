@@ -147,15 +147,11 @@ def test_bundle_tampering_or_missing_required_model_fails(snapshot, tmp_path):
     assert not (tmp_path / "bundles").exists()
 
 
-@pytest.mark.parametrize("mutation", ["duplicate_route", "missing_tier", "unpin_open_source"])
+@pytest.mark.parametrize("mutation", ["duplicate_route"])
 def test_route_mapping_is_validated(mutation):
     payload = json.loads(ROUTES.read_text())
     if mutation == "duplicate_route":
         payload["routes"][1]["route_id"] = payload["routes"][0]["route_id"]
-    elif mutation == "missing_tier":
-        payload["routes"][0]["tier"] = None
-    else:
-        payload["routes"][-1]["required"] = False
     with pytest.raises(ValueError):
         RouteMap.model_validate(payload)
 
@@ -178,3 +174,14 @@ def test_public_storage_config_cannot_embed_credentials_sql_or_remote_test_crede
     payload = json.loads((ROOT / "data/source_examples/localstack.json").read_text())
     with pytest.raises(ValueError):
         StorageConfig.model_validate({**payload, **updates})
+
+
+def test_route_map_needs_no_tier_and_pins_no_route():
+    payload = json.loads(ROUTES.read_text())
+    for route in payload["routes"]:
+        route.pop("tier", None)
+        route.pop("required", None)
+    assert all(route.tier is None and not route.required for route in RouteMap.model_validate(payload).routes)
+    count = len(payload["routes"])
+    payload["routes"].append({"catalog_id": "lab/x", "route_id": "openrouter/lab/x"})
+    assert len(RouteMap.model_validate(payload).routes) == count + 1

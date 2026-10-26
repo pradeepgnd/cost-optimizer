@@ -226,6 +226,11 @@ class MarketReference(BaseModel):
     list_price_input_usd_per_m: Optional[NonNegativeDecimal] = None
     list_price_output_usd_per_m: Optional[NonNegativeDecimal] = None
     usage_rank: Optional[PositiveInt] = None          # 1 == most used in the catalog snapshot
+    # Catalog reference only. None == the snapshot did not carry the field, which stays unknown, not "text only".
+    input_modalities: Optional[list[str]] = Field(default=None, exclude_if=lambda value: value is None)
+    output_modalities: Optional[list[str]] = Field(default=None, exclude_if=lambda value: value is None)
+    # True when the catalog lists a Hugging Face ID. A signal that weights are published, not a licence finding.
+    open_weights_signal: Optional[bool] = Field(default=None, exclude_if=lambda value: value is None)
     status: EvidenceStatus = EvidenceStatus.unverified
 
     @computed_field
@@ -270,6 +275,7 @@ class ShortlistEntry(BaseModel):
     price_per_intelligence_point_usd: Optional[Decimal] = None
     price_per_intelligence_point_label: Optional[str] = None
     selected: bool = False
+    selected_for: list[str] = Field(default_factory=list, exclude_if=lambda value: not value)   # feature IDs it was chosen for
     reason: str
 
 
@@ -347,7 +353,8 @@ class FeatureProfile(AssumptionInput):
     description: NonBlank
     example_input: NonBlank
     mode: Literal["interactive", "background"]
-    modality: list[Literal["text", "audio_in", "audio_out"]] = Field(default_factory=lambda: ["text"], min_length=1)
+    modality: list[Literal["text", "audio_in", "audio_out", "image_in", "image_out"]] = Field(
+        default_factory=lambda: ["text"], min_length=1)
     audio_seconds_per_use: Optional[NonNegativeDecimal] = None   # applied to each audio direction in modality
     revenue_per_use: Optional[NonNegativeDecimal] = None          # present -> AI cost per use as a share of revenue per use
     uses_per_user_month: Optional[NonNegativeDecimal] = None
@@ -756,10 +763,14 @@ class ReadinessCheck(BaseModel):
 class ReadinessResult(BaseModel):
     scope: Literal["sponsor_integration", "live_diagnostic"] = "sponsor_integration"
     checks: list[ReadinessCheck] = Field(default_factory=list)
+    # Orthogonal integration facts. These describe what is known about a route
+    # without promoting it to sponsor readiness or paid-dispatch eligibility.
+    dimensions: list[ReadinessCheck] = Field(default_factory=list)
 
     @model_validator(mode="after")
     def _unique_checks(self):
         require_unique([check.name for check in self.checks], "readiness check names")
+        require_unique([check.name for check in self.dimensions], "readiness dimension names")
         return self
 
     @computed_field
@@ -865,3 +876,20 @@ class RunError(BaseModel):
 FounderBrief.model_rebuild()
 StageCostTable.model_rebuild()
 RunRequest.model_rebuild()
+
+
+# ------------------------------------------------- modality capability (catalog reference)
+
+# Feature modality -> (catalog direction, catalog modality name a model must list).
+MODALITY_CAPABILITY = {"text": ("input", "text"), "audio_in": ("input", "audio"), "image_in": ("input", "image"),
+                       "audio_out": ("output", "audio"), "image_out": ("output", "image")}
+
+
+def covers_modalities(market: Optional[MarketReference], modalities) -> Optional[bool]:
+    """True/False when the catalog reference says whether a model covers every feature modality; None when it
+    does not carry the field (unknown, never assumed text-only). A text feature always needs text output too."""
+    if market is None or market.input_modalities is None or market.output_modalities is None:
+        return None
+    have = {"input": set(market.input_modalities), "output": set(market.output_modalities)}
+    needed = {MODALITY_CAPABILITY[m] for m in modalities} | {("output", "text")}
+    return all(name in have[direction] for direction, name in needed)

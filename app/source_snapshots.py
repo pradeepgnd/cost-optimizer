@@ -94,11 +94,20 @@ def normalize_pages(pages: list[bytes], *, rejected=None) -> list[CatalogModel]:
                 rejected.append({"catalog_id": cid, "reason": "invalid_or_unbounded_pricing", "fields": sorted(set(invalid_prices))})
                 continue
             inp, out = token_price(pricing.get("prompt")), token_price(pricing.get("completion"))
+            architecture = entry.get("architecture") if isinstance(entry.get("architecture"), dict) else {}
+            modalities = {key: architecture.get(key) for key in ("input_modalities", "output_modalities")}
+            if any(value is not None and (not isinstance(value, list) or any(not isinstance(item, str) for item in value))
+                   for value in modalities.values()):
+                raise ValueError(f"{cid}: invalid architecture modalities")
+            hf_id = entry.get("hugging_face_id")
             found.append(CatalogModel(catalog_id=cid, name=entry.get("name") or cid,
                 context_length=entry.get("context_length"), supported_parameters=entry.get("supported_parameters") or [],
                 input_usd_per_m=None if inp is None else inp * 1_000_000,
                 output_usd_per_m=None if out is None else out * 1_000_000,
-                pricing=pricing, pricing_overrides=overrides))
+                pricing=pricing, pricing_overrides=overrides,
+                input_modalities=None if modalities["input_modalities"] is None else sorted(set(modalities["input_modalities"])),
+                output_modalities=None if modalities["output_modalities"] is None else sorted(set(modalities["output_modalities"])),
+                hugging_face_id=hf_id if isinstance(hf_id, str) and hf_id.strip() else None))
             if len(found) > MAX_RECORDS:
                 raise ValueError("catalog exceeded record bound")
     if not found:
@@ -247,6 +256,8 @@ def build_bundle(catalog_dir: Path, mapping: RouteMap, output_dir: Path, briefs=
         catalog = by_id[route.catalog_id]
         market = MarketReference(catalog_id=route.catalog_id, snapshot_date=manifest.retrieved_at[:10], list_price_input_usd_per_m=catalog.input_usd_per_m,
             list_price_output_usd_per_m=catalog.output_usd_per_m,
+            input_modalities=catalog.input_modalities, output_modalities=catalog.output_modalities,
+            open_weights_signal=None if catalog.input_modalities is None else catalog.hugging_face_id is not None,
             status=EvidenceStatus.verified if manifest.acquisition == "https_api" else EvidenceStatus.unverified)
         if route.billing_profile:
             model = route.billing_profile.model_copy(deep=True, update={"tier": route.tier, "required": route.required, "market": market})

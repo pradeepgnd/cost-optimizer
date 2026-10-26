@@ -403,6 +403,8 @@ def stage_cost_row(feature: FeatureProfile, model: ModelProfile, stage: Stage, t
     p_in, p_out = _usd(r["in"]), _usd(r["out"])
     unknown = [why for cond, why in ((calls is None, "uses_per_user_month unknown"), (tokens is None, "tokens unknown"),
                                      (p_in is None or p_out is None, "input or output rate unknown")) if cond]
+    image_dirs = [d for d in ("image_in", "image_out") if d in feature.modality]
+    unknown += [f"{d} pricing is not modeled" for d in image_dirs]
     audio_tokens: dict[str, Decimal] = {}
     for d in audio_dirs:
         n, why = _audio_tokens_per_call(feature, model, tokens, d)

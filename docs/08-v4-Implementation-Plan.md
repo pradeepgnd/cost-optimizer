@@ -1,10 +1,32 @@
-# v4 gap implementation guide
+# v4 implementation plan
 
-Created October 25, 2026; revised for priority-based, incremental testing. **M00–M04 are complete for their recorded scopes**. **M05–M06 have passing local source-component checks but overall acceptance remains partial** for applicable execution tariffs, remaining source coverage and later measured-model evidence. **M07 passes its local-engine acceptance**: pinned reference, restart/recall/isolation/audit and blocked-network sample delegation. **M08 has prior real Ultra/Lightning NVIDIA receipts, passing response fixtures and a read-only live preflight, but remains partial** because applicable route tariffs, bounds and a third candidate response are missing. M09–M14 remain pending. Follow the [Steps 5–6 manual tests](12-M05-M06-Manual-Testing.md), [M07 manual tests](14-M07-Manual-Testing.md), [M08 manual tests](15-M08-Manual-Testing.md) and [evidence ledger](v4-release-checklist.md). M03's Windows preflight execution remains unverified.
+Created October 25, 2026; updated October 26, 2026 to current status. This is the step-by-step plan that closes the v4 findings. **M00–M08 are done for their recorded scopes**, with the sponsor and candidate parts of M05 and M08 delivered through the revised steps R1–R5 in [17-v4-Revised-Implementation-Steps.md](17-v4-Revised-Implementation-Steps.md). **M09–M14 are not started.** Evidence for every result is in the [evidence ledger](v4-release-checklist.md). Where this plan and `17` differ on candidate selection or the NVIDIA requirement, `17` and `07` v4.3 win; each step below says what changed.
 
-**Objective:** close all 16 findings in the [integration gap review](08-v4-Integration-Gap-Review.md), then demonstrate a reproducible founder workflow using Zetaris, Nightshift, Nemotron and the real H-MEM engine.
+**Objective:** close all findings in the table below, then demonstrate a reproducible founder workflow using Zetaris, Nightshift, Nemotron and the real H-MEM engine. The original integration gap review that produced them (F01–F16) was folded into this plan; its history is in git.
 
-The authoritative product specification remains [07-Realignment-v4.md](../Planning/07-Realignment-v4.md), version 4.2. Integration references are the supplied **Participant Setup Guide**, updated October 21, 2026: Zetaris pp. 5–11 and 22; Meterless Engines pp. 12–15; Nightshift/Nemotron pp. 16–20; setup verification pp. 23–24. New contract names, file names and policies in this guide are proposed implementation choices, not existing APIs or sponsor endpoints.
+The authoritative product specification is [07-Realignment-v4.md](../Planning/07-Realignment-v4.md), version 4.3. Integration references are the supplied **Participant Setup Guide**, updated October 21, 2026: Zetaris pp. 5–11 and 22; Meterless Engines pp. 12–15; Nightshift/Nemotron pp. 16–20; setup verification pp. 23–24. New contract names, file names and policies in this plan are implementation choices, not existing APIs or sponsor endpoints.
+
+## Findings status
+
+| ID | Finding | Status | Closed by, or what remains |
+|---|---|---|---|
+| F01 | Typed Zetaris reads and evidence round trip | PASS, local | M05/M06; R5 wrote and read back evidence in-run (LocalStack S3). Second-machine run pending (M14) |
+| F02 | Real H-MEM engine | PASS, local reference | M07; one H-MEM save in the R5 pack. Decision influence is F07 |
+| F03 | Candidate identity and Nightshift proof | PASS | R1 (Planner and Critic) and R5: requested = resolved model on every dispatched call |
+| F04 | Dated source snapshots, repeatable registration | PASS | M05; modalities added in R2. Execution tariffs exist only for the two role routes |
+| F05 | Founder form and results UI | **Open** | M13 |
+| F06 | Planner makes representative tasks and rubrics | **Open** | M09 |
+| F07 | Memory changes a later decision | **Open** | M11 |
+| F08 | Composed levers can go negative | PASS | M02 |
+| F09 | Repaired quality feeds the recommendation | **Open** | M10 |
+| F10 | Spend ceiling, retries, unknown outcomes | PASS | M04; R5 exercised overrun, timeout and non-stop-finish stops |
+| F11 | Input validation and operating controls | PASS, partly | M01; budget fit across stages needs M12 |
+| F12 | Stage revenue, contribution, margin | **Open** | M12 |
+| F13 | Critic grounding and lab independence | **Open** | M09; shared-lab disclosure exists |
+| F14 | Human reviews bound to outputs | **Open** | M10 |
+| F15 | Diagnostics and traces | PASS, scoped | M03; Windows unverified |
+| F16 | Release docs, rehearsal, outside-founder evidence | **Open** | M14; `CLAUDE.md`, README and `07` updated |
+| F17 | No candidate or tier hard-coded | PASS, with one note | R3a/R4. `tier` stays an optional curated hint in the route map (Ultra frontier, Lightning mid-tier); `METERLESS_OPEN_MODEL` is an optional override |
 
 ## Priorities and incremental delivery order
 
@@ -12,25 +34,25 @@ The authoritative product specification remains [07-Realignment-v4.md](../Planni
 
 The milestone number matches its implementation step below. Every milestone must leave the existing sample workflow usable or provide an explicit setup/input outcome. Introduce only the contract changes required for the current milestone; do not wait for a complete redesign before testing.
 
-| Milestone | Priority | Deliverable you can test immediately afterward | Findings | Prerequisites | Test environment |
-|---|---|---|---|---|---|
-| M00 | P0 | Reproducible baseline and three sample packs | F16; inventory F01/F04 | — | Offline |
-| M01 | P0 | Validated operating-only input with preserved controls | F11 | M00 | Offline |
-| M02 | P0 | Correct combined-lever costs; no negative monthly totals | F08 | M01 | Offline calculator fixtures |
-| M03 | P0 | Usage-preserving traces and honest readiness results | F15 | M00 | Offline HTTP/engine fixtures |
-| M04 | P0 | Bounded calls, spend and timeout recovery | F10 | M01, M03 | Offline scripted inference |
-| M05 | P1 | Versioned real-model price data and repeatable registration | F04 | M01 | Offline manifest; live registration |
-| M06 | P1 | Real Zetaris reads and an evidence write/read round trip | F01 | M03, M05 | Isolated Zetaris; no model calls |
-| M07 | P1 | Real H-MEM save/restart/recall and offline adapter | F02 | M01, M03 | Local pinned engine; no providers |
-| M08 | P1 | Identified Nightshift candidates and first small live CLI pack | F03 | M02–M07 | Nightshift + Zetaris + H-MEM |
-| M09 | P1 | Validated task planning and grounded flags-only critique | F06, F13 | M08 | Offline scripted loop, then live |
-| M10 | P1 | Output-bound human review and effective repair results | F09, F14 | M02, M04, M09 | Saved/scripted samples, then live |
-| M11 | P1 | Accepted memory changes a later decision | F07 | M06, M07, M10 | Local engine + persisted evidence |
-| M12 | P2 | Stack totals, editable switch threshold, revenue and margin | F11, F12 | M02, M10 | Offline stage fixtures |
-| M13 | P2 | Form, results, chart, review and export | F05 | M09–M12 | Sample UI, then live UI |
-| M14 | P2 | Clean-clone rehearsal and release evidence | F16; final F01–F15 verification | M00–M13 | Second-machine sample/live |
+| Milestone | Priority | Status | Deliverable you can test immediately afterward | Findings | Prerequisites | Test environment |
+|---|---|---|---|---|---|---|
+| M00 | P0 | PASS | Reproducible baseline and three sample packs | F16; inventory F01/F04 | — | Offline |
+| M01 | P0 | PASS | Validated operating-only input with preserved controls | F11 | M00 | Offline |
+| M02 | P0 | PASS | Correct combined-lever costs; no negative monthly totals | F08 | M01 | Offline calculator fixtures |
+| M03 | P0 | PASS | Usage-preserving traces and honest readiness results | F15 | M00 | Offline HTTP/engine fixtures |
+| M04 | P0 | PASS | Bounded calls, spend and timeout recovery | F10 | M01, M03 | Offline scripted inference |
+| M05 | P1 | PASS (components; R2, R3a) | Versioned real-model price data and repeatable registration | F04 | M01 | Offline manifest; live registration |
+| M06 | P1 | PASS (components) | Real Zetaris reads and an evidence write/read round trip | F01 | M03, M05 | Isolated Zetaris; no model calls |
+| M07 | P1 | PASS (local) | Real H-MEM save/restart/recall and offline adapter | F02 | M01, M03 | Local pinned engine; no providers |
+| M08 | P1 | PASS (R1, R4, R5) | Identified Nightshift candidates and first small live CLI pack | F03 | M02–M07 | Nightshift + Zetaris + H-MEM |
+| M09 | P1 | Not started (R6) | Validated task planning and grounded flags-only critique | F06, F13 | M08 | Offline scripted loop, then live |
+| M10 | P1 | Not started (R7) | Output-bound human review and effective repair results | F09, F14 | M02, M04, M09 | Saved/scripted samples, then live |
+| M11 | P1 | Not started (R8) | Accepted memory changes a later decision | F07 | M06, M07, M10 | Local engine + persisted evidence |
+| M12 | P2 | Not started (R9) | Stack totals, editable switch threshold, revenue and margin | F11, F12 | M02, M10 | Offline stage fixtures |
+| M13 | P2 | Not started (R10) | Form, results, chart, review and export | F05 | M09–M12 | Sample UI, then live UI |
+| M14 | P2 | Not started (R11) | Clean-clone rehearsal and release evidence | F16; final F01–F15 verification | M00–M13 | Second-machine sample/live |
 
-Executed results and artifact locations are tracked in the [milestone evidence ledger](evidence/v4-release-checklist.md); the table above describes delivery order rather than completion status.
+Executed results and artifact locations are tracked in the [evidence ledger](v4-release-checklist.md).
 
 Useful stopping points are **M02** (calculator correctness), **M04** (safe scripted execution), **M06** (real data path), **M07** (real engine), **M08** (first small live pack), **M10** (reviewed repair), and **M13** (complete user flow). Do not wait until M14 to discover whether the integrations work.
 
@@ -50,13 +72,15 @@ The live checks consume bounded model calls only where explicitly stated. Full-s
 
 ## Step 0 — Establish the baseline and recover earlier work
 
-**Files:** [gap review](08-v4-Integration-Gap-Review.md), [README](../README.md), [CLAUDE.md](../CLAUDE.md), existing local traces, Git history.
+**Status (October 26, 2026): PASS (M00).**
+
+**Files:** [README](../README.md), [CLAUDE.md](../CLAUDE.md), existing local traces, Git history.
 
 1. Record the working revision and existing uncommitted changes. Preserve unrelated changes.
 2. Run `python -m pytest -q` in the configured virtual environment. The review baseline was 100 passed and 9 skipped; record current results rather than assuming those numbers remain valid.
 3. Locate the earlier Zetaris mapping/registration/writeback implementation associated with the successful local traces. Inspect history or obtain the relevant teammate's changes; compare them with current contracts before restoring them. Logs alone cannot reconstruct that code.
 4. Update contributor instructions to identify `07` as authoritative and distinguish shelved retrospective work from the active workflow.
-5. Start an evidence ledger, proposed path `docs/evidence/v4-release-checklist.md`, with finding ID, milestone, revision, test/command, environment, expected/actual result and artifact location. Leave results pending until executed.
+5. Start an evidence ledger, now `docs/v4-release-checklist.md`, with finding ID, milestone, revision, test/command, environment, expected/actual result and artifact location. Leave results pending until executed.
 
 **Acceptance:** a reproducible baseline and an explicit list of reusable integration changes; no earlier trace is presented as proof of the current revision.
 
@@ -68,9 +92,11 @@ python -m pytest -q tests/test_controller_sample.py tests/test_sample_data.py
 python scripts/check_sample_examples.py
 ```
 
-The implemented [sample checker](../scripts/check_sample_examples.py) runs the three CLI examples with forced sample mode, isolated databases/logs, dotenv loading disabled and Python sockets blocked. It preserves source inputs and saves copied requests, packs, traces and a manifest in a fresh temporary directory; it prints the path. Run it after shared-core changes. Pass `--output-dir <new-directory>` to retain artifacts at a chosen location; existing directories are refused. Inspect SAMPLE/OFFLINE labels, estimated stage rows, zero executed samples and no fabricated quality. M00 results and known skips are recorded in the [evidence ledger](evidence/v4-release-checklist.md); recoverable integration code is documented in the [history inventory](evidence/m00-integration-inventory.md).
+The implemented [sample checker](../scripts/check_sample_examples.py) runs the three CLI examples with forced sample mode, isolated databases/logs, dotenv loading disabled and Python sockets blocked. It preserves source inputs and saves copied requests, packs, traces and a manifest in a fresh temporary directory; it prints the path. Run it after shared-core changes. Pass `--output-dir <new-directory>` to retain artifacts at a chosen location; existing directories are refused. Inspect SAMPLE/OFFLINE labels, estimated stage rows, zero executed samples and no fabricated quality. M00 results and known skips are recorded in the [evidence ledger](v4-release-checklist.md); recoverable integration code is documented in the history inventory.
 
 ## Step 1 — Complete the contracts before adapting consumers
+
+**Status (October 26, 2026): PASS (M01).**
 
 **Files:** [contracts.py](../app/contracts.py), [controller.py](../app/controller.py), input examples and contract consumers.
 
@@ -91,9 +117,11 @@ python -m pytest -q tests/test_v4_contracts.py
 python -m pytest -q tests/test_controller_sample.py tests/test_sample_data.py
 ```
 
-The implemented [contract tests](../tests/test_v4_contracts.py) cover operating-only input, negative/non-finite values, duplicate IDs, unexpected fields, assumed defaults and round-tripped budget/threshold controls. Full-request fixtures use 2–5 features; calculator fixtures may use one. Invalid CLI input returns a structured error before adapter setup. Schema `1.0`/unversioned requests normalize to `1.1` under the same rules. Both controls appear in the exported pack; the switch threshold is already passed into the existing projection, while aggregate monthly budget-fit analysis remains M12. See [M01 results](evidence/v4-release-checklist.md#m01--input-contracts-and-founder-controls) for commands, regenerated examples and limitations.
+The implemented [contract tests](../tests/test_v4_contracts.py) cover operating-only input, negative/non-finite values, duplicate IDs, unexpected fields, assumed defaults and round-tripped budget/threshold controls. Full-request fixtures use 2–5 features; calculator fixtures may use one. Invalid CLI input returns a structured error before adapter setup. Schema `1.0`/unversioned requests normalize to `1.1` under the same rules. Both controls appear in the exported pack; the switch threshold is already passed into the existing projection, while aggregate monthly budget-fit analysis remains M12. See [M01 results](v4-release-checklist.md#m01--input-contracts-and-founder-controls) for commands, regenerated examples and limitations.
 
 ## Step 2 — Recompute costs under composed levers
+
+**Status (October 26, 2026): PASS (M02).**
 
 **Files:** [economics.py](../app/economics.py), `ModelPricingTerms` and stage-row contracts; [test_stage_economics.py](../tests/test_stage_economics.py).
 
@@ -114,9 +142,11 @@ The implemented [contract tests](../tests/test_v4_contracts.py) cover operating-
 python -m pytest -q tests/test_stage_economics.py tests/test_economics.py
 ```
 
-Implemented and tested: batch + cap returns $1.1055 exact / $1.11 displayed; required unknown surcharge prices cannot qualify a cheaper model, including after serialization. Accepted-cap fixtures recompute both input/output usage and long-context eligibility. Caching/batch stacking requires cited exact compatibility rules; output reuse rechecks paid volume and TTL eligibility, with fill kept separate. Negative/non-finite costs fail validation. See [calculator fixtures](evidence/m02-calculator-regressions.json) and [M02 evidence](evidence/v4-release-checklist.md#m02--composed-cost-levers). These are synthetic calculator inputs; actual repaired-configuration selection/quality remains M10, and real provider source verification remains M05–M06.
+Implemented and tested: batch + cap returns $1.1055 exact / $1.11 displayed; required unknown surcharge prices cannot qualify a cheaper model, including after serialization. Accepted-cap fixtures recompute both input/output usage and long-context eligibility. Caching/batch stacking requires cited exact compatibility rules; output reuse rechecks paid volume and TTL eligibility, with fill kept separate. Negative/non-finite costs fail validation. See calculator fixtures and [M02 evidence](v4-release-checklist.md#m02--composed-cost-levers). These are synthetic calculator inputs; actual repaired-configuration selection/quality remains M10, and real provider source verification remains M05–M06.
 
 ## Step 3 — Preserve evidence and make readiness checks meaningful
+
+**Status (October 26, 2026): PASS (M03); Windows execution unverified.**
 
 **Files:** [trace.py](../app/trace.py), [smoke_live.py](../scripts/smoke_live.py), [preflight_windows.ps1](../scripts/preflight_windows.ps1), both live adapters.
 
@@ -135,11 +165,13 @@ Implemented and tested: batch + cap returns $1.1055 exact / $1.11 displayed; req
 python -m pytest -q tests/test_trace.py tests/test_smoke_live.py
 ```
 
-Implemented and tested: **89 focused tests** verify numeric and nested reasoning usage, redacted file/stderr/final output, correlated attempt/terminal HTTP events (including timeout, HTTP, parse and semantic failures), strict SQL cell/discovery validation, explicit discovery/response Nemotron identity and response request IDs, required-skip exit behavior, JSON H-MEM self-tests, and typed readiness separate from pack completion. The full offline suite has **303 passing tests and 9 known skips**; all three examples were regenerated and pass the guarded sample checker. See [M03 evidence](evidence/v4-release-checklist.md#m03--trace-evidence-and-truthful-readiness) and [portable diagnostic fixtures](evidence/m03-diagnostic-regressions.json).
+Implemented and tested: **89 focused tests** verify numeric and nested reasoning usage, redacted file/stderr/final output, correlated attempt/terminal HTTP events (including timeout, HTTP, parse and semantic failures), strict SQL cell/discovery validation, explicit discovery/response Nemotron identity and response request IDs, required-skip exit behavior, JSON H-MEM self-tests, and typed readiness separate from pack completion. The full offline suite has **303 passing tests and 9 known skips**; all three examples were regenerated and pass the guarded sample checker. See [M03 evidence](v4-release-checklist.md#m03--trace-evidence-and-truthful-readiness) and portable diagnostic fixtures.
 
 Scope: fixtures and an unconfigured, network-blocked diagnostic only. Shared validators are used by Windows preflight, but PowerShell is unavailable on the current host and the revised script has not been executed on Windows. Real response mappings/read-writeback remain M06, engine persistence/offline delegation remains M07, model receipts and a working Nemotron feature remain M08, and UI consumption remains M13. Pack sponsor readiness stays `not_verified` until those required proofs exist. M04 dispatch safeguards are implemented below.
 
 ## Step 4 — Enforce spend, dispatch and restart limits
+
+**Status (October 26, 2026): PASS (M04); exercised live in R5.**
 
 **Files:** [dispatch.py](../app/dispatch.py): shared `Budget`, `Checkpoints`, `Dispatcher`; [controller.py](../app/controller.py): `_call`, `_execute`; [live_nightshift.py](../app/adapters/live_nightshift.py); [contracts.py](../app/contracts.py); [smoke_live.py](../scripts/smoke_live.py).
 
@@ -161,7 +193,7 @@ python -m pytest -q tests/test_dispatch_limits.py
 python -m pytest -q tests/test_controller_live_fake.py
 ```
 
-Implemented and tested: **67 dispatch tests** and **20 controller fake tests**, included in **183 focused dispatch/controller/smoke/trace tests**. The full suite passes **377 tests with 9 known skips**. Tests verify transactional reservation visibility, missing bounds/rates and zero-budget refusal, all-role reconciliation, unknown/held outcomes, exact applicable long-context tariffs, known overrun accounting, safe retries and global caps, duplicate/crash restart refusal, concurrent SQLite claims, sampling profiles, adapter/receipt correlation, and separate diagnostic allowances. Sample outputs were regenerated and all three pass with zero dispatches/reservations. See [M04 evidence](evidence/v4-release-checklist.md#m04--bounded-dispatch-spend-and-restart-safety) and [portable synthetic receipts](evidence/m04-dispatch-regressions.json).
+Implemented and tested: **67 dispatch tests** and **20 controller fake tests**, included in **183 focused dispatch/controller/smoke/trace tests**. The full suite passes **377 tests with 9 known skips**. Tests verify transactional reservation visibility, missing bounds/rates and zero-budget refusal, all-role reconciliation, unknown/held outcomes, exact applicable long-context tariffs, known overrun accounting, safe retries and global caps, duplicate/crash restart refusal, concurrent SQLite claims, sampling profiles, adapter/receipt correlation, and separate diagnostic allowances. Sample outputs were regenerated and all three pass with zero dispatches/reservations. See [M04 evidence](v4-release-checklist.md#m04--bounded-dispatch-spend-and-restart-safety) and portable synthetic receipts.
 
 Live execution requires real cited `ModelProfile.dispatch_policy` and rate/terms evidence for the pinned Planner, Critic and candidates; see [data contracts](../data/README.md). A founder estimate, 4/3 rule or fixed five-cent reservation cannot provide these bounds. The current sample prices/policies cannot authorize live dispatch. The runtime must confirm completion limits include hidden reasoning and the input/output tariff covers all billed categories/fees. Until this evidence is collected in M05–M08, live execution stops with a partial result and an evidence gap.
 
@@ -169,11 +201,13 @@ Unknown outcomes are retained for external reconciliation; restart does not auto
 
 ## Step 5 — Prepare source snapshots and repeatable registration
 
+**Status (October 26, 2026): PASS for components (M05); candidate selection revised in R3a; see the status paragraph below.**
+
 **Files:** [source contracts](../app/source_contracts.py), [collector/bundle logic](../app/source_snapshots.py), [publisher/registration](../app/source_registry.py), [collector CLI](../scripts/collect_sources.py), [bundle CLI](../scripts/prepare_source_bundle.py), [registration CLI](../scripts/register_sources.py), [data guide](../data/README.md).
 
-**Collection options:** the [OpenRouter source comparison](10-OpenRouter-Source-Options.md) recommends automated API collection into immutable S3 snapshots first, with direct Zetaris REST federation as an independent experiment. Installed REST connector classes and driver-to-OpenRouter HTTPS access have been observed; an actual SQL REST-table query remains unproven. Preserve catalog-reference versus verified-tariff semantics, and address the current 50-row model-query bound before using a full catalog. This exploration does not complete M05/M06.
+**Collection:** automated API collection into immutable S3 snapshots was chosen; direct Zetaris REST federation was not pursued and stays an untested experiment. Preserve catalog-reference versus verified-tariff semantics.
 
-1. Obtain actual route discovery and pin the priced frontier, mid-tier and required open-model variants. Record route, resolved model identity, provider/lab, price-record ID and snapshot version in one mapping. The NVIDIA candidate **Nemotron 3.5 Lightning 30B-A3B** remains mid-tier; [the selection record](13-M05-Serving-and-Billing-Selection.md) now pins Gemma 4 31B Dense free as the open candidate. Actual execution identity, applicable production tariffs and task quality remain to be verified.
+1. Obtain actual route discovery and register the priced routes. **Revised (R3a):** `prepare_source_bundle.py --include-discovered` maps every offered `openrouter/<catalog id>` route that the catalog prices to its catalog row with no tier; the curated entries in `data/source_examples/routes.selected.json` (Ultra as a frontier hint and Lightning as a mid-tier hint, both with verified profiles) stay. Record route, resolved model identity, provider/lab, price-record ID and snapshot version in the mapping. Candidate selection per feature happens in the controller under `07` §4, not in this map, and no route is pinned or required.
 2. Collect dated source URLs for input/output rates, cache-read/write rates, minimum prefix, TTL, batch eligibility/discount, long-context thresholds/rates and intelligence index. Preserve unknown values. Record permitted uses/licence, retrieval date, object version and content hash.
 3. Keep catalog/reference prices and intelligence scores separate from actual Nightshift tariffs. Catalog prices may also price a clearly labeled hypothetical OpenRouter serving scenario; they must not authorize Nightshift dispatch or decide the actual-route model stack.
 4. Upload founder inputs, price snapshots and result-source data to storage Zetaris can reach. Configure bucket access on the Zetaris side; keep application runtime free of bucket secrets.
@@ -190,11 +224,13 @@ python -m pytest -q tests/test_source_manifest.py
 
 Add tests/test_source_manifest.py for units, required route mapping, provenance, missing/unknown prices and content hashes. Then run the registration dry run and apply flow using the exact command documented by its implementation; query one registered model row. Save the redacted plan, registration result and returned snapshot ID. No Nightshift completion is needed.
 
-**Implemented incremental status:** 5A collection/validation PASS; 5B route discovery and an observed Ultra/Lightning/Gemma mapping PASS, applicable execution tariffs pending; 5C LocalStack publication/registration PASS. [The selected serving routes](13-M05-Serving-and-Billing-Selection.md) are NVIDIA Ultra (frontier), NVIDIA Lightning (mid-tier) and Google Gemma 4 31B Dense free (required open model). The configured Ultra Critic shares the frontier candidate and is disclosed. The comparison now spans Google and NVIDIA, while Nemotron award evidence must come from a working Ultra or Lightning feature. The actual public fetch retained 467 raw catalog entries, 460 accepted entries and 7 explicitly quarantined invalid/unbounded-price entries. Raw responses, normalization, quarantine and manifest are retained locally and published with the bundle. Versioned tables and schema 1.1 bindings pin exact IDs/counts/envelope hashes. Sources are never dropped or replaced, and the current pointer is not switched automatically.
+**Status: PASS for components (updated October 26, 2026).** 5A collection and validation, 5B route discovery and 5C LocalStack publication and registration pass. The public catalog fetch retained 467 raw entries, 460 accepted and 7 quarantined invalid or unbounded-price entries (snapshot `a6cff78717992be3b332c65d`); R2 added a migrated copy that keeps each model's input and output modalities and its Hugging Face ID. The current bundle is `87f8564d36ffd17330015ad3` (460 catalog rows, 37 model rows) with schema 1.1 bindings that pin exact IDs, counts and envelope hashes. Registration never drops or replaces a source and never switches the current pointer. Nightshift discovery on October 26 advertised 111 routes (37 `openrouter/`, 5 `nvidia/`).
 
-Catalog references are not execution tariffs. The original example map remains planned; the selected map was upgraded with fresh retained discovery and registered as bundle `d85a2e103d87ba5069bf26e3`. A no-completion live-mode preview with its bindings queried Zetaris catalog rows and produced 24 explicitly labeled OpenRouter listed-token cost rows; actual Nightshift route costs remained unknown. Nightshift advertised the route IDs but did not return the active provider or billing rules. Gemma's catalog price is zero for the listed free tier, but no Nightshift entitlement or limits are verified. Intelligence/provider-endpoint enrichment, complete official term/tariff coverage, usage-rights review and actual billing/token-bound verification remain open. The current `.env` Ultra Critic shares the frontier candidate and is accepted with an explicit independence disclosure. See the [selection record](13-M05-Serving-and-Billing-Selection.md) and [manual guide](12-M05-M06-Manual-Testing.md). AWS source access has not been validated by the LocalStack check.
+Catalog references are not execution tariffs. Only the two role routes (Ultra, Lightning) carry verified execution profiles, on a free NVIDIA Developer Program key; every other candidate is projected only (R4). The route `openrouter/nvidia/nemotron-3-super-120b-a12b:free` is advertised but returns an upstream 404, so it was removed from the route map. **Still open:** a usage-rights review of the catalog, official tariff evidence for any route you want executed beyond the two role routes, and AWS/IAM access (the check used LocalStack only).
 
 ## Step 6 — Complete the Zetaris adapter and evidence round trip
+
+**Status (October 26, 2026): PASS for components (M06); the round trip also ran inside the R5 live pack.**
 
 **Files:** [base.py](../app/adapters/base.py), [live_zetaris.py](../app/adapters/live_zetaris.py), [sample.py](../app/adapters/sample.py), [controller.py](../app/controller.py).
 
@@ -217,9 +253,11 @@ Add fixture-based tests/test_zetaris_adapter.py, then run an isolated live SELEC
 
 **Implemented incremental status:** typed pinned model/founder/optional-approach reads, preserved citation/date/status plus transport/query/hash references, one query per retrieval, independent optional build failure, separate ingestion and exact evidence readback, and durable unpublished outbox recovery are implemented. Actual local checks passed SELECT 1, three model rows, a synthetic founder brief, a queried catalog-price reference calculation, and fixture write/readback/append/restart/idempotency. A real loopback HTTP ingestion/outbox rehearsal passed failure → recovery → no-op retry with exit codes 1 → 0 → 0 and zero model completions. Sealed access restrictions remain intact.
 
-The calculator demonstration is explicitly a **token-only OpenRouter reference scenario**, not an applicable Nightshift execution bill. The controller now exposes that scenario separately for each candidate/feature/stage, with catalog rows queried through Zetaris; it never feeds the actual-route table or recommendation. M06's execution-tariff calculation remains pending until M05 supplies the correct profiles; actual measured-sample write/readback remains M08. The source component can be manually tested now without H-MEM or inference. See [manual steps](12-M05-M06-Manual-Testing.md), [selection/projection evidence](13-M05-Serving-and-Billing-Selection.md) and [earlier recorded results](m05-m06-source-checks.json).
+**Update (October 26):** the evidence round trip now also runs inside a live pack: the R5 run wrote and read back all five of its evidence records through the loopback publisher with no pending outbox. The calculator demonstration is explicitly a **token-only OpenRouter reference scenario**, not an applicable Nightshift execution bill. The controller now exposes that scenario separately for each candidate/feature/stage, with catalog rows queried through Zetaris; it never feeds the actual-route table or recommendation. M06's execution-tariff calculation remains pending until M05 supplies the correct profiles; actual measured-sample write/readback remains M08. The source component can be manually tested now without H-MEM or inference. See manual steps, selection/projection evidence and earlier recorded results.
 
 ## Step 7 — Install and connect the real H-MEM engine
+
+**Status (October 26, 2026): PASS, local reference scope (M07).**
 
 **Files:** [H-MEM directory](../app/engines/hmem/README.md), [bridge.py](../app/engines/hmem/bridge.py), [sample.py](../app/adapters/sample.py), [run.py](../run.py), [test_hmem_engine.py](../tests/test_hmem_engine.py).
 
@@ -240,9 +278,11 @@ python -m pytest -q tests/test_sample_memory.py tests/test_controller_sample.py
 
 Add tests/test_sample_memory.py for delegation and missing/broken engine outcomes. The real engine test must report PASS with zero required skips; a green pytest process that skipped it does not close M07. Demonstrate save, new process, recall, other-project isolation and audit. Rerun the sample helper with network blocked and confirm installing the engine does not break sample mode.
 
-**Status: PASS for the M07 local reference scope (October 25, 2026).** The pinned sponsor reference, lockfile, licence, Node bridge, project-scoped persistent storage and sample delegation are installed. Its 10 reference tests and 13 conformance checks passed. The required real-engine test and sample-memory tests pass without skipping; the full offline suite reports 456 passed, 8 shelved-retrospective skips. All three sample examples pass with Python and Node network guards. See [manual verification](14-M07-Manual-Testing.md) and the [ledger](v4-release-checklist.md). M11 still must prove accepted memory affects a later decision; the reference JSON store has no production concurrency guarantee.
+**Status: PASS for the M07 local reference scope (October 25, 2026).** The pinned sponsor reference, lockfile, licence, Node bridge, project-scoped persistent storage and sample delegation are installed. Its 10 reference tests and 13 conformance checks passed. The required real-engine test and sample-memory tests pass without skipping; the full offline suite reports 456 passed, 8 shelved-retrospective skips. All three sample examples pass with Python and Node network guards. See manual verification and the [ledger](v4-release-checklist.md). M11 still must prove accepted memory affects a later decision; the reference JSON store has no production concurrency guarantee.
 
 ## Step 8 — Verify Nightshift model identity and usage
+
+**Status (October 26, 2026): PASS for the bounded live pack (R1, R4, R5); see the status paragraph below.**
 
 **Files:** [live_nightshift.py](../app/adapters/live_nightshift.py), candidate selection and `_execute` in [controller.py](../app/controller.py), proposed route mapping from step 5.
 
@@ -261,22 +301,24 @@ python -m pytest -q tests/test_nightshift_adapter.py
 python scripts/smoke_live.py
 ```
 
-Add tests/test_nightshift_adapter.py for response/identity fixtures. Once those pass, run live smoke, then one tiny CLI evaluation: 2 text features, 3 candidates, 1 sample per pair, pre-supplied frozen rubrics and bounded outputs. Reserve up to 11 dispatches including Planner, Critic, one repair and two safe retries; choose a spend ceiling no greater than $0.50 and stop if verified rates/bounds cannot fit. Force sample_mode=false in this dedicated request, use a fresh run ID and record the actual dispatch count. Save pack, trace, resolved models, usage, Zetaris evidence readback and engine revision. Pending human review is acceptable at this checkpoint; do not call it a final reviewed recommendation.
+`tests/test_nightshift_adapter.py` holds the response and identity fixtures. The tiny live pack ran as described below, with candidates chosen per feature (R3a) instead of a fixed three: 2 text features, 1 sample per pair, pre-supplied frozen rubrics and bounded outputs. Reserve up to 11 dispatches including Planner, Critic, one repair and two safe retries; choose a spend ceiling no greater than $0.50 and stop if verified rates/bounds cannot fit. Force sample_mode=false in this dedicated request, use a fresh run ID and record the actual dispatch count. Save pack, trace, resolved models, usage, Zetaris evidence readback and engine revision. Pending human review is acceptable at this checkpoint; do not call it a final reviewed recommendation.
 
-**Current status: PARTIAL (October 25, 2026).** The adapter now rejects malformed response shape, absent response identity/request ID, missing or negative usage and reasoning counts outside completion. It retains Nightshift winning-route, provider kind and receipt metadata, including in durable dispatch records. Focused fixtures pass. The earlier `feature/plan-07-impl-meena` Stage 3 record documents live NVIDIA cloud receipts for Ultra and Lightning. A current no-spend check with the new bindings passed Zetaris `SELECT 1` and exact reads for the three selected models; Nightshift advertised all three among 112 routes. The [read-only gate and manual sequence](15-M08-Manual-Testing.md) confirm that the selected routes are registered and match the current map; the registered bundle mapping is `discovery_observed`, but execution sources are `unknown` and dispatch policies are absent. The current Ultra Critic is allowed with explicit shared-candidate disclosure. Gemma's current serving behavior still needs proof. No new completion was sent in this M08 check; the bounded live pack remains pending until exact serving/billing evidence passes the dispatch gate. OpenRouter scenario rates do not fill that gap.
+**Status: PASS for the bounded live pack (October 26, 2026), delivered through R1, R4 and R5.** The adapter rejects malformed response shape, absent response identity or request ID, missing or negative usage and reasoning counts above completion, and it keeps the Nightshift winning-route model, provider, kind and receipt ID in the durable dispatch record. The Planner (Lightning) and Critic (Ultra) have verified profiles on a free NVIDIA Developer Program key and ran through the Dispatcher with requested = resolved model. Run `r5-live-20261026-113150-e` is a clean `complete` pack: 6 dispatches, $0, four candidate pairs measured (Ultra and Lightning on two features), one candidate projected only, zero unpublished evidence and one memory save.
 
-**Two-model validation checkpoint:** a request can now select `frontier` and `mid_tier` only when `sampling_profile: validation`. A current Ultra + Lightning controller run read Zetaris, discovered Nightshift routes, recalled H-MEM, selected only those two models and produced four unexecuted feature/model pairs and 16 separate market-reference projection rows. It stopped `partial` before any model completion because Ultra/Lightning execution tariffs and dispatch policies are unverified; Gemma is explicitly pending. The [two-model guide](16-M08-Two-Model-Validation.md) includes a $0 repeatable manual path and the later bounded live gate.
+What this does **not** show: the third candidate (an open-weights route) was projected only because it has no verified profile, so "three identified responses" is two executed candidates plus the Planner and Critic. Thinking was off for the Planner, the Critic and Lightning (settings in the ledger), which means the reasoning-token behavior is documented for those routes only from single probes. Free-tier rate limits are unknown, and sponsor `readiness` stays `not_verified` until `scripts/smoke_live.py` is run on the final setup (M14). The failed first attempts (an overrun from the prompt-token bound, a 60 s timeout and a Critic that exhausted its token cap) are recorded as negative results in the ledger.
 
 ## Step 9 — Implement representative task planning and grounded critique
+
+**Status (October 26, 2026): not started** (R6). Findings F06, F13.
 
 **Files:** [controller.py](../app/controller.py): `_domain_risks`, `_prompt`, `_critique`, `_check_critic_route`; [contracts.py](../app/contracts.py), [rubric.py](../app/rubric.py).
 
 1. Validate missing cost-critical founder inputs before paid work. Return structured questions, or let the founder explicitly confirm visibly assumed estimates; do not silently spend against an unusable workload.
-2. Expand the existing single Planner call to return representative task instructions, output bounds, 3–5 deterministic checks per task, required human-review checks and domain risks. It may propose candidates from the retrieved eligible shortlist; the controller enforces the three roles and required open-model route. A Nemotron working feature remains a separate sponsor acceptance check.
+2. Expand the existing single Planner call to return representative task instructions, output bounds, 3–5 deterministic checks per task, required human-review checks and domain risks. It may propose up to three candidates per feature from the filtered pool with reasons; the controller validates each proposal against the R3a rules (in the pool, modality covered, tier rules) and records accept or reject. No candidate is required or pinned. The Nemotron proof is the Planner and Critic (`07` §4).
 3. Validate the plan against typed contracts. Use approved, bounded check templates; never execute model-generated code or SQL. Freeze the same task/check definitions across candidates and save their version/hash.
 4. For semantic quality bars such as factuality, require output-bound human review. Format checks alone must not be presented as proof of those semantic claims. The Planner proposes checks; it does not score candidate outputs.
 5. Build Critic context from approved example inputs/facts, source references, bounded excerpts across samples, deterministic check results and input/output token comparisons. Disclose any omitted/truncated coverage.
-6. Select a Critic from a non-candidate lab when supported by reliable route metadata; otherwise disclose shared/unknown lab identity. Preserve flags-only output and one controller-validated corrective action.
+6. The Critic runs on the pinned Nemotron route (the sponsor proof); disclose when it is also a candidate's route or lab, and prefer a non-candidate lab only when route metadata makes that reliable. Preserve flags-only output and one controller-validated corrective action.
 7. In sample mode, use explicit deterministic planning/templates where supported, or return clarification/conditional economics. Do not invent generated outputs, model evaluations or live quality scores.
 
 **Acceptance tests:** a normal founder brief produces a usable frozen task plan; invalid plan JSON consumes its call and stops honestly; missing critical inputs prevent execution; invalid citations/actions are rejected; Critic verdict fields cannot affect grades; lab disclosure is accurate.
@@ -291,6 +333,8 @@ python -m pytest -q tests/test_controller_live_fake.py
 Add tests/test_v4_planning.py. Start from the basic founder fields instead of pre-supplied rubrics and show a typed frozen task plan; missing cost-critical values return questions before dispatch. Assert critic context contains approved input and both token directions, that unsupported verdicts cannot change grades, and that invalid plans consume their permitted call. Repeat the M08 tiny profile once with live planning after the scripted checks pass.
 
 ## Step 10 — Bind human reviews and apply repair evidence consistently
+
+**Status (October 26, 2026): not started** (R7). Findings F09, F14.
 
 **Files:** `HumanReview`, `FeatureRun`, `Revision` and result contracts; [rubric.py](../app/rubric.py); `_finish_run`, `_repair`, `_project` and checkpoints in [controller.py](../app/controller.py).
 
@@ -313,10 +357,12 @@ Add tests/test_review_finalize.py using saved/scripted outputs. Verify stale rev
 
 ## Step 11 — Use confirmed memory on later runs
 
+**Status (October 26, 2026): not started** (R8). Finding F07.
+
 **Files:** [controller.py](../app/controller.py), H-MEM bridge, founder/result contracts and Zetaris evidence records.
 
 1. Define compatible record kinds for `confirmed_assumption` and `accepted_decision`, with project scope, source/run IDs, version, status and supersession references. Use matching save/recall filters.
-2. Add explicit assumption confirmation and decision acceptance actions. Evaluation approval authorizes bounded testing; it does not automatically accept the resulting recommendation.
+2. Add explicit assumption confirmation and decision acceptance actions. Accepted decisions store each feature's candidate set and why it was chosen. Evaluation approval authorizes bounded testing; it does not automatically accept the resulting recommendation.
 3. Store compact accepted facts and evidence references. Recall actual context at the next run, validate it against current structured inputs, and use current confirmed inputs to override superseded memory.
 4. Feed valid recalled assumptions into planning/projection and produce a dated comparison of prior versus current users, prices, selected models and costs. Separate workload changes from price/model changes.
 5. Read current prices from Zetaris every time. Memory must never become an alternative price authority. Keep live and sample records distinguished so offline recommendations cannot become live measured evidence.
@@ -335,13 +381,15 @@ Add tests/test_memory_workflow.py. Accept a confirmed assumption/decision, stop 
 
 ## Step 12 — Aggregate stage costs, revenue and budget fit
 
+**Status (October 26, 2026): not started** (R9). Findings F11 (rest), F12.
+
 **Files:** [economics.py](../app/economics.py), [contracts.py](../app/contracts.py), `_project` in [controller.py](../app/controller.py).
 
 1. Aggregate effective recommended feature costs into one monthly stack total per stage, retaining feature-level tables and comparable candidate totals. If a required feature is unqualified or unknown, show the aggregate as incomplete/unknown and identify known components separately.
 2. Propagate the founder's switch threshold into switch detection and model-stack selection. Compare the monthly stack total with `monthly_ai_budget_usd`; show the first exceeded stage and qualified alternatives.
 3. Compute stage revenue as `active_users × paying_fraction × subscription_price_usd`. Compute `AI contribution = revenue − monthly AI cost` and `AI contribution margin = AI contribution / revenue` when revenue is positive.
 4. Label these as AI-only contribution measures because non-AI operating costs are outside the modeled total. With absent revenue, show costs only; with zero revenue, contribution can be negative but margin is undefined.
-5. Preserve build costs as a separate ledger and keep one-time costs out of monthly operating totals.
+5. Preserve build costs as a separate ledger and keep one-time costs out of monthly operating totals. A stage total that includes projected-only candidates is labeled incomplete or lower-bound.
 
 **Acceptance tests:** threshold edits move switch points; monthly-budget edits change fit; paying fraction is not treated as active-user fraction; unknown feature costs prevent a complete total; missing/zero revenue and Decimal display precision are correct.
 
@@ -355,13 +403,15 @@ Add tests/test_stage_summary.py with known feature totals, incomplete aggregates
 
 ## Step 13 — Build the Streamlit workflow around shared operations
 
+**Status (October 26, 2026): not started** (R10). Finding F05.
+
 **Files:** proposed `streamlit_app.py` and a small shared application service; [run.py](../run.py), contracts and controller. Keep business rules in the core.
 
-1. Expose the v4 form: idea, user, 2–5 features with example/mode/usage, editable stages, optional monthly ceiling/quality/revenue/build fields. Display assumed defaults beside their controls.
+1. Expose the v4 form: idea, user, 2–5 features with example/mode/usage and modality (text, audio, image), editable stages, optional monthly ceiling/quality/revenue/build fields. Display assumed defaults beside their controls.
 2. Show preflight/readiness, missing-input questions, task-plan details and the bounded evaluation spend. Collect evaluation authorization before paid execution.
 3. Persist a stable run ID for a submitted evaluation. UI rerenders must load progress/results, not create a new paid run. Call the same idempotent core operations from UI and CLI.
 4. Present samples with deterministic results and output-bound human-review controls. Finalize and accept decisions using steps 10 and 11 without regenerating samples.
-5. Render recommended/alternate stacks, aggregate stage table/chart, feature drill-down, lever deltas, switch evidence, estimated/measured token comparisons, separate build panel, risks and memory changes.
+5. Render per-feature candidates labeled executed or projected only, recommended/alternate stacks, aggregate stage table/chart, feature drill-down, lever deltas, switch evidence, estimated/measured token comparisons, separate build panel, risks and memory changes.
 6. Provide decision-pack and trace exports with source/version references. Keep `SAMPLE/OFFLINE` visible on every offline view/export; show partial, unknown and review-pending results explicitly.
 
 **Acceptance:** one live and one offline idea traverse form → pack → review/results → export using the shared core. Double-click, rerender, review and download produce no extra generations. Charts and tables match serialized pack values.
@@ -376,9 +426,11 @@ After implementing and documenting streamlit_app.py, launch with python -m strea
 
 ## Step 14 — Rehearse and collect release evidence
 
+**Status (October 26, 2026): not started** (R11). Findings F15 (residual), F16.
+
 **Files:** README, contributor instructions, [data/README.md](../data/README.md), input/output examples, proposed evidence ledger, demo/deck links.
 
-1. Run relevant focused tests as each behavior changes. Before committing an implementation, run the complete `python -m pytest -q` suite required by project instructions. Live sponsor proof remains separate from scripted adapter tests.
+1. Run the sponsor smoke check (`scripts/smoke_live.py`) on the final setup, and run relevant focused tests as each behavior changes. Before committing an implementation, run the complete `python -m pytest -q` suite required by project instructions. Live sponsor proof remains separate from scripted adapter tests.
 2. Regenerate the three example packs at the final schema/revision, with fresh or isolated run databases. Include an unseen in-domain input, missing-input case and changed budget/quality/volume case. Runtime must never read `output_examples/` as answers.
 3. Rehearse a clean clone on a second machine using only documented instructions: install pinned Python/Node/reference dependencies; configure private access manually; register/query sources; run sample and live workflows. Install dependencies before launching the application.
 4. Run three live founder ideas. Keep operation IDs, resolved identities, usage, cost, latency, deterministic results, human reviews, accepted/rejected repair and memory restart evidence. Preserve an honest no-repair path; do not force a corrective action to improve the demo.
@@ -412,19 +464,20 @@ Run these from the final clean clone after all planned files exist. Required int
 
 ## Final handoff checklist
 
-- [ ] F01: typed Zetaris reads and evidence round trip work from a clean setup.
-- [ ] F02: pinned real H-MEM works live/offline and passes restart/isolation tests.
-- [ ] F03: all candidate identities match their price records; Nemotron proof is attributable.
-- [ ] F04: dated, cited source snapshots and repeatable registration are available.
+- [x] F01: typed Zetaris reads and evidence round trip work (local; clean-clone and second-machine run pending in M14).
+- [x] F02: pinned real H-MEM works live/offline and passes restart/isolation tests.
+- [x] F03: dispatched Planner, Critic and candidate identities match their records; Nemotron proof is attributable (R1, R5).
+- [x] F04: dated, cited source snapshots and repeatable registration are available.
 - [ ] F05: shared-core founder UI works in both modes.
 - [ ] F06: validated representative tasks and rubrics come from the planning workflow.
 - [ ] F07: confirmed/accepted memory changes a subsequent run and reports differences.
-- [ ] F08: composed levers produce valid totals with unknown prices preserved.
+- [x] F08: composed levers produce valid totals with unknown prices preserved.
 - [ ] F09: repaired tokens and quality jointly drive the effective recommendation.
-- [ ] F10: dispatch/spend limits and unknown-outcome recovery pass.
-- [ ] F11: ranges, unique IDs, optional build fields, budget, threshold and provenance pass.
+- [x] F10: dispatch/spend limits and unknown-outcome recovery pass.
+- [x] F11: ranges, unique IDs, optional build fields, budget, threshold and provenance pass (budget fit across stages needs M12).
 - [ ] F12: stage totals, revenue, AI contribution and margin pass.
 - [ ] F13: Critic receives grounding evidence and lab independence is handled honestly.
 - [ ] F14: human reviews are bound to actual immutable outputs and invalidated on change.
-- [ ] F15: traces preserve usage and required SKIPs cannot report readiness.
+- [x] F15: traces preserve usage and required SKIPs cannot report readiness (Windows unverified).
 - [ ] F16: documentation, clean-clone rehearsal, founder observations and release artifacts are complete.
+- [x] F17: no candidate or tier is hard-coded in code or configuration; optional curated tier hints and an optional override remain.

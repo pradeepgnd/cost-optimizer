@@ -16,6 +16,9 @@ def main():
     parser.add_argument("--catalog", required=True, type=Path)
     parser.add_argument("--route-map", required=True, type=Path)
     parser.add_argument("--discovery", type=Path, help="Retained output from discover_source_routes.py; all mapped routes must be offered.")
+    parser.add_argument("--include-discovered", action="store_true",
+                        help="Also register every offered openrouter/<catalog id> route that the catalog prices, with no tier: "
+                             "the controller chooses candidates per feature from this pool. Requires --discovery.")
     parser.add_argument("--brief", action="append", type=Path, default=[], help="FounderBrief or RunRequest JSON; repeatable.")
     parser.add_argument("--approaches", type=Path, help="Optional JSON list of cited ApproachProfile records.")
     parser.add_argument("--output-dir", type=Path, default=ROOT / "data/localstack/bundles")
@@ -32,6 +35,16 @@ def main():
             mapping = mapping.model_copy(update={"mapping_status": "discovery_observed", "discovery_source": SourceRef(
                 source_set="nightshift_discovery", record_id="offered_routes", version=digest(raw),
                 origin_url=discovery["source_url"], verified_at=discovery["checked_at"], status=EvidenceStatus.verified)})
+        if args.include_discovered:
+            if not args.discovery:
+                raise ValueError("--include-discovered requires --discovery")
+            from app.source_contracts import RouteMapping
+            from app.source_snapshots import validate_snapshot
+            catalog_ids = {record.catalog_id for record in validate_snapshot(args.catalog)[1]}
+            mapped = {route.route_id for route in mapping.routes}
+            extra = [RouteMapping(catalog_id=route[len("openrouter/"):], route_id=route) for route in sorted(routes)
+                     if route.startswith("openrouter/") and route not in mapped and route[len("openrouter/"):] in catalog_ids]
+            mapping = mapping.model_copy(update={"routes": [*mapping.routes, *extra]})
         briefs = []
         for path in args.brief:
             payload = json.loads(path.read_text())

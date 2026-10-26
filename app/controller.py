@@ -26,12 +26,13 @@ from app.contracts import (
     FeatureProfile, FeatureRun, FeatureSample, ModelProfile, ModelStackEntry, Observation, OutputCapRerun,
     Revision, Risk, RiskCause, RunRequest, RunState, ShortlistEntry, SourceRef, TokenUsage,
 )
+from app.contracts import covers_modalities
 from app.economics import (SIZE_MULTIPLIER, build_ledger, estimate_feature_tokens, openrouter_projection_table,
                            recommend_model_stack, stage_cost_table)
 from app.rubric import evaluate, json_fields_requested, parse_json_object
 from app.trace import Trace
 from app.dispatch import (Budget, Checkpoints, Dispatcher, DuplicateRun, StopRun,
-                          MAX_DISPATCHES, MAX_OUTPUT_TOKENS, measured_usage)
+                          MAX_DISPATCHES, MAX_OUTPUT_TOKENS, measured_usage, request_bound)
 
 MAX_CANDIDATE_GENERATIONS = MAX_DISPATCHES  # compatibility name; the cap now includes every role and retry
 SAMPLES_PER_PAIR = 2                      # 07 §7 call budget; 1 when 2 would not fit under the cap
@@ -41,6 +42,8 @@ MAX_DOMAIN_RISKS = 8
 CRITIC_FINDING_KINDS = {"unsupported_claim", "token_gap", "output_too_long"}
 VERDICT_KEYS = {"pass", "passed", "passes", "fail", "failed", "verdict", "score", "grade", "approved"}
 NOT_ADVICE = "Model-generated; not legal, medical or financial advice."
+IMAGE_NOT_EXECUTABLE = ("image modality: not executable through chat completions; image pricing is not modeled, "
+                        "so the cost stays unknown and no image is sent")
 AUDIO_NOT_EXECUTABLE = ("audio modality: not executable through chat completions; audio is priced from the "
                         "per-second conversion (estimated) and no audio is sent")
 
@@ -81,7 +84,9 @@ class Controller:
         self.ckpt = checkpoints or Checkpoints()
         self.critic_model = critic_model
         self.planner_model = planner_model
-        self.open_model = open_model          # the pinned open-model route (METERLESS_OPEN_MODEL)
+        self.open_model = open_model          # optional founder override of the open-source candidate (METERLESS_OPEN_MODEL)
+        self.feature_candidates: dict[str, list[ModelProfile]] = {}   # per feature, chosen by modality and tier rules
+        self.unproven: dict[str, str] = {}   # candidate route -> why it is projected only (no verified rate/dispatch policy)
         self.state = RunState.approved
         self.evidence: list[SourceRef] = []
         self.gaps: list[EvidenceGap] = []
@@ -186,7 +191,7 @@ class Controller:
             self.evidence += [a.source for a in approaches] + [m.source for m in models]
             route_list = self.inf.list_models() if self.mode == "live" else []   # GET /v1/models is free
             candidates, pack.candidate_shortlist = self._candidates(
-                models, set(route_list) if self.mode == "live" else None, requested_tiers)
+                models, set(route_list) if self.mode == "live" else None, requested_tiers, brief.ai_features)
             if not candidates:
                 raise StopRun(RunState.needs_input, "no candidate models available in the pinned price source")
             if set(requested_tiers) != set(CANDIDATE_TIERS):
@@ -220,6 +225,7 @@ class Controller:
 
             # 3. Critic route, before any paid call
             self._check_critic_route(candidates, route_list)
+            self.unproven = self._unproven_routes(candidates) if self.mode == "live" else {}
 
             # 4. Build panel (secondary): missing build inputs add questions and never stop the run
             pack.build_ledgers = [build_ledger(a, brief.features_v1) for a in approaches]
@@ -246,12 +252,13 @@ class Controller:
                 if est is None:
                     self.questions.append(f"About how long is a typical {f.feature_id} output (words)? "
                                           "Its token estimate is unknown without it.")
-                for m in candidates:
+                for m in self.feature_candidates.get(f.feature_id, []):
                     runs[(f.feature_id, m.model_id)] = FeatureRun(
                         feature_id=f.feature_id, model_id=m.model_id, tier=m.tier, executed=False, estimated=est,
                         not_executed_reason=self._not_executable(f) or (
                             "sample mode: not executed; tokens estimated with the 4/3 rule" if self.mode == "sample"
-                            else "awaiting an approved live run"))
+                            else f"projected only: {self.unproven[m.model_id]}; tokens estimated, quality unknown"
+                            if m.model_id in self.unproven else "awaiting an approved live run"))
                 self.trace.event("Analyst", "estimate_tokens", execution_kind="rule_policy",
                                  input_summary=f.feature_id,
                                  output_summary="unknown" if est is None else
@@ -263,14 +270,21 @@ class Controller:
                               ["Approve the bounded feature evaluation and confirm max_spend_usd."])
 
             # 7. Planner: domain risks only, live only
-            pairs = sum(self._not_executable(f) is None for f in brief.ai_features) * len(candidates)
+            pairs = sum(sum(m.model_id not in self.unproven for m in self.feature_candidates.get(f.feature_id, []))
+                        for f in brief.ai_features if self._not_executable(f) is None)
+            wanted = sum(len(self.feature_candidates.get(f.feature_id, [])) for f in brief.ai_features
+                         if self._not_executable(f) is None)
             self.samples_per_pair = (2 if req.sampling_profile == "production" and pairs * 2 + 5 <= MAX_DISPATCHES else 1)
             pack.selected_samples_per_pair = self.samples_per_pair if self.mode == "live" and pairs else 0
             if self.mode == "live":
                 self.limitations.append(f"Sampling plan: {self.samples_per_pair} sample(s) per executable pair; "
                                         f"{pairs * self.samples_per_pair + 5} maximum planned dispatch slots including Planner, Critic, one repair and two retries.")
-                self.dispatcher.validate_routes({self.planner_model or self.critic_model, self.critic_model,
-                                                 *(m.model_id for m in candidates)})
+                # Only the Planner and Critic routes gate the run. A candidate without a verified rate source and
+                # dispatch policy is projected, never dispatched (see _unproven_routes).
+                self.dispatcher.validate_routes({self.planner_model or self.critic_model, self.critic_model})
+                if wanted and not pairs:
+                    raise StopRun(RunState.partial, "no feature x candidate pair can be executed: every chosen candidate lacks a "
+                                                    "verified rate source and dispatch policy, so all candidates are projected only")
             pack.risks += self._domain_risks(brief, budget)
 
             # 8. Sampling
@@ -364,63 +378,161 @@ class Controller:
         return value, (f"USD per 1M tokens per intelligence point: {mk.label} list price blended 3:1 input:output ÷ "
                        f"{iq.score_source} score ({iq.score_date}); reference only, not used in costs")
 
+    @staticmethod
+    def _blended_price(m: ModelProfile) -> Optional[Decimal]:
+        """3:1 input:output reference price, USD per 1M tokens, or None when the catalog gives no price."""
+        mk = m.market
+        if mk is None or None in (mk.list_price_input_usd_per_m, mk.list_price_output_usd_per_m):
+            return None
+        return (3 * mk.list_price_input_usd_per_m + mk.list_price_output_usd_per_m) / 4
+
+    @staticmethod
+    def _dispatch_verified(m: ModelProfile) -> bool:
+        try:
+            request_bound(m, "", "", 8)
+            return True
+        except StopRun:
+            return False
+
+    def _eligibility(self, m: ModelProfile, f: Optional[FeatureProfile], is_route) -> tuple[bool, str]:
+        """Whether a model may be a candidate for a feature. Unknown stays unknown: a catalog row without modality
+        data is kept and says so, while a row that lists modalities without the needed one is excluded."""
+        if m.model_id == AUTO_ROUTE or m.model_id.startswith("meterless/"):
+            return False, "a router alias, not a model; never a candidate"
+        if is_route(m) is False:
+            return False, "not a Nightshift route; never a candidate"
+        if self._blended_price(m) is None:
+            return False, "no reference price in the pinned source; cannot be ranked or projected"
+        if f is not None:
+            covered = covers_modalities(m.market, f.modality)
+            if covered is False:
+                return False, f"the catalog reference lists no support for {', '.join(f.modality)}"
+            if covered is None and f.modality != ["text"]:
+                return True, f"modality coverage for {', '.join(f.modality)} is unknown in the catalog reference"
+        return True, ""
+
+    def _tier_of(self, eligible: list[tuple[int, ModelProfile]]) -> dict[str, tuple[str, str]]:
+        """Tier per model: a curated tier in the route map wins; otherwise open-weights models are open_source and the
+        rest split by reference price (upper half frontier, lower half mid_tier). A price-rank proxy, since no
+        licensed intelligence index exists; it labels the comparison and never feeds the cost arithmetic."""
+        tiers, closed = {}, []
+        for i, m in eligible:
+            if m.tier is not None:
+                tiers[m.model_id] = (m.tier, "tier curated in the route map")
+            elif m.market is not None and m.market.open_weights_signal:
+                tiers[m.model_id] = ("open_source", "catalog lists published weights")
+            else:
+                closed.append((i, m))
+        closed.sort(key=lambda im: (-self._blended_price(im[1]), im[0]))
+        cut = (len(closed) + 1) // 2
+        for pos, (_, m) in enumerate(closed):
+            tiers[m.model_id] = (("frontier" if pos < cut else "mid_tier"), "reference-price rank proxy")
+        return tiers
+
     def _candidates(self, models: list[ModelProfile], routes: Optional[set[str]],
-                    tiers: tuple[str, ...] = CANDIDATE_TIERS) -> tuple[list[ModelProfile], list[ShortlistEntry]]:
-        """One candidate per tier, from Nightshift routes only (live). The open-source tier is always the pinned
-        route (METERLESS_OPEN_MODEL, else the snapshot row marked required), regardless of score. Other tiers take
-        the top-ranked eligible model. Reference data ranks the shortlist and never replaces measurement."""
+                    tiers: tuple[str, ...] = CANDIDATE_TIERS, features=None) -> tuple[list[ModelProfile], list[ShortlistEntry]]:
+        """Candidates are chosen per feature from the Nightshift routes that have a reference price and cover the feature's
+        modalities, from any lab. No route is pinned: METERLESS_OPEN_MODEL is an optional override. Within a tier,
+        a route with a verified rate and dispatch policy ranks first (it can be measured), then intelligence score,
+        market usage rank and snapshot order. Returns the union of per-feature candidates; self.feature_candidates
+        holds each feature's own list. Reference data ranks the shortlist and never replaces measurement."""
         def is_route(m):
             return None if routes is None else m.model_id in routes
-        chosen: dict[str, tuple[ModelProfile, str]] = {}
-        for tier in tiers:
-            in_tier = [(i, m) for i, m in enumerate(models) if m.tier == tier]
-            if tier == "open_source":
-                pinned = next((m for _, m in in_tier if self.open_model and m.model_id == self.open_model), None)
-                if self.open_model and pinned is None:
-                    raise StopRun(RunState.needs_input, f"METERLESS_OPEN_MODEL {self.open_model} has no price snapshot row",
-                                  ["Add a price snapshot for the pinned open-model route, or correct METERLESS_OPEN_MODEL."])
-                required = pinned or next((m for _, m in in_tier if m.required), None)
-                if required is not None:
-                    if is_route(required) is False:
-                        raise StopRun(RunState.needs_input, f"Required open-model route {required.model_id} is not offered by Nightshift",
-                                      ["Enable the required open-model route in Nightshift, or pin the route it offers in METERLESS_OPEN_MODEL."])
-                    chosen[tier] = (required, "the required open-source route; always a candidate, regardless of score")
+        by_id = {m.model_id: m for m in models}
+        if self.open_model:
+            if self.open_model not in by_id:
+                raise StopRun(RunState.needs_input, f"METERLESS_OPEN_MODEL {self.open_model} has no price snapshot row",
+                              ["Add a price snapshot for the override route, or clear METERLESS_OPEN_MODEL."])
+            if is_route(by_id[self.open_model]) is False:
+                raise StopRun(RunState.needs_input, f"Override open-model route {self.open_model} is not offered by Nightshift",
+                              ["Enable the route in Nightshift, or clear METERLESS_OPEN_MODEL."])
+        subjects = list(features) if features else [None]
+        self.feature_candidates = {}
+        chosen_for: dict[str, list[tuple[str, str, str]]] = {m.model_id: [] for m in models}   # id -> (feature, tier, why)
+        excluded: dict[str, list[str]] = {m.model_id: [] for m in models}
+        derived: dict[str, str] = {}          # first tier a model was given by the rules, for the shortlist
+        for f in subjects:
+            fid = f.feature_id if f is not None else ""
+            eligible, notes = [], {}
+            for i, m in enumerate(models):
+                ok, note = self._eligibility(m, f, is_route)
+                if ok:
+                    eligible.append((i, m))
+                    notes[m.model_id] = note
+                else:
+                    excluded[m.model_id].append(note)
+            tier_of = self._tier_of(eligible)
+            for mid, (tier, _) in tier_of.items():
+                derived.setdefault(mid, tier)
+            taken: dict[str, tuple[ModelProfile, str]] = {}
+            if self.open_model and self.open_model in notes:
+                taken["open_source"] = (by_id[self.open_model], "founder override (METERLESS_OPEN_MODEL)")
+            for tier in tiers:
+                if tier in taken:
                     continue
-                self.limitations.append("No open-model route is pinned (METERLESS_OPEN_MODEL or a required snapshot row); "
-                                        "the open-source candidate is chosen by ranking.")
-            eligible = [(i, m) for i, m in in_tier if is_route(m) is not False]
-            if not eligible:
-                self.limitations.append(f"No {tier} candidate that is a Nightshift route in the pricing snapshots.")
-                continue
-            top = min(eligible, key=lambda im: self._rank_key(im[1], im[0]))[1]
-            chosen[tier] = (top, "top-ranked eligible route in its tier (intelligence score, then market usage rank, "
-                                 "then snapshot order)")
-        selected = {m.model_id for m, _ in chosen.values()}
-        shortlist = []
+                pool = [(i, m) for i, m in eligible if tier_of[m.model_id][0] == tier and m.model_id not in
+                        {t[0].model_id for t in taken.values()}]
+                if not pool:
+                    continue
+                _, top = min(((not self._dispatch_verified(m), self._rank_key(m, i)), (i, m)) for i, m in pool)[1]
+                verified = self._dispatch_verified(top)
+                taken[tier] = (top, f"top-ranked {tier} route ({tier_of[top.model_id][1]}); "
+                                    f"{'verified rate and dispatch policy, so it can be measured' if verified else 'no verified dispatch policy, so projected only'}"
+                                    + (f"; {notes[top.model_id]}" if notes[top.model_id] else ""))
+            self.feature_candidates[fid] = [taken[t][0] for t in tiers if t in taken]
+            for t in tiers:
+                if t in taken:
+                    chosen_for[taken[t][0].model_id].append((fid, t, taken[t][1]))
+            if not taken:
+                self.limitations.append(f"No candidate route covers {fid or 'the request'}"
+                                        f"{'' if f is None else ' (' + ', '.join(f.modality) + ')'}.")
+        shortlist, selected = [], set()
         for m in models:
             ppp, ppp_label = self._price_per_point(m)
-            if m.model_id in selected:
-                reason = chosen[m.tier][1]
-            elif is_route(m) is False:
-                reason = "not a Nightshift route; never a candidate"
-            elif m.tier == "open_source" and m.tier in chosen and "required" in chosen[m.tier][1]:
-                reason = "the open-source tier is fixed to the required route"
-            elif m.tier in CANDIDATE_TIERS and m.tier not in tiers:
-                reason = "omitted from this validation comparison"
-            elif m.tier in CANDIDATE_TIERS:
-                reason = f"ranked below {chosen[m.tier][0].model_id}" if m.tier in chosen else "not eligible"
+            picks = chosen_for[m.model_id]
+            if picks:
+                selected.add(m.model_id)
+                tier, why = picks[0][1], picks[0][2]
+                reason = why if len(picks) == 1 else f"{why} (also chosen for {len(picks) - 1} more feature(s))"
+            elif excluded[m.model_id] and len(excluded[m.model_id]) == len(subjects):
+                tier, reason = m.tier, excluded[m.model_id][0]
+            elif (m.tier or derived.get(m.model_id)) in CANDIDATE_TIERS and (m.tier or derived.get(m.model_id)) not in tiers:
+                tier, reason = m.tier or derived.get(m.model_id), "omitted from this validation comparison"
             else:
-                reason = "no candidate tier"
-            shortlist.append(ShortlistEntry(model_id=m.model_id, tier=m.tier, nightshift_route=is_route(m),
+                tier, reason = m.tier or derived.get(m.model_id), "eligible but ranked below the chosen route in its tier"
+            shortlist.append(ShortlistEntry(model_id=m.model_id, tier=tier, nightshift_route=is_route(m),
                                             intelligence=m.intelligence, market=m.market,
                                             price_per_intelligence_point_usd=ppp, price_per_intelligence_point_label=ppp_label,
-                                            selected=m.model_id in selected, reason=reason))
+                                            selected=bool(picks), selected_for=[p[0] for p in picks if p[0]], reason=reason))
         if routes is None:
             self.limitations.append("Candidate routes are checked against Nightshift only in live mode.")
+        union = [m for t in tiers for m in models if m.model_id in selected
+                 and any(p[1] == t for p in chosen_for[m.model_id])]
+        union = list(dict.fromkeys(m.model_id for m in union))
         self.trace.event("Controller", "select_candidates", execution_kind="rule_policy",
-                         output_summary="; ".join(f"{t}: {m.model_id}" for t, (m, _) in chosen.items())
-                                        + f" ({len(models)} snapshot models shortlisted)")
-        return [chosen[t][0] for t in tiers if t in chosen], shortlist
+                         output_summary="; ".join(f"{fid or 'request'}: " + ", ".join(m.model_id for m in cs)
+                                                  for fid, cs in self.feature_candidates.items())
+                                        + f" ({len(models)} snapshot models considered)")
+        return [by_id[i] for i in union], shortlist
+
+    def _unproven_routes(self, candidates: list[ModelProfile]) -> dict[str, str]:
+        """Candidates the Dispatcher would refuse (no verified route tariff or dispatch policy). They stay in the
+        comparison as catalog projections with unknown quality; none is ever dispatched, and each is an evidence gap.
+        The Planner and Critic routes are not handled here: they still stop the run when unproven."""
+        unproven = {}
+        for m in candidates:
+            try:
+                self.dispatcher.validate_routes({m.model_id})
+            except StopRun as stop:
+                unproven[m.model_id] = stop.reason
+                self.gaps.append(EvidenceGap(field=f"execution:{m.model_id}", status=EvidenceStatus.unknown,
+                                             note=f"projected only, not executed: {stop.reason}"))
+        if unproven:
+            self.limitations.append(f"{len(unproven)} candidate route(s) are projected only, with estimated tokens and unknown "
+                                    f"quality, because they lack a verified rate source and dispatch policy: {', '.join(sorted(unproven))}.")
+            self.trace.event("Controller", "candidates_projected_only", execution_kind="rule_policy",
+                             output_summary=f"{len(unproven)} of {len(candidates)} candidates not executable: {', '.join(sorted(unproven))}")
+        return unproven
 
     def _check_critic_route(self, candidates: list[ModelProfile], route_list: list[str]):
         """Record shared candidate identity; discovery alone cannot establish a different lab."""
@@ -608,7 +720,9 @@ class Controller:
 
     @staticmethod
     def _not_executable(f: FeatureProfile) -> Optional[str]:
-        return AUDIO_NOT_EXECUTABLE if {"audio_in", "audio_out"} & set(f.modality) else None
+        if {"audio_in", "audio_out"} & set(f.modality):
+            return AUDIO_NOT_EXECUTABLE
+        return IMAGE_NOT_EXECUTABLE if {"image_in", "image_out"} & set(f.modality) else None
 
     @staticmethod
     def _prompt(f: FeatureProfile) -> str:
@@ -675,7 +789,7 @@ class Controller:
     def _sample(self, brief, candidates, runs, budget: Budget, req: RunRequest):
         """Run each executable feature's example input on each candidate. Sample mode executes nothing."""
         features = {f.feature_id: f for f in brief.ai_features}
-        executable = [k for k in runs if self._not_executable(features[k[0]]) is None]
+        executable = [k for k in runs if self._not_executable(features[k[0]]) is None and k[1] not in self.unproven]
         if self.mode == "sample":
             self.trace.event("Analyst", "run_feature", execution_kind="rule_policy",
                              output_summary=f"sample mode: {len(executable)} feature × candidate pairs not executed; "
@@ -808,6 +922,14 @@ class Controller:
     def _project(self, pack: DecisionPack, brief, candidates, runs):
         live_executed = self.mode == "live" and any(r.executed for r in runs.values())
         for f in brief.ai_features:
+            candidates = self.feature_candidates.get(f.feature_id, [])
+            if not candidates:
+                why = f"no candidate in the pinned price source covers {', '.join(f.modality)} for {f.feature_id}"
+                self.gaps.append(EvidenceGap(field=f"candidates:{f.feature_id}", status=EvidenceStatus.unknown, note=why))
+                self.questions.append(f"No candidate covers {f.feature_id} ({', '.join(f.modality)}): which route should be compared?")
+                pack.model_stack += [ModelStackEntry(feature_id=f.feature_id, stage=g.name, status="no_candidate_passes", reason=why)
+                                     for g in brief.growth_stages]
+                continue
             pair = [runs[(f.feature_id, m.model_id)] for m in candidates]
             tokens = {r.model_id: r.measured_mean for r in pair if r.measured_mean is not None}
             rubric = [r.rubric for r in pair if r.rubric is not None]

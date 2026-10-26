@@ -19,4 +19,4 @@ cd ../../../..
 
 `bridge.mjs` accepts one JSON request on stdin and emits exactly one JSON response on stdout. It calls H-MEM `add`, `query` and `ledger.all` and returns `status`, `engine_revision`, `memory_ids`, structured `context`, and `audit_refs`. `node bridge.mjs --selftest` creates a disposable scope and checks save, new-instance recall, isolation and audit. Errors go to stderr. The Python wrapper enforces a 20-second timeout and verifies revision/response shape. Sample mode delegates to the same bridge. Dreaming and sleep operations are outside M07.
 
-See [M07 manual checks](../../../docs/14-M07-Manual-Testing.md). M11 still needs proof that explicitly accepted memory changes a later application decision; current controller behavior does not establish that.
+See the M07 entry in the [evidence ledger](../../../docs/v4-release-checklist.md). Step R8 in [docs/17](../../../docs/17-v4-Revised-Implementation-Steps.md) still needs proof that explicitly accepted memory changes a later application decision; current controller behavior does not establish that.
