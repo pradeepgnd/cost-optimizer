@@ -81,7 +81,7 @@ class Controller:
         self.ckpt = checkpoints or Checkpoints()
         self.critic_model = critic_model
         self.planner_model = planner_model
-        self.open_model = open_model          # the pinned Nemotron route (METERLESS_OPEN_MODEL)
+        self.open_model = open_model          # the pinned open-model route (METERLESS_OPEN_MODEL)
         self.state = RunState.approved
         self.evidence: list[SourceRef] = []
         self.gaps: list[EvidenceGap] = []
@@ -135,10 +135,12 @@ class Controller:
         self.run_id = req.run_id
         self.project_id = req.project_id
         budget = Budget(max_spend=req.max_spend_usd)
+        requested_tiers = tuple(req.candidate_tiers or CANDIDATE_TIERS)
         pack = DecisionPack(run_id=req.run_id, project_id=req.project_id, execution_mode=self.mode,
                             status=RunState.approved, trace_path=str(self.trace.path),
                             monthly_ai_budget_usd=req.brief.monthly_ai_budget_usd,
-                            switch_threshold_usd=req.brief.switch_threshold_usd, sampling_profile=req.sampling_profile)
+                            switch_threshold_usd=req.brief.switch_threshold_usd, sampling_profile=req.sampling_profile,
+                            candidate_tiers=list(requested_tiers))
 
         if not self.ckpt.claim(req.run_id):
             raise DuplicateRun(f"run_id {req.run_id} already exists; idempotent refusal, no work dispatched")
@@ -183,9 +185,16 @@ class Controller:
             self.dispatcher = Dispatcher(self.inf, self.ckpt, req.run_id, budget, models, self.trace)
             self.evidence += [a.source for a in approaches] + [m.source for m in models]
             route_list = self.inf.list_models() if self.mode == "live" else []   # GET /v1/models is free
-            candidates, pack.candidate_shortlist = self._candidates(models, set(route_list) if self.mode == "live" else None)
+            candidates, pack.candidate_shortlist = self._candidates(
+                models, set(route_list) if self.mode == "live" else None, requested_tiers)
             if not candidates:
                 raise StopRun(RunState.needs_input, "no candidate models available in the pinned price source")
+            if set(requested_tiers) != set(CANDIDATE_TIERS):
+                omitted = [tier for tier in CANDIDATE_TIERS if tier not in requested_tiers]
+                self.limitations.append(f"Validation comparison uses only {', '.join(requested_tiers)}; "
+                                        f"{', '.join(omitted)} remains pending for the full comparison.")
+                self.gaps.extend(EvidenceGap(field=f"candidate_comparison:{tier}", status=EvidenceStatus.unknown,
+                                             note="omitted from this validation run") for tier in omitted)
 
             # OpenRouter is a separate, conditional serving scenario. Its prices are queried through Zetaris
             # and never become the profiles passed to the paid dispatcher or the actual-route recommendation.
@@ -314,8 +323,9 @@ class Controller:
                 saved = self.mem.remember_confirmed(req.project_id, {"kind": "accepted_finding", "run_id": req.run_id,
                                                                      "model_stack": [e.model_dump(mode="json") for e in pack.model_stack]})
                 self.memory_ids += saved.get("memory_ids", [])
-            except SetupIncomplete:
-                pass
+            except SetupIncomplete as e:
+                self.trace.event("Analyst", "hmem_remember_confirmed", status="error", output_summary=str(e))
+                self.limitations.append(f"H-MEM save unavailable: {e}")
 
         pack.questions = list(dict.fromkeys(pack.questions + self.questions))
         pack.evidence_refs = self.evidence
@@ -354,28 +364,29 @@ class Controller:
         return value, (f"USD per 1M tokens per intelligence point: {mk.label} list price blended 3:1 input:output ÷ "
                        f"{iq.score_source} score ({iq.score_date}); reference only, not used in costs")
 
-    def _candidates(self, models: list[ModelProfile], routes: Optional[set[str]]) -> tuple[list[ModelProfile], list[ShortlistEntry]]:
-        """One candidate per tier, from Nightshift routes only (live). The open-source tier is always the Nemotron
+    def _candidates(self, models: list[ModelProfile], routes: Optional[set[str]],
+                    tiers: tuple[str, ...] = CANDIDATE_TIERS) -> tuple[list[ModelProfile], list[ShortlistEntry]]:
+        """One candidate per tier, from Nightshift routes only (live). The open-source tier is always the pinned
         route (METERLESS_OPEN_MODEL, else the snapshot row marked required), regardless of score. Other tiers take
         the top-ranked eligible model. Reference data ranks the shortlist and never replaces measurement."""
         def is_route(m):
             return None if routes is None else m.model_id in routes
         chosen: dict[str, tuple[ModelProfile, str]] = {}
-        for tier in CANDIDATE_TIERS:
+        for tier in tiers:
             in_tier = [(i, m) for i, m in enumerate(models) if m.tier == tier]
             if tier == "open_source":
                 pinned = next((m for _, m in in_tier if self.open_model and m.model_id == self.open_model), None)
                 if self.open_model and pinned is None:
                     raise StopRun(RunState.needs_input, f"METERLESS_OPEN_MODEL {self.open_model} has no price snapshot row",
-                                  ["Add a price snapshot for the pinned Nemotron route, or correct METERLESS_OPEN_MODEL."])
+                                  ["Add a price snapshot for the pinned open-model route, or correct METERLESS_OPEN_MODEL."])
                 required = pinned or next((m for _, m in in_tier if m.required), None)
                 if required is not None:
                     if is_route(required) is False:
-                        raise StopRun(RunState.needs_input, f"Nemotron route {required.model_id} is not offered by Nightshift",
-                                      ["Enable the Nemotron route in Nightshift, or pin the route it offers in METERLESS_OPEN_MODEL."])
-                    chosen[tier] = (required, "the required open-source (Nemotron) route; always a candidate, regardless of score")
+                        raise StopRun(RunState.needs_input, f"Required open-model route {required.model_id} is not offered by Nightshift",
+                                      ["Enable the required open-model route in Nightshift, or pin the route it offers in METERLESS_OPEN_MODEL."])
+                    chosen[tier] = (required, "the required open-source route; always a candidate, regardless of score")
                     continue
-                self.limitations.append("No Nemotron route is pinned (METERLESS_OPEN_MODEL or a required snapshot row); "
+                self.limitations.append("No open-model route is pinned (METERLESS_OPEN_MODEL or a required snapshot row); "
                                         "the open-source candidate is chosen by ranking.")
             eligible = [(i, m) for i, m in in_tier if is_route(m) is not False]
             if not eligible:
@@ -393,7 +404,9 @@ class Controller:
             elif is_route(m) is False:
                 reason = "not a Nightshift route; never a candidate"
             elif m.tier == "open_source" and m.tier in chosen and "required" in chosen[m.tier][1]:
-                reason = "the open-source tier is fixed to the required Nemotron route"
+                reason = "the open-source tier is fixed to the required route"
+            elif m.tier in CANDIDATE_TIERS and m.tier not in tiers:
+                reason = "omitted from this validation comparison"
             elif m.tier in CANDIDATE_TIERS:
                 reason = f"ranked below {chosen[m.tier][0].model_id}" if m.tier in chosen else "not eligible"
             else:
@@ -407,11 +420,10 @@ class Controller:
         self.trace.event("Controller", "select_candidates", execution_kind="rule_policy",
                          output_summary="; ".join(f"{t}: {m.model_id}" for t, (m, _) in chosen.items())
                                         + f" ({len(models)} snapshot models shortlisted)")
-        return [chosen[t][0] for t in CANDIDATE_TIERS if t in chosen], shortlist
+        return [chosen[t][0] for t in tiers if t in chosen], shortlist
 
     def _check_critic_route(self, candidates: list[ModelProfile], route_list: list[str]):
-        """The Critic must not use a candidate's route when Nightshift offers another; otherwise the trace says so.
-        Checked before any paid call. GET /v1/models is free."""
+        """Record shared candidate identity; discovery alone cannot establish a different lab."""
         if self.mode == "sample":
             self.trace.event("Controller", "critic_route_check", execution_kind="rule_policy",
                              output_summary="sample mode: no Critic call")
@@ -419,6 +431,12 @@ class Controller:
         cand = {m.model_id for m in candidates}
         routes = route_list
         others = [r for r in routes if r not in cand and r != AUTO_ROUTE]
+        if self.critic_model in cand:
+            self.trace.event("Controller", "critic_shares_candidate_route", requested_model=self.critic_model,
+                             output_summary="explicit Critic route shares a candidate; lab independence unverified")
+            self.limitations.append(f"The Critic uses candidate route {self.critic_model}; its flags are not independent "
+                                    "of that candidate. No different-lab alternative was verified for this run.")
+            return
         if self.critic_model and self.critic_model not in cand and self.critic_model != AUTO_ROUTE:
             if routes and self.critic_model not in routes:
                 raise StopRun(RunState.needs_input, f"Critic route {self.critic_model} is not offered by Nightshift",
@@ -430,7 +448,7 @@ class Controller:
             return
         if others:
             raise StopRun(RunState.needs_input,
-                          "Critic route is unset, the router alias, or a candidate's route, while Nightshift offers others",
+                          "Critic route is unset or a router alias while Nightshift offers explicit routes",
                           [f"Set METERLESS_CRITIC_MODEL to a route that is not a candidate: {', '.join(others)}."])
         self.critic_model = self.critic_model if self.critic_model in cand else candidates[0].model_id
         self.trace.event("Controller", "critic_shares_candidate_route", requested_model=self.critic_model,
@@ -612,6 +630,8 @@ class Controller:
         s = FeatureSample(output_ref=ref, output_text=res["text"], usage=usage, raw_usage=res.get("usage") or {},
                           latency_s=res.get("elapsed_s"), requested_model=res.get("requested_model"),
                           resolved_model=res.get("resolved_model"), route_id=res.get("route_id"),
+                          receipt_id=res.get("receipt_id"), provider=res.get("provider"),
+                          provider_kind=res.get("provider_kind"),
                           max_tokens=MAX_OUTPUT_TOKENS if max_tokens is None else max_tokens)
         self.trace.event("Analyst", "run_feature", model=res.get("resolved_model"), requested_model=res.get("requested_model"),
                          route_id=res.get("route_id"), execution_kind=res["execution_kind"], input_summary=ref,

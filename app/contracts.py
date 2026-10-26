@@ -249,7 +249,7 @@ class ModelProfile(BaseModel):
     model_id: str                    # as exposed by Nightshift GET /v1/models
     provider_label: str              # e.g. "nvidia" — informational
     tier: Optional[Literal["frontier", "mid_tier", "open_source"]] = None
-    required: bool = False           # open_source: the Nemotron route, always a candidate regardless of score
+    required: bool = False           # open_source: the explicitly pinned route, always a candidate regardless of score
     rates: list[Rate]
     terms: ModelPricingTerms = Field(default_factory=ModelPricingTerms)
     audio: Optional[AudioConversion] = None   # None == audio not priced for this model; stays unknown
@@ -420,6 +420,9 @@ class FeatureSample(BaseModel):
     requested_model: Optional[str] = None
     resolved_model: Optional[str] = None
     route_id: Optional[str] = None
+    receipt_id: Optional[str] = None
+    provider: Optional[str] = None
+    provider_kind: Optional[str] = None
     max_tokens: Optional[int] = None
 
 
@@ -693,6 +696,7 @@ class RunRequest(PublicInput):
     sample_mode: Optional[bool] = None
     human_reviews: list[HumanReview] = Field(default_factory=list)
     sampling_profile: Literal["production", "validation"] = "production"
+    candidate_tiers: list[Literal["frontier", "mid_tier", "open_source"]] | None = None
 
     @model_validator(mode="before")
     @classmethod
@@ -706,6 +710,11 @@ class RunRequest(PublicInput):
     def _feature_count(self):
         if not 2 <= len(self.brief.ai_features) <= 5:
             raise ValueError("A founder run requires 2–5 AI features")
+        if self.candidate_tiers is not None:
+            if self.sampling_profile != "validation":
+                raise ValueError("candidate_tiers is available only for validation sampling")
+            if not 2 <= len(self.candidate_tiers) <= 3 or len(set(self.candidate_tiers)) != len(self.candidate_tiers):
+                raise ValueError("candidate_tiers requires two or three unique candidate tiers")
         return self
 
 
@@ -784,6 +793,9 @@ class DispatchRecord(BaseModel):
     requested_model: str
     resolved_model: Optional[str] = None
     provider_request_id: Optional[str] = None
+    provider_receipt_id: Optional[str] = None
+    provider: Optional[str] = None
+    provider_kind: Optional[str] = None
     state: Literal["dispatching", "completed", "unknown", "not_dispatched", "overrun"]
     reserved_usd: NonNegativeDecimal
     actual_usd: Optional[NonNegativeDecimal] = None
@@ -829,6 +841,8 @@ class DecisionPack(BaseModel):
     transport_retries: NonNegativeInt = 0
     selected_samples_per_pair: NonNegativeInt = 0
     sampling_profile: Literal["production", "validation"] = "production"
+    candidate_tiers: list[Literal["frontier", "mid_tier", "open_source"]] = Field(
+        default_factory=lambda: ["frontier", "mid_tier", "open_source"])
     operations: list[DispatchRecord] = Field(default_factory=list)
     unpublished_evidence_ids: list[str] = Field(default_factory=list)
     trace_path: Optional[str] = None

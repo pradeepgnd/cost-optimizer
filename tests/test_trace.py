@@ -83,6 +83,7 @@ def test_nightshift_attempt_and_terminal_include_failure_evidence(tmp_path, monk
     def handle(request):
         assert events(trace)[0]["status"] == "pending"
         assert request.headers["X-Request-ID"] == events(trace)[0]["operation_id"]
+        assert request.read() and json.loads(request.content)["chat_template_kwargs"] == {"enable_thinking": False}
         if outcome == "timeout":
             raise httpx.ReadTimeout("timed out with fixture-secret", request=request)
         if outcome == "http_error":
@@ -93,15 +94,18 @@ def test_nightshift_attempt_and_terminal_include_failure_evidence(tmp_path, monk
             "prompt_tokens": 12, "completion_tokens": 4, "completion_tokens_details": {"reasoning_tokens": 2}}}
         if outcome == "success":
             body["choices"] = [{"message": {"content": "OK"}}]
+            body["meterless"] = {"receipt_id": "rcpt_req_fixture", "winning_route": {
+                "provider": "nvidia", "kind": "cloud", "model": "nvidia/nemotron-fixture"}}
         return httpx.Response(200, json=body, headers={"x-request-id": "runtime-request"})
 
     with httpx.Client(transport=httpx.MockTransport(handle)) as client:
         monkeypatch.setattr(module.httpx, "post", client.post)
-        adapter = module.NightshiftInference(trace)
+        adapter = module.NightshiftInference(trace, disable_thinking=True)
         with adapter.dispatch_context("synthetic-fixture-operation"):
             if outcome == "success":
                 result = adapter.complete(role="Analyst", model="route/alias", system="check", user="check", max_tokens=8)
                 assert result["text"] == "OK" and result["route_id"] == "runtime-request"
+                assert result["receipt_id"] == "rcpt_req_fixture" and result["provider"] == "nvidia"
             else:
                 with pytest.raises((httpx.HTTPError, ValueError, KeyError)):
                     adapter.complete(role="Analyst", model="route/alias", system="check", user="check", max_tokens=8)
@@ -110,6 +114,9 @@ def test_nightshift_attempt_and_terminal_include_failure_evidence(tmp_path, monk
     if outcome in {"success", "invalid_body"}:
         assert terminal["model"] == "nvidia/nemotron-fixture"
         assert terminal["extra"]["usage"]["completion_tokens_details"]["reasoning_tokens"] == 2
+    if outcome == "success":
+        assert terminal["extra"]["receipt_id"] == "rcpt_req_fixture"
+        assert terminal["extra"]["provider_kind"] == "cloud"
     assert "fixture-secret" not in trace.path.read_text()
 
 

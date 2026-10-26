@@ -20,7 +20,7 @@ python -m pytest -q
 
 Sample mode runs the same controller, contracts and cost engine on bundled data. It makes zero network calls and executes no model: tokens are estimated with the 4/3 rule and labeled estimated, no outputs are produced, and rubric checks don't run. It never replays saved model answers and labels every output `SAMPLE/OFFLINE`. It is reproducibility for judges, not sponsor proof.
 
-For a repeatable check of all three examples, run `python scripts/check_sample_examples.py`. The checker forces sample mode in copied requests, disables private dotenv loading, blocks Python socket access, and uses fresh databases and logs. It retains packs, traces and a `manifest.json` in a new temporary directory and prints its location. To retain them in a chosen location, pass `--output-dir <new-directory>`; existing directories are refused. A passing check establishes the offline baseline; the H-MEM engine's offline behavior and live sponsor readiness require separate checks. See the [incremental implementation guide](docs/09-v4-Gap-Implementation-Guide.md) and [evidence ledger](docs/evidence/v4-release-checklist.md).
+For a repeatable check of all three examples, run `python scripts/check_sample_examples.py`. The checker forces sample mode in copied requests, disables private dotenv loading, blocks Python sockets and Node network calls, and uses fresh databases and logs. It retains packs, traces and a `manifest.json` in a new temporary directory and prints its location. To retain them in a chosen location, pass `--output-dir <new-directory>`; existing directories are refused. A passing check establishes the offline baseline and local H-MEM delegation; live sponsor readiness needs later checks. See the [incremental implementation guide](docs/09-v4-Gap-Implementation-Guide.md) and [evidence ledger](docs/v4-release-checklist.md).
 
 ## Live mode
 
@@ -30,13 +30,13 @@ Requires Zetaris (Docker Desktop / WSL2) and Meterless Nightshift running locall
 python run.py --input input_examples/example_1.json --output result.json
 ```
 
-Source setup now has an independent [Steps 5–6 manual test guide](docs/12-M05-M06-Manual-Testing.md): collect/validate a catalog, prepare pinned application records, preview/apply LocalStack or S3 registration, read typed rows and verify labeled evidence write/readback. These checks need no H-MEM or model completions. The OpenRouter collector retains raw/normalized data, exact hashes and explicit quarantine records. Application model profiles keep catalog references separate from execution tariffs; the example planned routes do not configure providers or authorize paid work.
+Source setup now has an independent [Steps 5–6 manual test guide](docs/12-M05-M06-Manual-Testing.md): collect/validate a catalog, prepare pinned application records, preview/apply LocalStack or S3 registration, read typed rows and verify labeled evidence write/readback. These checks need no H-MEM or model completions. The OpenRouter collector retains raw/normalized data, exact hashes and explicit quarantine records. The [selected Ultra/Lightning/Gemma routes and OpenRouter projection](docs/13-M05-Serving-and-Billing-Selection.md) add a separate listed-token serving scenario; application model profiles keep those catalog prices separate from actual Nightshift execution tariffs.
 
 Use the generated schema 1.1 bindings file through `ZETARIS_BINDINGS_FILE`. Every source row is checked against its pinned envelope hash; the earlier unbound `LIMIT 50` query is no longer the application read path. Optional build-source failure leaves the operating comparison available. Result ingestion runs in a separate publisher process, and the application retains a durable evidence outbox when write/readback is unavailable. AWS/Windows validation and applicable provider tariffs/billing bounds remain separate acceptance work. Recorded component evidence is in [m05-m06-source-checks.json](docs/m05-m06-source-checks.json).
 
 Preflight for the Windows host: `scripts/preflight_windows.ps1` checks RAM, CPUs, disk, WSL2, Docker allocation and ports. With `-ZetarisUrl`/`-NightshiftUrl`, it validates the actual `SELECT 1` cell and model-discovery structure using the shared Python validators. Activate the project environment first, or pass `-PythonExecutable <path>`. Required SKIP/UNKNOWN or FAIL gives exit code 1. This is machine/connectivity evidence only; the revised PowerShell script still needs execution on Windows.
 
-Live smoke test (diagnostic only, reads `.env`): `python scripts/smoke_live.py` checks Zetaris, Nightshift discovery and the H-MEM bridge separately. Paid diagnostic completions default to **disabled**. An explicit `--max-spend-usd <amount>` between $0 and $1, plus verified route prices/token bounds, allows one tiny completion per candidate through the same durable dispatcher. It saves a redacted Markdown table, typed JSON readiness/accounting and HTTP traces under `logs/`; `--output-dir <directory>` chooses report storage and `--no-dotenv` disables private dotenv loading. The operation ledger defaults to `<output-dir>/smoke-operations.db`; `--operations-db <path>` selects an existing ledger and `--run-id <id>` supplies a durable idempotency key. Reusing a key never replays paid work. Exit code 0 requires all seven diagnostic checks to pass; a required skip or missing check is non-success. Nemotron diagnostics require explicit discovery/response identity and a response request ID. Passing diagnostics do not establish working-feature or end-to-end sponsor proof; model alias/receipt verification remains M08.
+Live smoke test (diagnostic only, reads `.env`): `python scripts/smoke_live.py` checks Zetaris, Nightshift discovery and the H-MEM bridge separately. Paid diagnostic completions default to **disabled**. An explicit `--max-spend-usd <amount>` between $0 and $1, plus verified route prices/token bounds, allows one tiny completion per candidate through the same durable dispatcher. It saves a redacted Markdown table, typed JSON readiness/accounting and HTTP traces under `logs/`; `--output-dir <directory>` chooses report storage and `--no-dotenv` disables private dotenv loading. The operation ledger defaults to `<output-dir>/smoke-operations.db`; `--operations-db <path>` selects an existing ledger and `--run-id <id>` supplies a durable idempotency key. Reusing a key never replays paid work. Exit code 0 requires all seven diagnostic checks to pass; a required skip or missing check is non-success. Open-model diagnostics require explicit discovery/response identity and a response request ID. Passing diagnostics do not establish working-feature or end-to-end sponsor proof; model alias/receipt verification remains M08.
 
 Incremental trace/readiness check (offline fixtures, no paid requests): `python -m pytest -q tests/test_trace.py tests/test_smoke_live.py`. See [M03 evidence](docs/evidence/v4-release-checklist.md#m03--trace-evidence-and-truthful-readiness).
 
@@ -56,6 +56,8 @@ Every attempt transactionally claims money and a slot in SQLite before entering 
 
 The stricter [v4 call-budget policy](Planning/07-Realignment-v4.md) caps **all inference attempts, across roles and retries, at 30**. There is one logical Planner, one Critic and at most one repair, plus at most two safe retries globally. The default `sampling_profile: production` uses two samples per executable pair when the dispatch slots fit; four features need at most 29 slots including reserved repair/retry slots, while five use one sample. `sampling_profile: validation` explicitly selects one sample per pair for incremental checks. Spend is checked before each attempt; a selected sampling count does not guarantee the whole run fits the monetary budget.
 
+For an incremental Ultra + Lightning comparison, a validation request may set `candidate_tiers: ["frontier", "mid_tier"]`. The [two-model manual guide](docs/16-M08-Two-Model-Validation.md) prepares a zero-spend request, checks its gate and runs the controller; the pack records that Gemma remains pending. Production requests keep all three tiers.
+
 Incremental dispatch check (offline synthetic billing/HTTP fixtures): `python -m pytest -q tests/test_dispatch_limits.py tests/test_controller_live_fake.py`. See [M04 evidence](docs/evidence/v4-release-checklist.md#m04--bounded-dispatch-spend-and-restart-safety).
 
 Incremental contract check: `python -m pytest -q tests/test_v4_contracts.py`. See [M01 evidence](docs/evidence/v4-release-checklist.md#m01--input-contracts-and-founder-controls) for the tested scope and remaining work.
@@ -70,8 +72,8 @@ Founder idea + AI features ─► Controller (allowlist by state, call caps, spe
   2  Retrieve   Analyst ◄─ Zetaris         dated prices (input, output, cache, batch, audio, long-context),
                                            intelligence scores, OpenRouter market reference
   3  Select     Controller ◄─ Nightshift   candidate shortlist: one Nightshift route per tier (GET /v1/models,
-                                           before any paid call); open-source is always the Nemotron route;
-                                           Critic route must not be a candidate's route
+                                           before any paid call); open-source is the required pinned route;
+                                           shared candidate/Critic routes are disclosed
   4  Estimate   Analyst                    4/3 rule per feature × candidate, labeled estimated
      ── approval gate (evaluation_approved, max_spend_usd) ──
   5  Plan       Planner ◄─ Nightshift      domain risks only, labeled model-generated, not advice
@@ -89,14 +91,14 @@ Founder idea + AI features ─► Controller (allowlist by state, call caps, spe
 **Candidate shortlist.** One candidate per tier: frontier, mid-tier and open-source. In live mode only Nightshift routes are eligible; sample mode says the route check needs live mode.
 
 - **Frontier and mid-tier:** the top-ranked eligible model by intelligence score, then OpenRouter usage rank, then snapshot order.
-- **Open-source:** always the Nemotron route, from `METERLESS_OPEN_MODEL` or the snapshot row marked `required`, regardless of score. Other open models can appear in the shortlist but never replace it. If the pinned route has no price snapshot or Nightshift doesn't offer it, the run stops for input before any paid call.
+- **Open-source:** always the pinned required route, from `METERLESS_OPEN_MODEL` or the snapshot row marked `required`, regardless of score. The current selection is Gemma 4 31B Dense free through Nightshift's `openrouter/google/gemma-4-31b-it:free` route. Other open models can appear in the shortlist but never replace it. If the pinned route has no price snapshot or Nightshift doesn't offer it, the run stops for input before any paid call.
 - **In the pack:** `candidate_shortlist` lists every snapshot model, with:
   - whether it's a Nightshift route;
   - its intelligence score, with source and date;
   - its market reference, labeled *market reference (OpenRouter, date)*;
   - its price per intelligence point (list price blended 3:1 input:output ÷ score), labeled with source and date;
   - why it was or wasn't selected.
-- **Reference data only ranks the shortlist.** Costs come from the price snapshots and pass/fail from rubric checks; scores and market prices never feed stage tables, switch points or the model stack.
+- **Reference data stays separate from actual-route costs.** OpenRouter catalog rows may price a clearly labeled hypothetical serving table. Actual-route stage tables, switch points and model-stack recommendations use the applicable execution price snapshot and rubric checks; market prices never authorize paid dispatch.
 
 **Decision pack.** Two ledgers, never summed:
 
@@ -120,21 +122,21 @@ Hard limits per run: 1 logical Planner, 1 logical Critic, ≤1 logical repair, �
 | Zetaris | Data layer: price snapshots for every candidate (S3-backed sources) and writeback of measured runs | `app/adapters/live_zetaris.py`; trace `zetaris_query` events with query IDs |
 | Meterless H-MEM | The idea's memory: confirmed assumptions recalled at the start of a run; accepted model-stack decisions saved at the end | `app/engines/hmem/`; `tests/test_hmem_engine.py` |
 | Meterless Nightshift | The router for every model call: Planner, all three candidates and the Critic; requested and resolved model logged per request | `app/adapters/live_nightshift.py`; trace `nightshift_request` and `run_feature` events |
-| NVIDIA Nemotron | The open-source candidate in every comparison, pinned so no higher-scored open model replaces it; its measured cost and deterministic quality checks drive the switch points | `METERLESS_OPEN_MODEL`; trace `select_candidates` (chosen routes) and `run_feature` events (`model` per request) |
+| NVIDIA Nemotron | Ultra and Lightning remain candidates; a measured Nemotron-backed working feature and corroborated identity are needed for NVIDIA evidence | Trace `select_candidates` (chosen routes) and `run_feature` events (`model` per request) |
 | Cursor | Used by Shrie for UI and Zetaris work | — |
 
 No model grades the comparison. The Critic only flags issues and proposes one action, which the controller validates. It never uses a candidate's route when Nightshift offers another; when none is available, the trace and the pack's limitations say so.
 
 ## Build status
 
-The offline suite has 449 passing tests covering contracts, Decimal economics, durable dispatch, source collection/publication, typed Zetaris reads, ingestion/outbox recovery, the controller loop, rubric checks, trace, CLI, sample adapters and the repeatable sample checker. Known correctness and integration gaps are tracked in the [gap review](docs/08-v4-Integration-Gap-Review.md) and [incremental implementation guide](docs/09-v4-Gap-Implementation-Guide.md). Real route/tariff verification and H-MEM integration remain in progress as of 25 October.
+The offline suite has 483 passing tests covering contracts, Decimal economics, durable dispatch, source collection/publication, typed Zetaris reads, ingestion/outbox recovery, the controller loop, rubric checks, trace, CLI, sample adapters and the repeatable sample checker. Known correctness and integration gaps are tracked in the [gap review](docs/08-v4-Integration-Gap-Review.md) and [incremental implementation guide](docs/09-v4-Gap-Implementation-Guide.md). M07 local H-MEM integration passes; M08 live route/tariff verification and later memory influence remain open as of 25 October.
 
 | Component | State |
 |---|---|
-| Contracts, economics, dispatch, sources/Zetaris, controller, rubric checks, trace, CLI, sample adapters | implemented with known gaps; 449 tests pass (9 skipped: the shelved comparison and the H-MEM bridge test) |
+| Contracts, economics, dispatch, sources/Zetaris, controller, rubric checks, trace, CLI, sample adapters | implemented with known gaps; 483 tests pass, 8 shelved retrospective tests skipped |
 | Zetaris live adapter | typed pinned reads, preserved provenance, external ingestion/readback and durable outbox implemented; LocalStack component proof passes; applicable execution-tariff/model evidence remains pending |
-| Nightshift live adapter | in progress: written; candidate routes not yet pinned; tested only against a scripted fake |
-| H-MEM bridge | in progress: Python interface written; Node bridge and pinned engine revision pending |
+| Nightshift live adapter | M08 partial: the earlier branch records real NVIDIA cloud responses for Ultra and Lightning; current discovery, receipt-aware adapter fixtures and read-only gate pass. Applicable execution tariffs, a third candidate response and the bounded live pack remain pending. See [M08 checks](docs/15-M08-Manual-Testing.md). |
+| H-MEM bridge | M07 local reference PASS: pinned Node bridge, save/restart/recall/isolation/audit and blocked-network sample delegation; [manual checks](docs/14-M07-Manual-Testing.md). Decision influence remains M11. |
 | Streamlit UI | in progress |
 | Pricing snapshots | unverified placeholders; to be replaced with dated, cited snapshots |
 | Retrospective comparison script | shelved in v4 |
@@ -145,7 +147,7 @@ The offline suite has 449 passing tests covering contracts, Decimal economics, d
 - All prices are unverified placeholders until replaced with dated, cited snapshots; so are the intelligence scores and OpenRouter market references in the sample data.
 - Audio is priced from per-second conversions, not measured; audio is never sent to a model.
 - Prompt caching, batch API and output reuse are projections for a production setup, not measured in our runs.
-- The self-host break-even is not shown: it needs a cited throughput figure for the pinned Nemotron variant.
+- The self-host break-even is not shown: it needs a cited throughput figure for the selected open-model variant.
 - Founder-impact evidence so far comes only from the founder's own ideas (self-evaluation).
 - Build-approach costs are compared on rates; no build was executed on any platform.
 

@@ -8,16 +8,16 @@ Catalog prices remain reference data. OpenRouter documents model-level pricing a
 
 ## Current-machine quick check
 
-The latest NVIDIA candidate/Critic bindings were actually registered on this machine:
+The current Ultra/Lightning/Gemma candidate bindings were registered on this machine:
 
 ```text
-data/localstack/openrouter/bindings-final-scenario.json
+data/localstack/openrouter/bindings-lightning-mid-gemma-open.json
 ```
 
 With the project environment activated and the existing Zetaris/LocalStack containers running:
 
 ```text
-python scripts/check_zetaris_sources.py --bindings data/localstack/openrouter/bindings-final-scenario.json --catalog-id nvidia/nemotron-3.5-lightning --round-trip --storage data/source_examples/localstack.json --run-id manual-source-check-002 --output-dir data/localstack/manual-check-002
+python scripts/check_zetaris_sources.py --bindings data/localstack/openrouter/bindings-lightning-mid-gemma-open.json --catalog-id google/gemma-4-31b-it:free --round-trip --storage data/source_examples/localstack.json --run-id manual-source-check-002 --output-dir data/localstack/manual-check-002
 ```
 
 Expected: `status: pass`, five successful checks, `model_completions: 0`, `execution_billing_verified: false`. The final check covers fixture write/readback, a second append, publisher recreation and a repeated identical write. `report.json`, `reference-scenario.json`, `models.json`, `select-one.json` and a JSONL trace are retained in the output directory.
@@ -27,7 +27,7 @@ For a repeat, keep the same `--run-id` and choose a new `--output-dir`, such as 
 The current bundle also supports a full-controller OpenRouter listed-token projection with zero paid calls:
 
 ```text
-python scripts/check_openrouter_projection.py --input input_examples/example_3.json --bindings data/localstack/openrouter/bindings-final-scenario.json --output-dir data/localstack/manual-openrouter-projection-001
+python scripts/check_openrouter_projection.py --input input_examples/example_3.json --bindings data/localstack/openrouter/bindings-lightning-mid-gemma-open.json --output-dir data/localstack/manual-openrouter-projection-001
 ```
 
 Expected: `status: pass`, `scenario_rows: 24`, `model_completions: 0`, `actual_route_monthly_rows_known: 0`. The `pack.json` keeps `openrouter_projection_tables` separate from actual-route `stage_tables`. Use a new directory if the example name already exists.
@@ -108,7 +108,7 @@ python scripts/prepare_source_bundle.py --catalog <CATALOG_DIR> --route-map data
 
 Expected: 3 model records, 1 synthetic founder brief, the accepted catalog count, a returned `bundle_dir`, and `execution_tariffs_verified: false`. Use that directory as `<BUNDLE_DIR>`. Inspect `models.json`: catalog reference prices appear under `market`; execution rates remain null and dispatch policies remain absent unless a separate curated `billing_profile` was supplied. No intelligence score is invented. Optional build prices can be supplied with `--approaches <JSON-list>`; omission does not block model reads.
 
-The catalog-only route map is an example for data-path testing, not a quality recommendation or a claim that the routes are configured. Its frontier/mid routes were **not offered by the current runtime**; the Lightning route was advertised. It must remain `mapping_status: planned` until validated against retained discovery. An observed alternative with Ultra, Super, Lightning and a separate NVIDIA Nemotron Nano Critic is recorded in the [M05 serving/billing selection](13-M05-Serving-and-Billing-Selection.md) and [routes.nvidia-selected.json](../data/source_examples/routes.nvidia-selected.json). Its four routes were advertised and registered locally, but no execution tariff or actual serving result was verified.
+The catalog-only route map is an example for data-path testing, not a quality recommendation or a claim that the routes are configured. Its frontier/mid routes were **not offered by the current runtime**; the Lightning route was advertised. It must remain `mapping_status: planned` until validated against retained discovery. The current [selected map](../data/source_examples/routes.selected.json) uses Ultra, Lightning and Gemma 4 31B Dense free; all three were advertised and registered locally, but Gemma has no verified completion and none has an applicable execution tariff. The [M05 selection record](13-M05-Serving-and-Billing-Selection.md) retains the earlier NVIDIA-only bundle as history.
 
 Optional free route verification:
 
@@ -158,7 +158,7 @@ Expected: `SELECT 1`, typed model read, founder read and reference arithmetic ch
 To preview the same OpenRouter listed-token scenario in the full controller, with the selected NVIDIA Critic and **zero model calls**:
 
 ```text
-python scripts/check_openrouter_projection.py --input input_examples/example_3.json --bindings data/localstack/openrouter/bindings-final-scenario.json --output-dir data/localstack/openrouter/openrouter-projection-next
+python scripts/check_openrouter_projection.py --input input_examples/example_3.json --bindings data/localstack/openrouter/bindings-lightning-mid-gemma-open.json --output-dir data/localstack/openrouter/openrouter-projection-next
 ```
 
 Expected: `status: pass`, `model_completions: 0`, 24 scenario rows across two features, three candidates and four stages, each with a pinned Zetaris catalog source. The actual-route monthly rows remain unknown. Inspect `pack.json` fields `openrouter_projection_tables` and `stage_tables` separately. The scenario uses listed input/output prices and a transferred Nightshift workload estimate; unknown provider variation, conditional rates and account fees keep every row labeled as a lower bound. Use a new output directory for each check.

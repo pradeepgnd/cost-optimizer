@@ -7,19 +7,15 @@
       "tier": "frontier"
     },
     {
-      "catalog_id": "nvidia/nemotron-3-super-120b-a12b",
-      "route_id": "nvidia/nemotron-3-super-120b-a12b",
+      "catalog_id": "nvidia/nemotron-3.5-lightning",
+      "route_id": "nvidia/nemotron-3.5-lightning-30b-a3b",
       "tier": "mid_tier"
     },
     {
-      "catalog_id": "nvidia/nemotron-3.5-lightning",
-      "route_id": "nvidia/nemotron-3.5-lightning-30b-a3b",
+      "catalog_id": "nvidia/nemotron-3-super-120b-a12b",
+      "route_id": "nvidia/nemotron-3-super-120b-a12b",
       "tier": "open_source",
       "required": true
-    },
-    {
-      "catalog_id": "nvidia/nemotron-3-nano-30b-a3b",
-      "route_id": "local-runtime/nemotron-3-nano-30b-a3b"
     }
   ]
 }

@@ -210,6 +210,35 @@ data/localstack/openrouter/source-http-recovery-93d1e10c/report.json
 
 Final checks on base `3132207` plus the working tree (Python 3.12.12): 72 focused source/adapter/ingestion tests passed; full suite 449 passed, 9 known skips; three guarded sample examples passed and were regenerated. The exact commands, source hashes and actual local reports are in [the portable source record](../m05-m06-source-checks.json). Sample manifest: `/private/var/folders/8m/69np3l210snb8twb3tb0d7mh0000gn/T/cost-optimizer-sample-check-ctr_0bk2/manifest.json`. Retained test/example artifacts: `/private/var/folders/8m/69np3l210snb8twb3tb0d7mh0000gn/T/cost-optimizer-m05-m06-final-idb5tw9c/regeneration-manifest.json`.
 
+## M07 — Pinned real H-MEM and offline sample delegation
+
+**Status: PASS for the local reference scope.** Checked October 25, 2026. The unchanged Meterless H-MEM TypeScript reference and conformance vectors are vendored at revision `1742dec56a66e58eef9dda2d2b865823758ca8cd`, with its lockfile and Apache 2.0 licence. `bridge.mjs` calls the reference's `add`, `query` and audit ledger; JSON-only responses include engine revision, scoped IDs, structured context and audit refs. Project IDs are validated and stored in separate hashed directories. The Python and sample adapters verify the real bridge and fail visibly for missing/broken setup.
+
+| Check | Actual | Status |
+|---|---|---|
+| `npm test` in `app/engines/hmem/reference` | 10 reference tests passed | PASS |
+| `./node_modules/.bin/tsx ../conformance/runner.ts` | 13/13 sponsor checks passed | PASS |
+| `NODE_OPTIONS=--require=... node app/engines/hmem/bridge.mjs --selftest` | JSON status/revision, save/restart/recall/isolation/audit under Node network guard | PASS |
+| `.venv/bin/python -m pytest -q -rs tests/test_hmem_engine.py tests/test_sample_memory.py` | 5 passed, no skips; includes a second Python process and malformed project ID | PASS |
+| `.venv/bin/python scripts/check_sample_examples.py` | All three examples passed with Python and Node network guards | PASS |
+| `.venv/bin/python -m pytest -q -rs` | 456 passed, 8 skips (all shelved retrospective); H-MEM no longer skipped | PASS |
+
+The `tsx` CLI conformance run required sandbox escalation for its local IPC pipe; it passed after escalation. `npm ci` completed using the pinned lockfile and reported security advisories in development dependencies. No provider call was made. This is local reference evidence, not proof that accepted memory changes a later decision (M11), that JSON-file storage is safe for concurrent production use, or that the live sponsor workflow is ready. Manual instructions: [M07 verification](14-M07-Manual-Testing.md).
+
+## M08 — Nightshift response gate and read-only live preflight
+
+**Status: PARTIAL.** Checked October 25, 2026. `parse_completion_response` now requires a single text choice, a nonblank resolved model and response request ID, valid non-negative prompt/completion counts, and reasoning no greater than completion. It preserves raw usage, Nightshift winning-route model/provider/kind and receipt ID in the adapter, feature sample and durable dispatch record. The durable dispatcher still refuses a mismatched alias without a correlated priced identity and refuses all paid calls without verified route tariffs and bounds.
+
+The earlier `feature/plan-07-impl-meena` commit `1f27731` records two **actual** standalone Nightshift/NVIDIA cloud completions on October 25: Lightning receipt `rcpt_req_6vjuc0nt` (208 input/18 output tokens) and Ultra receipt `rcpt_req_51o80g0a` (206 input/16 output tokens). Both were attributed to exact requested winning models. It also records Super as previously failing before the configured candidate was changed. Those are documented prior probes, not this M08 pack; the branch contains receipt IDs and observations, not saved raw receipt JSON.
+
+The prior registered-binding no-spend diagnostic at `/private/tmp/cost-optimizer-m08-branch-verification/` reported Zetaris `SELECT 1` PASS, four pinned model rows PASS, Nightshift `GET /v1/models` PASS with 75 routes, H-MEM PASS, and three required completion SKIPs. The selected map now uses Ultra (frontier), Lightning (mid-tier) and Gemma 4 31B Dense free (required open model). Fresh discovery advertised 112 routes, including `openrouter/google/gemma-4-31b-it:free`. New immutable bundle `d85a2e103d87ba5069bf26e3` was registered with three rows at `data/localstack/openrouter/bindings-lightning-mid-gemma-open.json`; its typed Zetaris read and zero-completion OpenRouter projection passed (24 separate market-reference rows). The read-only gate at `/private/tmp/m08-lightning-mid-gemma-open-gate-retry.json` found all three advertised/registered and matched the current selection. Each still has `model_source_status: unknown`, no dispatch policy and a blocked billing gate. The configured Ultra Critic shares the frontier candidate, and the controller discloses that shared identity. The synthetic two-feature, one-sample-per-pair $0.50 request was prepared at `/private/tmp/cost-optimizer-m08-tiny-001.json` but **not executed** in this M08 check. No new paid request or model-output claim was made.
+
+The branch reconciliation focused tests passed (134 adapter/trace/dispatch/controller cases); the full offline suite passed **476 tests with 8 shelved retrospective skips** after the Gemma route change. The current zero-spend smoke at `/private/tmp/m08-smoke-gemma-no-spend-retry/` passed Zetaris, Nightshift discovery and H-MEM, with three expected completion skips. The remaining acceptance is a verified serving/billing source and request bound for each role, a current Gemma response, three attributable candidate responses, a Nemotron-backed working feature, and a bounded CLI pack with Zetaris evidence readback. A distinct Critic route is optional when its serving/lab identity is proven; shared Ultra is disclosed. See [M08 manual verification](15-M08-Manual-Testing.md). Do not infer a Nightshift bill from the separate OpenRouter scenario.
+
+The Ultra + Lightning validation subset passed the zero-spend controller preview (16 OpenRouter reference rows). A live-mode CLI run using only those two tiers returned a `partial` pack at `/private/tmp/m08-ultra-lightning-two-model-pack.json`: four unexecuted feature/model pairs, 0 dispatches, $0 spend and an explicit pending open-model comparison. Its request and gate report are `/private/tmp/m08-ultra-lightning-two-model.json` and `/private/tmp/m08-ultra-lightning-two-model-gate.json`. The gate requires Ultra and Lightning for this scoped run and reports Gemma as optional; both required billing gates remain blocked. See the [two-model manual guide](16-M08-Two-Model-Validation.md).
+
+The repeatable $0 request also produced a `partial` pack at `/private/tmp/m08-ultra-lightning-two-model-zero-pack.json` with four planned pairs, 16 reference projection rows, 0 dispatches and $0 spend. The full offline suite after the two-model changes passed **483 tests with 8 shelved retrospective skips**.
+
 ## Milestone status
 
 | Milestone | Status | Evidence or next acceptance action |
@@ -221,8 +250,8 @@ Final checks on base `3132207` plus the working tree (Python 3.12.12): 72 focuse
 | M04 | PASS, scoped as above | 67 dispatch tests; 183 focused / 377 full passing tests; synthetic receipts and restart/concurrency evidence |
 | M05 | PARTIAL; component PASS | Actual catalog retained/published/registered; execution tariff/route, source coverage and usage review pending |
 | M06 | PARTIAL; component PASS | Typed reads, reference calculation, real fixture round trip and HTTP outbox recovery pass; execution-tariff/measured-model proof pending |
-| M07 | pending | Real engine restart/isolation/audit PASS without skipping; offline delegation |
-| M08 | pending | Identified candidate requests and bounded small live pack |
+| M07 | PASS, local reference scope | Real engine restart/isolation/audit and offline delegation pass without skipping; M11 decision influence remains pending |
+| M08 | PARTIAL; prior Ultra/Lightning live receipts, current read-only gate and fixtures pass | Applicable tariffs, third candidate proof and bounded live pack pending; shared Critic disclosed |
 | M09 | pending | Validated planner tasks/rubrics and grounded flags-only critique |
 | M10 | pending | Output-bound review and effective repair evidence |
 | M11 | pending | Accepted context affects a later run with a sourced comparison |

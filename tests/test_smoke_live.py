@@ -45,8 +45,8 @@ def test_unconfigured_run_skips_everything_without_network_and_saves_report(tmp_
     assert evidence["counts"]["SKIP"] >= 6
 
 class _FakeNightshift:
-    """Stands in for NightshiftInference: offers the sample frontier and Nemotron routes, not the mid-tier one."""
-    def __init__(self, trace=None):
+    """Stands in for NightshiftInference: offers the sample frontier and open-model routes, not the mid-tier one."""
+    def __init__(self, trace=None, **kwargs):
         pass
 
     def list_models(self):
@@ -69,7 +69,7 @@ def test_nightshift_checks_report_usage_route_gaps_and_missing_usage(monkeypatch
     fr = by["completion: frontier"]
     assert fr[2] == "PASS" and "resolved sample/frontier-placeholder" in fr[3] and "prompt=12 completion=2" in fr[3]
     assert "Zetaris price snapshot" in by["completion: mid-tier"][3] and by["completion: mid-tier"][2] == "SKIP"
-    assert by["completion: Nemotron"][2] == "FAIL" and "unknown" in by["completion: Nemotron"][3]
+    assert by["completion: open-source"][2] == "FAIL" and "unknown" in by["completion: open-source"][3]
 
 
 @pytest.mark.parametrize("body", [ [[1]], {"rows": [[1]]}, {"data": [{"one": 1}]},
@@ -119,7 +119,7 @@ def test_smoke_validates_select_one_even_with_an_alternate_adapter(monkeypatch, 
     ("nvidia/nemotron-fixture", "request-1", False, "FAIL"),
     ("provider/notnemotron", "request-1", True, "FAIL"),
 ])
-def test_nemotron_diagnostic_needs_explicit_corroborated_identity(monkeypatch, resolved, request_id, discovered, expected):
+def test_open_model_diagnostic_needs_explicit_corroborated_identity(monkeypatch, resolved, request_id, discovered, expected):
     import app.adapters.live_nightshift as module
 
     class FakeNightshift(_FakeNightshift):
@@ -139,7 +139,7 @@ def test_nemotron_diagnostic_needs_explicit_corroborated_identity(monkeypatch, r
     models = [model.model_copy(update={"required": False}) if model.tier == "open_source" else model for model in models]
     models.append(models[-1].model_copy(update={"model_id": "nvidia/nemotron-fixture", "required": True}))
     diagnose(models)
-    assert next(row for row in smoke.rows if row[1] == "completion: Nemotron")[2] == expected
+    assert next(row for row in smoke.rows if row[1] == "completion: open-source")[2] == expected
 
 
 @pytest.mark.parametrize("routes", [[], "a", [""], [None], ["a", "a"]])
@@ -243,12 +243,14 @@ def fake_bridge(tmp_path, monkeypatch):
     monkeypatch.setattr(bridge, "PIN", tmp_path / "PINNED_REVISION")
     bridge.BRIDGE.touch()
     bridge.PIN.write_text("synthetic-fixture-revision")
-    (tmp_path / "reference").mkdir()
+    (tmp_path / "reference" / "src").mkdir(parents=True)
+    (tmp_path / "reference" / "src" / "index.ts").touch()
+    (tmp_path / "reference" / "node_modules" / "tsx").mkdir(parents=True)
     return bridge
 
 
-@pytest.mark.parametrize("stdout,exit_code,expected", [('{"status":"ok"}', 0, True),
-    ('{\n "status" : "ok"\n}', 0, True), ('{"status":"ok"}', 1, False),
+@pytest.mark.parametrize("stdout,exit_code,expected", [('{"status":"ok","engine_revision":"synthetic-fixture-revision"}', 0, True),
+    ('{\n "status" : "ok", "engine_revision": "synthetic-fixture-revision"\n}', 0, True), ('{"status":"ok"}', 1, False),
     ('{"status":"failed","message":"\\\"status\\\": \\\"ok\\\""}', 0, False),
     ("{'status': 'ok'}", 0, False), ('log: {"status": "ok"}', 0, False), ('[]', 0, False)])
 def test_bridge_selftest_parses_json_status_not_a_substring(fake_bridge, monkeypatch, stdout, exit_code, expected):
@@ -302,7 +304,7 @@ def test_funded_diagnostics_share_dispatch_accounting_and_refuse_duplicate_run(m
     models = [verified_profile(model) for model in SampleDataLayer().read_models() if model.tier != "frontier" or model.required]
     frontier = verified_profile(SampleDataLayer().read_models()[0])
     models.append(frontier)
-    models = [model.model_copy(update={"model_id": "nvidia/nemotron-fixture"}) if model.tier == "open_source" else model for model in models]
+    models = [model.model_copy(update={"model_id": "openrouter/google/gemma-4-31b-it:free"}) if model.tier == "open_source" else model for model in models]
     routes = [model.model_id for model in models]
     class FakeNightshift(_FakeNightshift):
         def list_models(self):

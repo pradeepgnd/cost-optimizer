@@ -26,7 +26,7 @@ def main() -> int:
     parser.add_argument("--input", type=Path, required=True, help="A RunRequest JSON; paid evaluation is always disabled.")
     parser.add_argument("--bindings", type=Path, required=True, help="Registered pinned Zetaris bindings.")
     parser.add_argument("--output-dir", type=Path, required=True, help="New directory for pack, trace and report.")
-    parser.add_argument("--critic", default="local-runtime/nemotron-3-nano-30b-a3b")
+    parser.add_argument("--critic", default="nvidia/nemotron-3-ultra-550b-a55b")
     parser.add_argument("--no-dotenv", action="store_true")
     args = parser.parse_args()
     if args.output_dir.exists():

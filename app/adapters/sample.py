@@ -91,8 +91,7 @@ class RulePolicyInference(Inference):
 
 
 class SampleMemory(Memory):
-    """Offline H-MEM path. Until the sponsor reference is pinned and verified offline, this adapter
-    refuses to pretend: it raises SetupIncomplete so sample readiness fails loudly (architecture §6)."""
+    """Offline H-MEM delegation. The same real bridge runs without provider calls."""
 
     def __init__(self, bridge_available: bool = False):
         self.bridge_available = bridge_available
@@ -101,12 +100,14 @@ class SampleMemory(Memory):
         if not self.bridge_available:
             raise SetupIncomplete("H-MEM bridge not pinned/verified for offline use; sample readiness fails rather than "
                                   "substituting a dictionary. See app/engines/hmem/README.md.")
+        from app.engines.hmem.bridge import HmemBridge
+        return HmemBridge()
 
     def remember_confirmed(self, project_scope, payload):
-        self._guard()
+        return self._guard().remember_confirmed(project_scope, payload)
 
     def recall(self, project_scope, query):
-        self._guard()
+        return self._guard().recall(project_scope, query)
 
     def audit(self, project_scope):
-        self._guard()
+        return self._guard().audit(project_scope)

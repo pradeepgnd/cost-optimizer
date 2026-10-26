@@ -63,14 +63,34 @@ def test_reservation_is_committed_before_adapter_and_all_fields_are_reconciled(d
         assert dispatcher.budget.held == Decimal(receipt["reserved_usd"])
         assert kwargs["max_tokens"] == 64
         return {"text": "OK", "resolved_model": model.model_id, "route_id": "provider-fixture",
+                "receipt_id": "receipt-fixture", "provider": "nvidia", "provider_kind": "cloud",
                 "usage": {"prompt_tokens": 10, "completion_tokens": 4}}
     inf.outcomes.append(callback)
     call(dispatcher, model)
     record = ckpt.operations(dispatcher.run_id)[0]
     assert record.state == "completed" and record.provider_request_id == "provider-fixture"
+    assert record.provider_receipt_id == "receipt-fixture" and record.provider == "nvidia"
+    assert record.provider_kind == "cloud"
     assert record.actual_usd == Decimal("0.00015")
     assert dispatcher.budget.spent == record.actual_usd and dispatcher.budget.held == 0
     assert dispatcher.budget.dispatch_count == 1
+
+
+@pytest.mark.parametrize("extra,error_type", [({"requires_review": True}, "RuntimeReviewRequired"),
+                                               ({"finish_reason": "length"}, "NonStopFinish")])
+def test_runtime_review_or_truncation_stops_further_spend_with_receipt(dispatch, extra, error_type):
+    model = verified_profile(SampleDataLayer().read_models()[0])
+    result = {"text": "partial", "resolved_model": model.model_id, "route_id": "request-fixture",
+              "receipt_id": "receipt-fixture", "provider": "nvidia", "provider_kind": "cloud",
+              "usage": {"prompt_tokens": 10, "completion_tokens": 4}, **extra}
+    dispatcher, _, ckpt, _ = dispatch(model=model, outcomes=[result])
+    with pytest.raises(StopRun):
+        call(dispatcher, model)
+    record = ckpt.operations(dispatcher.run_id)[0]
+    assert record.state == "unknown" and record.error_type == error_type
+    assert record.provider_receipt_id == "receipt-fixture" and record.actual_usd is not None
+    with pytest.raises(StopRun):
+        call(dispatcher, model, logical_id="later-sample")
 
 
 @pytest.mark.parametrize("mutation", ["no_policy", "unverified_policy", "undated_policy", "no_policy_url", "no_rate",

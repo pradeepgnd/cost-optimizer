@@ -121,6 +121,19 @@ def test_measured_usage_is_recorded_and_used(run):
     assert len(analyst) == 2 * 3 * 2 + 1                       # 2 features × 3 candidates × 2 samples + 1 repair
 
 
+def test_two_model_validation_executes_only_ultra_lightning_pair(run):
+    req = RunRequest.model_validate(_req(run_id="two-model-validation").model_dump(mode="json") |
+                                    {"sampling_profile": "validation", "candidate_tiers": ["frontier", "mid_tier"]})
+    pack, inf, _, _ = run(req=req)
+    assert pack.candidate_tiers == ["frontier", "mid_tier"]
+    assert {entry.model_id for entry in pack.candidate_shortlist if entry.selected} == {FR, MID}
+    assert {sample.model_id for sample in pack.feature_runs if not sample.is_repair} == {FR, MID}
+    assert not any(call["role"] == "Analyst" and call["model"] == OS for call in inf.calls)
+    assert len([call for call in inf.calls if call["role"] == "Analyst"]) == 4
+    assert any(gap.field == "candidate_comparison:open_source" for gap in pack.evidence_gaps)
+    assert any("full comparison" in limitation for limitation in pack.limitations)
+
+
 def test_rubric_decides_and_model_stack_is_cheapest_qualified(run):
     pack, _, _, _ = run()
     by = {r.model_id: r.rubric for r in pack.feature_runs if not r.is_repair}
@@ -173,10 +186,12 @@ def test_prefix_move_is_recorded_not_executed(run):
     assert any("cacheable prefix" in q for q in pack.questions)
 
 
-def test_critic_on_candidate_route_stops_before_any_paid_call_when_another_exists(run):
-    pack, inf, _, _ = run(critic_model=FR)
-    assert pack.status == RunState.needs_input and inf.calls == []
-    assert "other/critic-route" in pack.questions[0]
+def test_explicit_critic_on_candidate_route_discloses_shared_identity(run):
+    pack, inf, events, _ = run(critic_model=FR)
+    assert pack.status == RunState.complete
+    assert [c["model"] for c in inf.calls if c["role"] == "Critic"] == [FR]
+    assert any(e["action"] == "critic_shares_candidate_route" for e in events)
+    assert any("not independent" in limitation for limitation in pack.limitations)
 
 
 def test_critic_shares_candidate_route_only_when_nothing_else_is_offered(run):
@@ -214,23 +229,23 @@ def _open2(score="99"):
 def _selected(pack):
     return {e.tier: e.model_id for e in pack.candidate_shortlist if e.selected}
 
-def test_higher_scored_open_model_does_not_displace_nemotron(run):
+def test_higher_scored_open_model_does_not_displace_required_route(run):
     inf = FakeNightshift(routes=CANDIDATES + [OPEN2, "other/critic-route"])
     pack, _, _, _ = run(inf, data=Data(extra=[_open2()]))
     assert _selected(pack)["open_source"] == OS
     other = next(e for e in pack.candidate_shortlist if e.model_id == OPEN2)
-    assert not other.selected and other.nightshift_route and "fixed to the required Nemotron route" in other.reason
+    assert not other.selected and other.nightshift_route and "fixed to the required route" in other.reason
     assert {r.model_id for r in pack.feature_runs} == set(CANDIDATES)
 
-def test_pinned_open_model_setting_is_the_nemotron_candidate(run):
+def test_pinned_open_model_setting_is_the_required_candidate(run):
     inf = FakeNightshift(routes=CANDIDATES + [OPEN2, "other/critic-route"], answers={FR: "ok", MID: "ok", OPEN2: "ok"})
     pack, _, _, _ = run(inf, data=Data(extra=[_open2("1")]), open_model=OPEN2)
     assert _selected(pack)["open_source"] == OPEN2
 
-def test_nemotron_route_missing_from_nightshift_stops_before_any_paid_call(run):
+def test_required_open_route_missing_from_nightshift_stops_before_any_paid_call(run):
     pack, inf, _, _ = run(FakeNightshift(routes=[FR, MID, "other/critic-route"]))
     assert pack.status == RunState.needs_input and inf.calls == []
-    assert any("Nemotron route" in l and "not offered by Nightshift" in l for l in pack.limitations)
+    assert any("Required open-model route" in l and "not offered by Nightshift" in l for l in pack.limitations)
 
 def test_a_model_that_is_not_a_nightshift_route_is_never_selected(run):
     top = {ALT: {"intelligence": SampleDataLayer().read_models()[1].intelligence.model_copy(update={"score": Decimal("99")})}}

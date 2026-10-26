@@ -90,6 +90,24 @@ def test_legacy_schema_cannot_bypass_validation():
         RunRequest.model_validate(data)
 
 
+@pytest.mark.parametrize("tiers,profile", [(["frontier", "mid_tier"], "production"),
+                                            (["frontier"], "validation"),
+                                            (["frontier", "frontier"], "validation"),
+                                            (["frontier", "unknown"], "validation")])
+def test_validation_candidate_subset_requires_two_unique_known_tiers(tiers, profile):
+    data = request_data()
+    data.update(candidate_tiers=tiers, sampling_profile=profile)
+    with pytest.raises(ValidationError):
+        RunRequest.model_validate(data)
+
+
+def test_validation_candidate_subset_survives_request_export():
+    data = request_data()
+    data.update(candidate_tiers=["frontier", "mid_tier"], sampling_profile="validation")
+    request = RunRequest.model_validate(data)
+    assert RunRequest.model_validate_json(request.model_dump_json()).candidate_tiers == ["frontier", "mid_tier"]
+
+
 def test_controls_survive_pack_export_and_threshold_reaches_tables(tmp_path, monkeypatch):
     data = request_data()
     data["brief"].update(monthly_ai_budget_usd="300.25", switch_threshold_usd="50.50")

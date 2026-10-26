@@ -5,7 +5,7 @@
 Loads .env and checks each live piece separately, continuing past failures:
   Zetaris     SELECT 1, then read_models row count
   Nightshift  GET /v1/models; with a positive --max-spend-usd and verified billing/token bounds,
-              one tiny completion each for the frontier, mid-tier and Nemotron routes
+              one tiny completion each for the frontier, mid-tier and required open-model routes
   H-MEM       the bridge self-test (node bridge.mjs --selftest)
 
 Prints a PASS / FAIL / SKIP table with a reason per check and saves the same table to logs/smoke-<timestamp>.md.
@@ -38,7 +38,7 @@ from app.contracts import ReadinessCheck, ReadinessResult  # noqa: E402
 from app.trace import Trace, _mask  # noqa: E402
 from app.dispatch import Budget, Checkpoints, Dispatcher, StopRun  # noqa: E402
 
-TIERS = (("frontier", "frontier"), ("mid_tier", "mid-tier"), ("open_source", "Nemotron"))
+TIERS = (("frontier", "frontier"), ("mid_tier", "mid-tier"), ("open_source", "open-source"))
 _SECRET_NAME = re.compile(r"(KEY|TOKEN|SECRET|PASSWORD)", re.I)
 
 rows: list[tuple[str, str, str, str]] = []
@@ -129,7 +129,7 @@ def check_nightshift(models, trace=None, *, allowance=Decimal("0"), checkpoints=
         raise ValueError("diagnostic allowance must be between 0 and 1 USD")
     try:
         from app.adapters.live_nightshift import NightshiftInference
-        ns = NightshiftInference(trace=trace)
+        ns = NightshiftInference(trace=trace, disable_thinking=True)
     except SetupIncomplete as e:
         record("Nightshift", "GET /v1/models", "SKIP", str(e))
         for _, label in TIERS:
@@ -198,8 +198,8 @@ def check_nightshift(models, trace=None, *, allowance=Decimal("0"), checkpoints=
             record("Nightshift", name, "FAIL", detail + "; invalid reasoning count or reasoning exceeds completion: confirm usage semantics")
         elif not isinstance(resolved, str) or not resolved.strip() or not isinstance(request_id, str) or not request_id.strip():
             record("Nightshift", name, "FAIL", detail + "; resolved identity and response request ID are required")
-        elif tier == "open_source" and (not re.search(r"(?:^|[/_.-])nemotron(?:$|[/_.-]|\d)", resolved, re.I) or resolved not in routes):
-            record("Nightshift", name, "FAIL", detail + "; Nemotron identity is not corroborated by explicit discovery and response; aliases need receipt verification")
+        elif tier == "open_source" and (resolved != route or resolved not in routes):
+            record("Nightshift", name, "FAIL", detail + "; required open-model identity is not corroborated by explicit discovery and response; aliases need receipt verification")
         else:
             record("Nightshift", name, "PASS", detail + f"; request ID {request_id}; diagnostic evidence only")
 
@@ -210,7 +210,7 @@ def check_hmem():
     from app.engines.hmem import bridge as b
     try:
         b.bridge_selftest()
-        record("H-MEM", "bridge self-test", "PASS", f"pinned revision {b.PIN.read_text().strip()}; JSON status ok; persistence not checked")
+        record("H-MEM", "bridge self-test", "PASS", f"pinned revision {b.PIN.read_text().strip()}; JSON status, persistence, isolation and audit ok")
     except SetupIncomplete as error:
         record("H-MEM", "bridge self-test", "SKIP", str(error))
     except (OSError, ValueError, subprocess.TimeoutExpired) as error:

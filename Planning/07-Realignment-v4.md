@@ -1,6 +1,6 @@
 # v4 Realignment: AI SaaS Cost Advisor
 
-Version 4.1 | October 25, 2026 | Owner: Narin | v4.1 applies Isioma's review (precision, reasoning tokens, critic authority, lever labels, self-host inputs) | **Authoritative.** Where this document conflicts with PRD/architecture/plan v3.4 or `06`, this document wins. Sections of v3.4 not contradicted here still apply: sponsor requirements, controller limits, trace format, sample mode rules, secrets, submission package.
+Version 4.2 | October 25, 2026 | Owner: Narin | v4.1 applies Isioma's review (precision, reasoning tokens, critic authority, lever labels, self-host inputs); v4.2 selects Gemma 4 31B Dense free for the open-model comparison while retaining NVIDIA Nemotron candidates | **Authoritative.** Where this document conflicts with PRD/architecture/plan v3.4 or `06`, this document wins. Sections of v3.4 not contradicted here still apply: sponsor requirements, controller limits, trace format, sample mode rules, secrets, submission package.
 
 ## 1. What changed and why
 
@@ -49,12 +49,14 @@ User volume remains the founder's estimate and is labeled that way. Tokens and q
 |---|---|---|
 | Frontier | Best general route available in Nightshift | Quality ceiling |
 | Mid-tier | A cheaper route from a frontier lab | The usual production choice |
-| **Open-source (hero)** | **NVIDIA Nemotron via Nightshift** | The "frontier vs open source" question; NVIDIA award feature |
+| **Open-source (hero)** | **Google Gemma 4 31B Dense free via Nightshift** | The "frontier vs open source" question; compare a second lab |
 | Self-hosted open-source (stretch) | Same open model on rented GPU, priced by hour | Break-even against API pricing at scale |
 
-Exact route IDs are pinned from Nightshift's `GET /v1/models` during setup. `meterless/auto` is not a candidate.
+Exact route IDs are pinned from Nightshift's `GET /v1/models` during setup. The current Gemma route is `openrouter/google/gemma-4-31b-it:free`; the NVIDIA Ultra and Lightning routes remain frontier and mid-tier. `meterless/auto` is not a candidate.
 
-**No model grades the comparison.** Every candidate, frontier included, is being compared, so pass/fail comes from deterministic rubric checks plus human review. The Critic only flags issues and proposes one corrective action. Where Nightshift exposes a route from a lab that is not a candidate, the Critic uses it; otherwise the trace discloses that the Critic shares a lab with a candidate. NVIDIA award eligibility comes from Nemotron handling a working feature with its model identity logged per request (Submission Requirements §4).
+Incremental `validation` runs may select two candidate tiers while testing the Nightshift path. The request and pack must name the selected tiers and mark the omitted tier as pending. The full founder comparison still requires all three candidates.
+
+**No model grades the comparison.** Every candidate, frontier included, is being compared, so pass/fail comes from deterministic rubric checks plus human review. The Critic only flags issues and proposes one corrective action. Where Nightshift exposes a route from a lab that is not a candidate, the Critic uses it; otherwise the trace discloses that the Critic shares a lab with a candidate. NVIDIA award eligibility comes from the Ultra or Lightning Nemotron candidate handling a working feature with its model identity logged per request (Submission Requirements §4).
 
 ## 5. Economics (two ledgers, never summed)
 
@@ -82,9 +84,9 @@ monthly[f,m,s]   = calls[f,s] × cost_call[f,m] × (1 + retry_rate)
 | Output cap | critic finds output longer than the rubric needs | measured re-run with the cap |
 | Long-context cliff | measured input above the provider threshold | **warning**: surcharge applies to the whole request |
 
-**Switch point:** the first stage at which moving a feature from frontier to mid or open-source is projected to cost at least the founder's threshold (default $100/month) less **and** the cheaper model passed every critical rubric check. Reported as: "From Traction (5,000 users), plan generation on Nemotron is projected to cost ~$X/month less; measured quality 5/6 checks vs 6/6 on frontier. Test on your own data before switching."
+**Switch point:** the first stage at which moving a feature from frontier to mid or open-source is projected to cost at least the founder's threshold (default $100/month) less **and** the cheaper model passed every critical rubric check. Reported as: "From Traction (5,000 users), plan generation on Gemma is projected to cost ~$X/month less; measured quality 5/6 checks vs 6/6 on frontier. Test on your own data before switching."
 
-**Self-host break-even (stretch, cut first):** needs three inputs, not one: GPU $/hour (Isioma, AWS), the pinned Nemotron variant's served throughput in tokens/second on that GPU (cited benchmark), and a utilization assumption. Without a cited throughput figure, this item is not shown.
+**Self-host break-even (stretch, cut first):** needs three inputs, not one: GPU $/hour (Isioma, AWS), the pinned Gemma variant's served throughput in tokens/second on that GPU (cited benchmark), and a utilization assumption. Without a cited throughput figure, this item is not shown.
 
 Unknown prices stay unknown. Revenue present → contribution and margin per stage; absent → cost-only.
 
@@ -106,7 +108,7 @@ The four build approaches and the rework multiplier from v3.4, unchanged. Shown 
 
 - **Agent behaviour:** retrieves missing evidence, runs tasks, critiques, one repair, stops within limits, remembers across runs.
 - **Measurement validity:** measured tokens come only from API `usage` fields; estimate-versus-measured gaps are reported, never hidden.
-- **Quality comparison:** each task has 3–5 deterministic rubric checks plus human review. Small samples, stated as such. No "Nemotron is as good as frontier" claim beyond the measured tasks.
+- **Quality comparison:** each task has 3–5 deterministic rubric checks plus human review. Small samples, stated as such. No cross-model quality claim beyond the measured tasks.
 - **Founder impact:** Narin runs his own ideas (self-evaluation, labeled as such), **plus one or two outside founders**, e.g. from the Outskill cohort, who run one idea each and record before/after decisions with consent. Negative results are kept.
 
 **Call budget (M04 clarification):** at most **30 total inference dispatches**, including Planner, candidates, Critic, the single repair and all transport retries; the approved spend cap stays at most $25. There is one logical Planner call, one logical Critic call and at most one logical repair; retries of these operations count toward both the total dispatch cap and the global limit of two retries. Reserve one repair slot and two retry slots before selecting the sample count. Four executable features can use two samples (`24 + 1 Planner + 1 Critic + 1 repair + 2 retries = 29`); five use one sample. The explicit `validation` profile always uses one sample per executable pair, while `production` uses two when these slots fit. Every paid attempt needs a cited route-specific prompt/output bound and verified billing rates; unknown bounds stop execution. Ambiguous dispatched outcomes are held and not replayed. Diagnostic completions use the same durable dispatcher with a separate explicit allowance (at most $1, default $0). Actual cost depends on the verified route tariffs and measured usage; estimates alone do not establish a spend bound.
@@ -117,8 +119,8 @@ The four build approaches and the rework multiplier from v3.4, unchanged. Shown 
 |---|---|
 | Zetaris | Data layer: price snapshots, intelligence index, founder ideas, measured runs (evaluation evidence). Every price the agent uses comes from a Zetaris query. |
 | Meterless H-MEM | The idea's memory: confirmed assumptions and earlier stage decisions, recalled on a re-run so the agent reports what changed as the SaaS matures. |
-| Meterless Nightshift | The router for every model call: frontier, mid and Nemotron all go through it, which is what makes side-by-side measurement possible. |
-| NVIDIA Nemotron | The open-source contender in every comparison; its measured cost and deterministic quality checks drive the switch points. |
+| Meterless Nightshift | The router for every model call: frontier, mid and Gemma all go through it, which is what makes side-by-side measurement possible. |
+| NVIDIA Nemotron | Ultra and Lightning remain candidates; a measured working feature with corroborated Nemotron identity supplies NVIDIA-specific evidence. |
 | Cursor | Used by Shrie for UI and Zetaris work, truthfully described. |
 
 ## 9. Hosting: why Zetaris runs locally, and what Vercel can and can't do
@@ -138,7 +140,7 @@ The four build approaches and the rework multiplier from v3.4, unchanged. Shown 
 | Member | Strength | v4 responsibility | Acceptance |
 |---|---|---|---|
 | **Narin** | Product, integration owner | Realignment in Claude Code (contracts, economics, controller); 2–3 founder ideas as example inputs; demo narration and story; submission | Sample mode produces a stage-cost pack for 3 ideas; video recorded; submission accepted |
-| **Pradeep** | Backend | Nightshift live adapter: route discovery, pin frontier/mid/Nemotron IDs, `usage` capture incl. reasoning tokens, model identity per request. H-MEM bridge (`bridge.mjs`, pinned revision, passing test) | One real request per candidate logged with resolved model; `test_hmem_engine.py` green |
+| **Pradeep** | Backend | Nightshift live adapter: route discovery, pin frontier/mid/open-model IDs, `usage` capture incl. reasoning tokens, model identity per request. H-MEM bridge (`bridge.mjs`, pinned revision, passing test) | One real request per candidate logged with resolved model; `test_hmem_engine.py` green |
 | **Meena** | Backend | Zetaris live adapter: source registration from S3, fixed query templates, read path for prices and ideas, writeback of measured runs. Monday clean-clone rehearsal | `SELECT 1` and real price rows through the app; rehearsal passes on a second machine |
 | **Shrie** | Front end, already running Zetaris | Streamlit UI: the founder form (modeled on the 180 Lift Hub layout), cost-evolution table and chart, switch points, evidence timeline. Candidate integration host, since Zetaris already runs there | Form → pack → views, live and sample, same core |
 | **Isioma** | AWS | S3 bucket and IAM for Zetaris registration (bucket credentials Zetaris-side only); price snapshots for the candidates (input, output, cache, batch, thresholds) plus intelligence index, dated and cited; AWS GPU hourly rates for the self-host break-even; optional hosted sample-mode demo | `data/README.md` lists every source with URL, date, licence; registration script works from S3 |
@@ -153,6 +155,6 @@ The four build approaches and the rework multiplier from v3.4, unchanged. Shown 
 | When | Exit evidence |
 |---|---|
 | Sun midday–evening | v4 sample mode working (Narin); price snapshots v1 (Isioma); Nightshift routes pinned (Pradeep); Zetaris `SELECT 1` body shared (Shrie/Meena) |
-| **Sun 6 p.m. gate** | One real Nemotron request through Nightshift; one real Zetaris price query; H-MEM save/restart/recall. If any fails: cut the self-host stretch, then the hosted demo, never sponsor proof |
+| **Sun 6 p.m. gate** | One real Nemotron request through Nightshift plus one real Gemma candidate request; one real Zetaris price query; H-MEM save/restart/recall. If any fails: cut the self-host stretch, then the hosted demo, never sponsor proof |
 | Mon | Live end-to-end on 3 ideas; UI wired; clean-clone rehearsal; video draft |
 | Tue by noon | Final recording, deck, public repo, submission |

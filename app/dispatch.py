@@ -260,6 +260,9 @@ class Dispatcher:
                 record.error_type = type(error).__name__
                 record.provider_request_id = getattr(error, "route_id", None) if isinstance(getattr(error, "route_id", None), str) else None
                 record.resolved_model = getattr(error, "resolved_model", None) if isinstance(getattr(error, "resolved_model", None), str) else None
+                record.provider_receipt_id = getattr(error, "receipt_id", None) if isinstance(getattr(error, "receipt_id", None), str) else None
+                record.provider = getattr(error, "provider", None) if isinstance(getattr(error, "provider", None), str) else None
+                record.provider_kind = getattr(error, "provider_kind", None) if isinstance(getattr(error, "provider_kind", None), str) else None
                 failure_usage = getattr(error, "usage", {})
                 record.usage = _mask(failure_usage) if isinstance(failure_usage, dict) else {}
                 self.ckpt.finish(self.run_id, record, self.budget)
@@ -276,6 +279,9 @@ class Dispatcher:
                 raise blocked(f"{role} operation {record.operation_id}: malformed potentially charged response; not retried", "unknown_outcome")
             record.resolved_model = result.get("resolved_model") if isinstance(result.get("resolved_model"), str) else None
             record.provider_request_id = result.get("route_id") if isinstance(result.get("route_id"), str) else None
+            record.provider_receipt_id = result.get("receipt_id") if isinstance(result.get("receipt_id"), str) else None
+            record.provider = result.get("provider") if isinstance(result.get("provider"), str) else None
+            record.provider_kind = result.get("provider_kind") if isinstance(result.get("provider_kind"), str) else None
             record.usage = _mask(result.get("usage")) if isinstance(result.get("usage"), dict) else {}
             usage = measured_usage(result.get("usage"))
             if usage is None or record.resolved_model != model:
@@ -299,6 +305,10 @@ class Dispatcher:
                         record.source_refs.append(rate.source)
                 record.state = "overrun" if (usage.input_tokens > bound or usage.output_tokens > max_tokens
                                               or record.actual_usd > reserved) else "completed"
+                if record.state == "completed" and result.get("requires_review") is True:
+                    record.state, record.error_type = "unknown", "RuntimeReviewRequired"
+                elif record.state == "completed" and result.get("finish_reason") not in (None, "stop"):
+                    record.state, record.error_type = "unknown", "NonStopFinish"
             self.ckpt.finish(self.run_id, record, self.budget, result)
             self._event(record)
             if record.state != "completed":
