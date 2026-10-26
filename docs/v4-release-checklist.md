@@ -206,7 +206,22 @@ data/localstack/openrouter/final-check-2/report.json
 data/localstack/openrouter/source-http-recovery-93d1e10c/report.json
 ```
 
-**Remaining acceptance:** active frontier/mid routes, applicable provider/variant tariffs and complete cache/batch/context/index source coverage, source usage-rights review and runtime token/reasoning billing bounds. M06 has demonstrated reference-price arithmetic, not a verified execution-tariff calculation. Actual measured-model evidence is repeated at M08. Real AWS/IAM, Windows and H-MEM remain unverified. These outstanding proofs prevent marking all of M05/M06 complete.
+### Real AWS S3 on a Windows host (October 26, 2026)
+
+Windows 11 + WSL2, Docker Desktop 4.91.0 (8 CPUs, 15.6 GiB), Python 3.13.14, local Zetaris (`verify.sh` 9/9). Full record: [aws-registration-check.json](aws-registration-check.json). Zero model completions.
+
+| Command/check | Environment | Expected | Actual | Status |
+|---|---|---|---|---|
+| `scripts\preflight_windows.ps1` with Zetaris and Nightshift | PowerShell 7, venv Python | Machine/connectivity checks pass | PREFLIGHT CHECKS PASS, 0 FAIL/WARN/SKIP/UNKNOWN | PASS |
+| `register_sources.py --storage data\source_examples\aws.oah.json --apply` | Bucket `cost-optimizer-oah-k7m2q`; read-only key in the publishing terminal | Publish, register, exact row checks | 9 objects published with S3 versions; 3 tables created (1 brief, 460 catalog, 3 models); no current pointer change | PASS |
+| Same command repeated | Same | Everything reused | 9/9 objects and 3/3 tables reused | PASS |
+| `check_zetaris_sources.py` typed reads | Zetaris API key only | SELECT 1, typed reads, catalog arithmetic | 4/4 pass; `nvidia/nemotron-3.5-lightning` 0.07 / 0.20 per 1M, `execution_tariff: false` | PASS |
+| Same with `--round-trip --storage aws.oah.json` | Read-only key in terminal | Write/readback, append, restart, duplicate | 5/5 pass; 1 S3 evidence object, 2 fixture rows in Zetaris; first attempt without the key failed before any write | PASS |
+| Per-bucket `fs.s3a` credentials in Zetaris `spark-defaults.conf` | Driver restarted | Table creation without a key | Ignored; driver fell through to the EC2 metadata endpoint. Reverted | FAIL, by design not used |
+
+The Zetaris reader is a dedicated IAM user with an inline policy only: `GetBucketLocation`, `ListBucket` on prefix `cost-optimizer/v4/` and `GetObject` on `cost-optimizer/v4/*`; the IAM policy simulator denied everything else checked. Zetaris reads S3 file stores only with a key in the table `OPTIONS`, so the publisher adds it from `ZETARIS_S3_*` in its own process; Zetaris's metadata API returns that secret masked. The bundle used the catalog-only route map; the team's route selection and execution tariffs are still pending.
+
+**Remaining acceptance:** active frontier/mid routes, applicable provider/variant tariffs and complete cache/batch/context/index source coverage, source usage-rights review and runtime token/reasoning billing bounds. M06 has demonstrated reference-price arithmetic, not a verified execution-tariff calculation. Actual measured-model evidence is repeated at M08. Real AWS S3 registration, evidence round trip and Windows execution now pass for the scope above; server-side sealed-source permissions remain unverified. These outstanding proofs prevent marking all of M05/M06 complete.
 
 Final checks on base `3132207` plus the working tree (Python 3.12.12): 72 focused source/adapter/ingestion tests passed; full suite 449 passed, 9 known skips; three guarded sample examples passed and were regenerated. The exact commands, source hashes and actual local reports are in [the portable source record](../m05-m06-source-checks.json). Sample manifest: `/private/var/folders/8m/69np3l210snb8twb3tb0d7mh0000gn/T/cost-optimizer-sample-check-ctr_0bk2/manifest.json`. Retained test/example artifacts: `/private/var/folders/8m/69np3l210snb8twb3tb0d7mh0000gn/T/cost-optimizer-m05-m06-final-idb5tw9c/regeneration-manifest.json`.
 
@@ -246,10 +261,10 @@ The repeatable $0 request also produced a `partial` pack at `/private/tmp/m08-ul
 | M00 | PASS, scoped as above | Baseline checks, retained sample manifest, reusable-code inventory |
 | M01 | PASS, scoped as above | 84 contract cases; 185 passing suite tests; sample examples regenerated |
 | M02 | PASS, scoped as above | 75 focused economics checks; 217 passing suite tests; calculator/sample artifacts |
-| M03 | PASS, scoped as above | 89 focused checks; 303 passing suite tests; required-skip and portable HTTP evidence; Windows execution unverified |
+| M03 | PASS, scoped as above | 89 focused checks; 303 passing suite tests; required-skip and portable HTTP evidence; Windows preflight executed on Oct 26 (PASS, see M05–M06) |
 | M04 | PASS, scoped as above | 67 dispatch tests; 183 focused / 377 full passing tests; synthetic receipts and restart/concurrency evidence |
-| M05 | PARTIAL; component PASS | Actual catalog retained/published/registered; execution tariff/route, source coverage and usage review pending |
-| M06 | PARTIAL; component PASS | Typed reads, reference calculation, real fixture round trip and HTTP outbox recovery pass; execution-tariff/measured-model proof pending |
+| M05 | PARTIAL; component PASS | Actual catalog retained/published/registered on LocalStack and real AWS S3; execution tariff/route, source coverage and usage review pending |
+| M06 | PARTIAL; component PASS | Typed reads, reference calculation, real fixture round trip (LocalStack and AWS) and HTTP outbox recovery pass; execution-tariff/measured-model proof pending |
 | M07 | PASS, local reference scope | Real engine restart/isolation/audit and offline delegation pass without skipping; M11 decision influence remains pending |
 | M08 | PARTIAL; prior Ultra/Lightning live receipts, current read-only gate and fixtures pass | Applicable tariffs, third candidate proof and bounded live pack pending; shared Critic disclosed |
 | M09 | pending | Validated planner tasks/rubrics and grounded flags-only critique |

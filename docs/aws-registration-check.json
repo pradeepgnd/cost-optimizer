@@ -1,0 +1,224 @@
+{
+  "checked_at": "2026-10-26",
+  "scope": "Real AWS S3 + local Zetaris source pipeline on a Windows 11 + WSL2 host; no model completions",
+  "repository_revision": "97f9853a29ab8095083e6138ad42ec18579fe2c8",
+  "host": {
+    "os": "Windows 11 Pro 26200, WSL 3.0.3, Docker Desktop 4.91.0 (8 CPUs, 15.6 GiB)",
+    "python": "3.13.14",
+    "zetaris_verify": "9/9",
+    "windows_preflight": "PREFLIGHT CHECKS PASS (0 FAIL, 0 WARN, 0 SKIP, 0 UNKNOWN)"
+  },
+  "storage": {
+    "backend": "aws",
+    "bucket": "cost-optimizer-oah-k7m2q",
+    "region": "us-east-1",
+    "prefix": "cost-optimizer/v4",
+    "bucket_controls": [
+      "Block Public Access (all four)",
+      "SSE-S3 (AES256)",
+      "versioning",
+      "BucketOwnerEnforced"
+    ],
+    "config": "data/source_examples/aws.oah.json"
+  },
+  "zetaris_reader_iam": {
+    "user": "zetaris-s3-reader",
+    "inline_policy_only": true,
+    "allows": [
+      "s3:GetBucketLocation on bucket",
+      "s3:ListBucket for prefix cost-optimizer/v4/",
+      "s3:GetObject on cost-optimizer/v4/*"
+    ],
+    "simulator_denied": [
+      "GetObject outside prefix",
+      "ListBucket at bucket root",
+      "PutObject/DeleteObject",
+      "other buckets"
+    ],
+    "credential_location": "table OPTIONS, from ZETARIS_S3_* in the publishing terminal only; metadata API returns the secret masked (36 of 40 chars)"
+  },
+  "spark_per_bucket_credentials": "not honoured by Zetaris file-store tables (driver fell through to the EC2 metadata endpoint); reverted",
+  "bundle": {
+    "snapshot_id": "4d0b880c6c3101a07601724f",
+    "catalog_snapshot": "df417cd3feb0a27bf202bd3e",
+    "route_map": "data/source_examples/routes.catalog-only.json (catalog-only fixture; team route selection pending)",
+    "counts": {
+      "briefs": 1,
+      "catalog": 460,
+      "models": 3
+    }
+  },
+  "registration": {
+    "status": "pass",
+    "current_pointer_updated": false,
+    "publications": [
+      {
+        "key": "cost-optimizer/v4/bundles/4d0b880c6c3101a07601724f/briefs.json",
+        "sha256": "b987effdfa96560199c249a0b17c0e635a146cd09e57f89b4b6e0098a9fec9a5",
+        "version_id": "DlkMrk5TZd90Yb29acy4TFDBOXIrtvcB",
+        "reused": false
+      },
+      {
+        "key": "cost-optimizer/v4/bundles/4d0b880c6c3101a07601724f/catalog.json",
+        "sha256": "785479c2954fb06367f8e90b89525ee98d5a493ccbd97ebe9f28c4b9dbee8ace",
+        "version_id": "zj6Vqbvf2e2OWLmM7DP4Ve_1CVGd79L2",
+        "reused": false
+      },
+      {
+        "key": "cost-optimizer/v4/bundles/4d0b880c6c3101a07601724f/models.json",
+        "sha256": "8202e39bbc99ddb05ed6d6fc1b9dac02501b3dca56c97b0856c75b9581132e42",
+        "version_id": "RGCvfvL_e2NhH3WvSchC73akPSlAvMDp",
+        "reused": false
+      },
+      {
+        "key": "cost-optimizer/v4/bundles/4d0b880c6c3101a07601724f/source_catalog/catalog.json",
+        "sha256": "574cc945459ce8549369a4f8596f6dc2daecc030931e0c82a1d4ff039502cabc",
+        "version_id": "dPIkxhovROFZqDunqZz2K9yYjUxRvnLG",
+        "reused": false
+      },
+      {
+        "key": "cost-optimizer/v4/bundles/4d0b880c6c3101a07601724f/source_catalog/manifest.json",
+        "sha256": "5ce3b5103885a7a039aac697be66b4c89f53c256402b02dbe7ab6b840447c053",
+        "version_id": "02zzPzaxQNZ0V8Q0vTgTL1EBGl3jG6zK",
+        "reused": false
+      },
+      {
+        "key": "cost-optimizer/v4/bundles/4d0b880c6c3101a07601724f/source_catalog/raw/page-001.json",
+        "sha256": "4924134cac8a9bc185c334ebe4a154c5e8fab7bd7a46a4ce2d8830a554d24570",
+        "version_id": "Eemna6E0uF2zXaxAFSWbfJoo9d6woWNV",
+        "reused": false
+      },
+      {
+        "key": "cost-optimizer/v4/bundles/4d0b880c6c3101a07601724f/source_catalog/rejected.json",
+        "sha256": "06033772308de163dc4d240c3d02861c9dcb3e66ce2291ea54ca451e7bda71cd",
+        "version_id": "E8RiEvEXeSL_QGbwiERYHc9WkNJ3DSR9",
+        "reused": false
+      },
+      {
+        "key": "cost-optimizer/v4/bundles/4d0b880c6c3101a07601724f/manifest.json",
+        "sha256": "141ed5a185dd7b69bc6664e0cb04f69ef76c7c199c7beb0adbeef30cfd296d77",
+        "version_id": "C2AhIfmU251GxTu3fIkeJq6S7Xo3knsq",
+        "reused": false
+      },
+      {
+        "key": "cost-optimizer/v4/releases/4d0b880c6c3101a07601724f.json",
+        "sha256": "ba247ab004621553f94d5fbc8fa43b3c69194ed259a8efaef7d800bf9ec865af",
+        "version_id": "qduDjGAPEkzR7cskLsP7TwAOOa2QjkF1",
+        "reused": false
+      }
+    ],
+    "tables": [
+      {
+        "kind": "briefs",
+        "table": "briefs_4d0b880c6c3101a07601724f",
+        "state": "created",
+        "rows": 1
+      },
+      {
+        "kind": "catalog",
+        "table": "catalog_4d0b880c6c3101a07601724f",
+        "state": "created",
+        "rows": 460
+      },
+      {
+        "kind": "models",
+        "table": "models_4d0b880c6c3101a07601724f",
+        "state": "created",
+        "rows": 3
+      }
+    ]
+  },
+  "repeat_registration": {
+    "status": "pass",
+    "publications_reused": 9,
+    "publications_total": 9,
+    "tables": [
+      {
+        "kind": "briefs",
+        "state": "reused"
+      },
+      {
+        "kind": "catalog",
+        "state": "reused"
+      },
+      {
+        "kind": "models",
+        "state": "reused"
+      }
+    ]
+  },
+  "typed_read_check": {
+    "status": "pass",
+    "model_completions": 0,
+    "checks": [
+      {
+        "check": "SELECT 1",
+        "status": "pass"
+      },
+      {
+        "check": "typed pinned model read",
+        "status": "pass"
+      },
+      {
+        "check": "typed founder brief read",
+        "status": "pass"
+      },
+      {
+        "check": "queried catalog reference arithmetic",
+        "status": "pass"
+      }
+    ],
+    "catalog_reference": {
+      "catalog_id": "nvidia/nemotron-3.5-lightning",
+      "input_usd_per_m": "0.07000000",
+      "output_usd_per_m": "0.2000000",
+      "execution_tariff": false
+    },
+    "catalog_source": {
+      "origin_url": "https://openrouter.ai/api/v1/models",
+      "verified_at": "2026-10-26T08:22:05+00:00",
+      "transport_ref": "zetaris://cost_optimizer_v4.catalog_4d0b880c6c3101a07601724f/nvidia/nemotron-3.5-lightning",
+      "content_sha256": "1c9cdf14c14dd009b5e1865f0d822810616705d1ac3ba0afc7fad27fed8b6db5"
+    }
+  },
+  "evidence_round_trip": {
+    "status": "pass",
+    "model_completions": 0,
+    "checks": [
+      {
+        "check": "SELECT 1",
+        "status": "pass"
+      },
+      {
+        "check": "typed pinned model read",
+        "status": "pass"
+      },
+      {
+        "check": "typed founder brief read",
+        "status": "pass"
+      },
+      {
+        "check": "queried catalog reference arithmetic",
+        "status": "pass"
+      },
+      {
+        "check": "fixture write/readback, append, restart and duplicate write",
+        "status": "pass"
+      }
+    ],
+    "record_id": "aws-roundtrip-001/integration-test",
+    "evidence_status": "unverified",
+    "transport_ref": "zetaris://cost_optimizer_v4.evidence_ef8604593635ad1339c1/aws-roundtrip-001/integration-test",
+    "real_measured_sample": false,
+    "s3_object": "cost-optimizer/v4/evidence/ef8604593635ad1339c1.json",
+    "zetaris_rows": 2
+  },
+  "first_round_trip_attempt": "failed with SetupIncomplete before any write (read-key variables not set); reported reason added in 97f9853",
+  "not_proved": [
+    "execution tariffs for actual routes",
+    "team route selection",
+    "measured model evidence (M08)",
+    "server-side sealed-source permissions",
+    "OpenRouter catalog redistribution rights (private bucket only)"
+  ]
+}
