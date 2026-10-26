@@ -41,5 +41,5 @@ def test_project_scope_cannot_escape_storage(tmp_path, monkeypatch):
 
 
 def test_bridge_selftest_with_node_network_blocked(monkeypatch):
-    monkeypatch.setenv("NODE_OPTIONS", f"--require={ROOT / 'scripts' / 'hmem_network_guard.cjs'}")
+    monkeypatch.setenv("NODE_OPTIONS", f'--require="{(ROOT / "scripts" / "hmem_network_guard.cjs").as_posix()}"')
     assert bridge_selftest()["status"] == "ok"
