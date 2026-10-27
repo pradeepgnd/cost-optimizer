@@ -58,3 +58,34 @@ def test_two_model_gate_excludes_open_route_from_dispatch_readiness(tmp_path, mo
     assert subset["selection_matches_current"]
     assert not next(row for row in subset["routes"] if row["role"] == "open_source")["required_for_run"]
     assert gate.check(bindings, bundle)["status"] == "incomplete"
+
+
+def test_gate_reads_bundle_passed_with_bundle_flag_when_bindings_live_elsewhere(tmp_path, monkeypatch):
+    # README layout: bindings in one folder, bundle in another. Without --bundle the gate must say it fell back.
+    monkeypatch.setattr(gate, "load_dotenv", lambda *args, **kwargs: None)
+    monkeypatch.setenv("ZETARIS_BINDINGS_FILE", "")
+    selected = json.loads((ROOT / "data/source_examples/routes.selected.json").read_text())
+    routes = [entry["route_id"] for entry in selected["routes"]]
+    snapshot_id = "b" * 24
+    bindings = tmp_path / "bindings.json"
+    bindings.write_text(json.dumps({"snapshot_id": snapshot_id}))
+    bundle = tmp_path / "openrouter" / "bundles" / snapshot_id
+    bundle.mkdir(parents=True)
+    (bundle / "manifest.json").write_text(json.dumps({"bundle_id": snapshot_id,
+                                                      "route_map": {**selected, "mapping_status": "discovery_observed"}}))
+    profiles = [SimpleNamespace(model_id=route, source=SimpleNamespace(status=SimpleNamespace(value="verified")),
+                                dispatch_policy=object()) for route in routes]
+    monkeypatch.setattr(gate, "ZetarisDataLayer", lambda: SimpleNamespace(read_models=lambda: profiles))
+    monkeypatch.setattr(gate, "NightshiftInference", lambda: SimpleNamespace(list_models=lambda: routes))
+    monkeypatch.setattr(gate, "request_bound", lambda *args: (None, Decimal("0"), None, None, None))
+    monkeypatch.setenv("METERLESS_MODEL", "nvidia/nemotron-3.5-lightning-30b-a3b")
+    monkeypatch.setenv("METERLESS_CRITIC_MODEL", "nvidia/nemotron-3-ultra-550b-a55b")
+
+    fallback = gate.check(bindings)
+    assert fallback["status"] == "incomplete"
+    assert fallback["mapping_status"] == "planned"
+    assert fallback["route_map_source"].startswith("committed_fallback")
+
+    with_bundle = gate.check(bindings, bundle)
+    assert with_bundle["status"] == "ready_for_bounded_dispatch"
+    assert with_bundle["route_map_source"] == "bundle_manifest"

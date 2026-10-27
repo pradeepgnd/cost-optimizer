@@ -623,16 +623,16 @@ def controls() -> tuple[str, bool]:
                         ["Sample (offline)", "Live"],
                         key="mode",
                         horizontal=True,
-                        label_visibility="collapsed",
                         on_change=start_new_run,
+                        label_visibility="collapsed",
                     )
                     example = st.selectbox(
                         "Start from example",
                         svc.list_examples(),
                         format_func=svc.example_label,
                         key="example",
-                        label_visibility="collapsed",
                         on_change=start_new_run,
+                        label_visibility="collapsed",
                     )
         with st.container(key="hero-copy-row"):
             copy_col, art_col = st.columns([4.5, 1], vertical_alignment="center", gap="small")
