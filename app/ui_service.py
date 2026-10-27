@@ -74,8 +74,20 @@ def candidate_options(sample: bool, bindings_path: str = "") -> dict[str, str]:
             for mid in sorted(ids, key=lambda mid: (mid not in measured, mid)) if not mid.startswith("meterless/")}
 
 
+EXAMPLE_LABELS = {
+    "example_1": "Idea A · Speech",
+    "example_2": "Idea B · Payments",
+    "example_3": "Idea 3 · Writing",
+}
+
+
 def list_examples() -> list[str]:
     return sorted(path.stem for path in EXAMPLES_DIR.glob("example_*.json"))
+
+
+def example_label(name: str) -> str:
+    """Sidebar name: idea, then one word. The file stem stays the request source."""
+    return EXAMPLE_LABELS.get(name, name)
 
 
 def load_template(name: str) -> dict:
