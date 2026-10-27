@@ -1,0 +1,186 @@
+{
+  "schema_version": "1.1",
+  "project_id": "proj-synthetic-text-only",
+  "run_id": "live-ex3-20261027T023748Z",
+  "brief": {
+    "brief_id": "brief-synthetic-text-only",
+    "brief_version": "1",
+    "product_concept": "SYNTHETIC EXAMPLE, not a real founder idea: a writing assistant that turns rough meeting notes into a clean summary with action items, and sends a weekly digest of open action items.",
+    "target_user": "Small-team project leads (synthetic persona)",
+    "features_v1": [
+      {
+        "feature_id": "F1",
+        "title": "Notes intake and storage",
+        "size_class": "S",
+        "compute_heavy": false
+      },
+      {
+        "feature_id": "F2",
+        "title": "Summary and action-item generation",
+        "size_class": "M",
+        "compute_heavy": false
+      },
+      {
+        "feature_id": "F3",
+        "title": "Weekly digest job",
+        "size_class": "M",
+        "compute_heavy": false
+      },
+      {
+        "feature_id": "F4",
+        "title": "Accounts and billing",
+        "size_class": "M",
+        "compute_heavy": false
+      }
+    ],
+    "constraints": {
+      "cash_budget_usd": "500",
+      "time_budget_weeks": "6",
+      "team_size": 1,
+      "technical_skill": "scripting",
+      "devops_capacity": "basic",
+      "status": "assumed"
+    },
+    "quality_needs": [
+      "Action items must come from the notes; no invented owners or dates"
+    ],
+    "alternatives_considered": [],
+    "usage": {
+      "active_users": null,
+      "status": "unknown",
+      "subscription_price_usd": "15",
+      "paying_fraction": "0.08",
+      "field_status": {
+        "subscription_price_usd": "assumed",
+        "paying_fraction": "assumed"
+      }
+    },
+    "ai_features": [
+      {
+        "feature_id": "summarize_notes",
+        "description": "Turn pasted meeting notes into a summary and a list of action items with owners",
+        "example_input": "Sync with design: Ana will finish the onboarding mockups by Thursday. Raj to check analytics events. Open question on pricing page copy, revisit next week.",
+        "mode": "interactive",
+        "modality": [
+          "text"
+        ],
+        "uses_per_user_month": "12",
+        "calls_per_use": "1",
+        "static_prefix_tokens": 1200,
+        "expected_output_words": 250,
+        "revenue_per_use": "0.08",
+        "rubric_checks": [
+          {
+            "check_id": "has_summary_and_actions",
+            "description": "JSON with a summary and a list of action items",
+            "kind": "required_json_fields",
+            "params": {
+              "fields": [
+                "summary",
+                "action_items"
+              ]
+            },
+            "critical": true
+          },
+          {
+            "check_id": "actions_from_notes",
+            "description": "every action item appears in the notes",
+            "kind": "human_review",
+            "critical": true
+          },
+          {
+            "check_id": "no_invented_owners",
+            "description": "no owner or date that is not in the notes",
+            "kind": "human_review",
+            "critical": true
+          },
+          {
+            "check_id": "concise",
+            "description": "summary at most 150 words",
+            "kind": "max_words",
+            "params": {
+              "limit": 150,
+              "json_field": "summary"
+            },
+            "critical": false
+          }
+        ],
+        "field_status": {
+          "uses_per_user_month": "assumed",
+          "calls_per_use": "assumed",
+          "static_prefix_tokens": "assumed",
+          "expected_output_words": "assumed",
+          "revenue_per_use": "assumed"
+        }
+      },
+      {
+        "feature_id": "weekly_digest",
+        "description": "Compile a weekly digest of open action items across a user's notes",
+        "example_input": "Open items: mockups (Ana, Thu), analytics events (Raj), pricing copy (unassigned).",
+        "mode": "background",
+        "modality": [
+          "text"
+        ],
+        "uses_per_user_month": "4",
+        "calls_per_use": "1",
+        "static_prefix_tokens": 800,
+        "expected_output_words": 300,
+        "rubric_checks": [
+          {
+            "check_id": "only_open_items",
+            "description": "lists only items still open",
+            "kind": "human_review",
+            "critical": true
+          },
+          {
+            "check_id": "grouped_by_owner",
+            "description": "items grouped by owner",
+            "kind": "human_review",
+            "critical": false
+          }
+        ],
+        "field_status": {
+          "uses_per_user_month": "assumed",
+          "calls_per_use": "assumed",
+          "static_prefix_tokens": "assumed",
+          "expected_output_words": "assumed"
+        }
+      }
+    ],
+    "monthly_ai_budget_usd": "40",
+    "switch_threshold_usd": "100",
+    "growth_stages": [
+      {
+        "name": "Prototype",
+        "active_users": 50,
+        "status": "assumed"
+      },
+      {
+        "name": "Launch",
+        "active_users": 500,
+        "status": "assumed"
+      },
+      {
+        "name": "Traction",
+        "active_users": 5000,
+        "status": "assumed"
+      },
+      {
+        "name": "Scale",
+        "active_users": 50000,
+        "status": "assumed"
+      }
+    ],
+    "field_status": {
+      "product_concept": "assumed",
+      "features_v1": "assumed",
+      "constraints": "assumed",
+      "ai_features": "assumed",
+      "growth_stages": "assumed",
+      "alternatives_considered": "unknown"
+    }
+  },
+  "evaluation_approved": true,
+  "max_spend_usd": "0.50",
+  "sample_mode": false
+}
