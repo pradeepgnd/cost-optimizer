@@ -824,7 +824,7 @@ def unverified_sponsor_readiness() -> ReadinessResult:
         ("zetaris_roundtrip", "Requires sourced reads and evidence write/readback (M06)."),
         ("hmem_persistence", "Requires pinned-engine restart, recall, isolation and audit (M07)."),
         ("nightshift_candidates", "Requires identified, usage-bearing candidate executions (M08)."),
-        ("nemotron_feature", "Requires a working feature with corroborated Nemotron identity (M08)."),
+        ("nemotron_roles", "Requires the Planner and Critic to run on Nemotron through Nightshift, with the resolved model identity logged per request (M08)."),
     )])
 
 
