@@ -17,7 +17,7 @@
 - pass/fail quality checks, flagged risks, and a full trace of every step.
 
 **How it works.**
-1. Recalls what earlier runs learned about this idea.
+1. Recalls your earlier inputs for this idea (budget, price, paying fraction) and fills any you left blank, labelled as recalled.
 2. Reads dated model prices from a data layer.
 3. Picks a frontier, a mid-tier and an open-source candidate model for each feature.
 4. With your approval and under a spend cap you set, runs your example inputs on the models it can measure.

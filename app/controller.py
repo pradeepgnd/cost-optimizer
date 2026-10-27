@@ -39,6 +39,9 @@ SAMPLES_PER_PAIR = 2                      # 07 §7 call budget; 1 when 2 would n
 CANDIDATE_TIERS = ("frontier", "mid_tier", "open_source")
 AUTO_ROUTE = "meterless/auto"             # a router alias, never a candidate or a Critic route
 MAX_DOMAIN_RISKS = 8
+# Founder inputs H-MEM carries between runs of one project: (field, sub-object of the brief or None for the brief itself).
+# A later run uses a remembered value only where its own brief leaves the field empty; the founder's current input wins.
+REMEMBERED_INPUTS = (("monthly_ai_budget_usd", None), ("subscription_price_usd", "usage"), ("paying_fraction", "usage"))
 CRITIC_FINDING_KINDS = {"unsupported_claim", "token_gap", "output_too_long"}
 VERDICT_KEYS = {"pass", "passed", "passes", "fail", "failed", "verdict", "score", "grade", "approved"}
 NOT_ADVICE = "Model-generated; not legal, medical or financial advice."
@@ -161,12 +164,14 @@ class Controller:
         runs: dict[tuple[str, str], FeatureRun] = {}
         repairs: list[FeatureRun] = []
         try:
-            # 0. Recall confirmed assumptions (H-MEM). Visible failure if the engine is not wired.
+            # 0. Recall founder inputs from earlier completed runs (H-MEM). Visible failure if the engine is not wired.
             try:
-                recalled = self.mem.recall(req.project_id, {"kind": "confirmed_constraint"})
+                recalled = self.mem.recall(req.project_id, {"kind": "founder_input"})
                 self.memory_ids = recalled.get("memory_ids", [])
                 self.trace.event("Analyst", "hmem_recall", memory_ids=self.memory_ids,
                                  output_summary=f"{len(self.memory_ids)} memories", extra={"engine_revision": recalled.get("engine_revision")})
+                brief = self._apply_recalled_inputs(brief, recalled.get("context", []))
+                pack.monthly_ai_budget_usd = brief.monthly_ai_budget_usd
             except SetupIncomplete as e:
                 self.trace.event("Analyst", "hmem_recall", status="error", output_summary=str(e))
                 self.limitations.append(f"H-MEM unavailable: {e}")
@@ -341,6 +346,11 @@ class Controller:
                 saved = self.mem.remember_confirmed(req.project_id, {"kind": "accepted_finding", "run_id": req.run_id,
                                                                      "model_stack": [e.model_dump(mode="json") for e in pack.model_stack]})
                 self.memory_ids += saved.get("memory_ids", [])
+                inputs = self._founder_inputs(req.brief)
+                if inputs:   # only what this run's own brief stated; recalled values keep their original memory
+                    saved = self.mem.remember_confirmed(req.project_id, {"kind": "founder_input", "run_id": req.run_id,
+                                                                         "inputs": inputs})
+                    self.memory_ids += saved.get("memory_ids", [])
             except SetupIncomplete as e:
                 self.trace.event("Analyst", "hmem_remember_confirmed", status="error", output_summary=str(e))
                 self.limitations.append(f"H-MEM save unavailable: {e}")
@@ -672,6 +682,53 @@ class Controller:
     def _devops_ok(required: str, capacity: str) -> bool:
         order = {"none": 0, "basic": 1, "full": 2}
         return order[required] <= order[capacity]
+
+    @staticmethod
+    def _founder_inputs(brief) -> dict:
+        """The remembered fields this brief states, with the evidence status the founder gave them."""
+        inputs = {}
+        for name, part in REMEMBERED_INPUTS:
+            holder = getattr(brief, part) if part else brief
+            value = getattr(holder, name)
+            if value is not None:
+                inputs[name] = {"value": str(value), "status": holder.field_status.get(name, EvidenceStatus.assumed).value}
+        return inputs
+
+    def _apply_recalled_inputs(self, brief, context: list[dict]):
+        """Fill fields this brief leaves empty from the newest remembered value. The status is kept, never upgraded."""
+        latest: dict[str, tuple[int, str, dict]] = {}
+        for item in context:
+            try:
+                memory = json.loads(item.get("text") or "")
+            except ValueError:
+                continue
+            if not isinstance(memory, dict) or not isinstance(memory.get("inputs"), dict):
+                continue
+            learned = (item.get("provenance") or {}).get("learnedAt") or 0
+            for name, entry in memory["inputs"].items():
+                if isinstance(entry, dict) and "value" in entry and learned >= latest.get(name, (-1,))[0]:
+                    latest[name] = (learned, str(memory.get("run_id", "an earlier run")), entry)
+        data, applied = brief.model_dump(mode="json"), []
+        for name, part in REMEMBERED_INPUTS:
+            holder = data.setdefault(part, {}) if part else data
+            if name not in latest or holder.get(name) is not None:
+                continue
+            _, run_id, entry = latest[name]
+            holder[name] = entry["value"]
+            holder.setdefault("field_status", {})[name] = entry.get("status", EvidenceStatus.assumed.value)
+            applied.append(f"{name} = {entry['value']} ({holder['field_status'][name]}, from run {run_id})")
+        if not applied:
+            return brief
+        try:
+            updated = type(brief).model_validate(data)
+        except ValueError as e:
+            self.limitations.append(f"Recalled founder inputs were not used: {e}")
+            return brief
+        self.trace.event("Analyst", "hmem_apply", execution_kind="rule_policy",
+                         output_summary=f"{len(applied)} recalled founder input(s) filled empty fields: " + "; ".join(applied))
+        self.limitations.append("Recalled from H-MEM because this brief left them empty: " + "; ".join(applied)
+                                + ". Enter a value to override.")
+        return updated
 
     @staticmethod
     def _constraint_status(constraints, name: str) -> EvidenceStatus:
