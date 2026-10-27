@@ -139,7 +139,7 @@ python -m pytest -q -rs
 python scripts/check_sample_examples.py
 ```
 
-The `npm ci` step needs Node 20+ and is required for the real H-MEM test. Expected: 595 passed and 8 skipped (the shelved retrospective), then three PASS lines.
+The `npm ci` step needs Node 20+ and is required for the real H-MEM test. Expected: 614 passed and 8 skipped (the shelved retrospective), then three PASS lines.
 
 Per step (`-rs` shows skips; a skipped H-MEM test means Step 7 is **not** confirmed):
 
@@ -240,7 +240,7 @@ v4 (`Planning/07-Realignment-v4.md`). The founder describes an AI SaaS idea and 
 
 ```
 Founder idea + AI features ─► Controller (allowlist by state, call caps, spend reservation, SQLite checkpoints)
-  1  Recall     H-MEM (Meterless)         earlier runs and confirmed assumptions for this idea
+  1  Recall     H-MEM (Meterless)         earlier founder inputs for this idea; fills blanks
   2  Retrieve   Analyst ◄─ Zetaris         dated prices (input, output, cache, batch, audio, long-context),
                                            intelligence scores, OpenRouter market reference
   3  Select     Controller ◄─ Nightshift   per feature, candidates from the Nightshift routes (GET /v1/models,
@@ -310,7 +310,7 @@ Hard limits per run: 1 logical Planner, 1 logical Critic, ≤1 logical repair, �
 | Sponsor | Role in this project | Proof |
 |---|---|---|
 | Zetaris | Data layer: price snapshots for every candidate (S3-backed sources) and writeback of measured runs | `app/adapters/live_zetaris.py`; trace `zetaris_query` events with query IDs |
-| Meterless H-MEM | The idea's memory: confirmed assumptions recalled at the start of a run; accepted model-stack decisions saved at the end | `app/engines/hmem/`; `tests/test_hmem_engine.py` |
+| Meterless H-MEM | The idea's memory: a completed run saves the founder's budget, price and paying fraction plus the accepted model stack; the next run of the same idea fills those fields if left blank (labelled with the source run, status kept, current input wins) | `app/engines/hmem/`; `tests/test_hmem_engine.py` |
 | Meterless Nightshift | The router for every model call: Planner, per-feature candidates and the Critic; requested and resolved model logged per request | `app/adapters/live_nightshift.py`; trace `nightshift_request` and `run_feature` events |
 | NVIDIA Nemotron | Planner and Critic run on Nemotron through Nightshift (`07` v4.3); candidates are not tied to a lab. Corroborated resolved identity per request is the NVIDIA evidence | Trace `select_candidates` (chosen routes) and `run_feature` events (`model` per request) |
 | Cursor | Used by Shrie for UI and Zetaris work | — |
@@ -326,7 +326,7 @@ The offline suite covers contracts, Decimal economics, durable dispatch, source 
 | Contracts, economics, dispatch, sources/Zetaris, controller, rubric checks, trace, CLI, sample adapters | implemented with known gaps; 595 tests pass, 8 shelved retrospective tests skipped |
 | Zetaris live adapter | typed pinned reads, preserved provenance, external ingestion/readback and durable outbox implemented; LocalStack component proof passes; applicable execution-tariff/model evidence remains pending |
 | Nightshift live adapter | The Planner (Lightning) and Critic (Ultra) calls go through the spend-checking Dispatcher on a free NVIDIA Developer Program key, and the model that actually answered is logged. Every request gets its own `meterless-scope`, because Nightshift's built-in memory otherwise injected earlier answers into similar prompts (found and fixed 26 October); reasoning text placed inside an answer is stripped. Clean live runs after the fix: `ui-20261026-170134` (Example 3) and `ui-20261026-172053` (Example 1); numbers from earlier runs, including R5, should not be quoted. Only Ultra and Lightning have verified execution profiles; other candidates are projected only. |
-| H-MEM bridge | M07 local reference PASS: pinned Node bridge, save/restart/recall/isolation/audit and blocked-network sample delegation (checks in the ledger). Decision influence remains open (R8). |
+| H-MEM bridge | M07 local reference PASS: pinned Node bridge, save/restart/recall/isolation/audit and blocked-network sample delegation (checks in the ledger). Recalled founder inputs now fill blank budget, price and paying fraction in a later run of the same idea (`tests/test_hmem_founder_inputs.py`); recall does not yet change model selection. |
 | Streamlit UI | trimmed first version (R10): form with modality, revenue and up to three candidate picks; live progress; cost by stage with monthly totals; measured versus estimated tokens; quality checks; risks; trace and export. Live runs from the UI pass. No recommended stack until human review exists; layout not reviewed in a browser |
 | Pricing snapshots | sample mode uses unverified placeholders; live mode reads a dated OpenRouter catalog reference (market reference only) plus verified $0 profiles for the two role routes |
 | Retrospective comparison script | shelved in v4 |

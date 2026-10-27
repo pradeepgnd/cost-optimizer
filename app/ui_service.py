@@ -201,7 +201,8 @@ def submit_run(request: dict, *, sample: bool, env_extra: dict | None = None, ti
     return {"result": result, "reused": False, "exit_code": process.returncode}
 
 
-STEP_LABELS = {"hmem_recall": "Recalling earlier runs (H-MEM)", "retrieve_evidence": "Reading evidence (Zetaris)",
+STEP_LABELS = {"hmem_recall": "Recalling earlier runs (H-MEM)", "hmem_apply": "Using recalled founder inputs (H-MEM)",
+               "retrieve_evidence": "Reading evidence (Zetaris)",
                "zetaris_query": "Zetaris query", "nightshift_models": "Listing Nightshift routes",
                "select_candidates": "Choosing candidate models", "candidates_projected_only": "Marking projected-only models",
                "estimate_tokens": "Estimating tokens", "domain_risk_review": "Planner reviewing risks",
