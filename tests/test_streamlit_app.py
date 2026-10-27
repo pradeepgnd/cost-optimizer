@@ -69,9 +69,11 @@ def test_live_shaped_pack_shows_market_costs_checks_and_critic_flags():
     (svc.UI_DIR / "ui-live-shape.result.json").write_text(json.dumps(pack))
     at = AppTest.from_file(str(ROOT / "streamlit_app.py"), default_timeout=120)
     at.session_state["run_id"] = "ui-live-shape"
+    at.session_state["mode"] = "Live (Nightshift + Zetaris)"
     at.run()
     assert not at.exception
     assert 'class="ca-sample"' not in _markdown_text(at)  # live packs may mention SAMPLE in limitations text
+    assert 'class="ca-live"' in _markdown_text(at)
     assert any("market reference price" in c.value for c in at.caption)
     assert "Recommendations locked until human review" in _markdown_text(at)
     frames = [df.value for df in at.dataframe]
@@ -84,6 +86,8 @@ def test_live_mode_shows_which_price_data_it_will_use_or_blocks_run(tmp_path, mo
     monkeypatch.delenv("ZETARIS_BINDINGS_FILE", raising=False)
     at = AppTest.from_file(str(ROOT / "streamlit_app.py"), default_timeout=120).run()
     at.radio(key="mode").set_value("Live (Nightshift + Zetaris)").run()
+    assert "LIVE" in _markdown_text(at) and "Nightshift runs the models" in _markdown_text(at)
+    assert 'class="ca-sample"' not in _markdown_text(at)
     assert any("Price data not found" in e.value for e in at.error)
     assert next(b for b in at.button if b.label == "Run").disabled
     bindings = tmp_path / "b.json"

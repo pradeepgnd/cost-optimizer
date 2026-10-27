@@ -97,7 +97,7 @@ section[data-testid="stSidebar"],
   margin-left: calc(50% - 50vw);
   margin-right: calc(50% - 50vw);
   margin-bottom: 1.5rem;
-  padding: 1.35rem var(--hero-pad) 0;
+  padding: 3.75rem var(--hero-pad) 0 !important;
   background: var(--dp-color-accent) !important;
   color: var(--dp-color-on-field);
   border-bottom-right-radius: clamp(80px, 11vw, 144px);
@@ -105,17 +105,60 @@ section[data-testid="stSidebar"],
   overflow: hidden;
   position: relative;
 }
-.st-key-hero-bar {
-  width: 100%;
-  justify-content: space-between !important;
-  align-items: center !important;
-  margin-bottom: 2.75rem;
-  gap: 1.25rem;
-}
 .ca-brand-hero {
-  font-size: 1.5rem; line-height: 1; font-weight: 900;
-  letter-spacing: -0.04em; margin: 0; color: #0A0A0A;
+  font-size: 1.5rem; line-height: 1.2; font-weight: 900;
+  letter-spacing: -0.04em; margin: 0 0 1.75rem; color: #0A0A0A;
 }
+.st-key-settings-row {
+  position: fixed !important;
+  top: 0.55rem;
+  right: 9.6rem;
+  z-index: 1000002;
+  width: fit-content !important;
+  margin: 0 !important;
+  background: transparent !important;
+  pointer-events: none;
+}
+/* While a run is going, Stop and the running icon sit left of Deploy. Keep the gear clear of them. */
+.stApp:has([data-testid="stStatusWidgetRunningIcon"]) .st-key-settings-row { right: 18.5rem; }
+.st-key-settings-row button,
+.st-key-settings-row button:hover,
+.st-key-settings-row button:focus,
+.st-key-settings-row button:focus-visible,
+.st-key-settings-row button div {
+  pointer-events: auto;
+  width: auto;
+  height: auto;
+  min-height: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+.st-key-settings-row button p {
+  color: #FFFFFF !important;
+  font-size: 1.15rem !important;
+  font-weight: 400 !important;
+  line-height: 1 !important;
+}
+.st-key-start {
+  margin: 0 0 1.5rem;
+  padding: 1.15rem 1.25rem 0.9rem;
+  border: 1px solid rgba(253, 224, 71, 0.7);
+  border-radius: var(--dp-radius-panel);
+  background: #111111;
+  box-shadow: 0 0 0 4px rgba(253, 224, 71, 0.12);
+}
+.ca-start { display: flex; align-items: flex-start; gap: 0.75rem; margin: 0 0 0.85rem; }
+.ca-start > b {
+  display: inline-grid; place-items: center; min-width: 2rem; height: 2rem; border-radius: var(--dp-radius-pill);
+  background: var(--dp-color-accent); color: #0A0A0A; font-weight: 800; font-size: 0.85rem;
+}
+.ca-start div { color: #FFFFFF; font-size: 1.2rem; font-weight: 700; letter-spacing: -0.03em; line-height: 1.15; }
+.ca-start small { display: block; margin-top: 0.25rem; color: #A3A3A3; font-size: 0.85rem; font-weight: 500; letter-spacing: 0; }
 .ca-display {
   font-size: clamp(2.6rem, 7vw, 5.4rem); line-height: 0.92; font-weight: 900;
   letter-spacing: -0.045em; color: #0A0A0A; max-width: 16ch; margin: 0 0 1.1rem;
@@ -149,7 +192,11 @@ section[data-testid="stSidebar"],
   background: transparent !important; border: none !important; box-shadow: none !important;
 }
 .st-key-rail [data-baseweb="select"] * { color: #D4D4D4 !important; }
-.ca-sample {
+.st-key-rail [data-testid="stWidgetLabel"] p {
+  color: #FDE047 !important; font-weight: 700; letter-spacing: 0.12em;
+  text-transform: uppercase; font-size: 0.72rem;
+}
+.ca-sample, .ca-live {
   margin: 0 0 1rem; padding: 1.15rem 1.35rem;
   background: var(--dp-glass); color: #D4D4D4;
   border: 1px solid rgba(253, 224, 71, 0.3); border-radius: var(--dp-radius-panel);
@@ -157,7 +204,7 @@ section[data-testid="stSidebar"],
   font-size: var(--dp-typography-caption); font-weight: 400;
   animation: ca-rise var(--dp-motion-enter) both;
 }
-.ca-sample b {
+.ca-sample b, .ca-live b {
   display: block; margin-bottom: 0.2rem; color: var(--dp-color-accent);
   font-size: var(--dp-typography-label); font-weight: 700; letter-spacing: 0.14em;
 }
@@ -389,35 +436,23 @@ def num(value):
 
 
 def banner(pack: dict | None, sample: bool):
-    if (pack or {}).get("execution_mode") == "sample" or (pack is None and sample):
-        st.markdown(
-            '<div class="ca-sample" role="status"><b>SAMPLE/OFFLINE</b>'
-            "<span>No network calls, no model executed. Tokens are estimated and nothing here is measured.</span></div>",
-            unsafe_allow_html=True,
+    """The selected mode, in the same card. A stored pack does not relabel the mode the founder just picked."""
+    if sample:
+        kind, title, text = "ca-sample", "SAMPLE/OFFLINE", (
+            "No network calls, no model executed. Tokens are estimated and nothing here is measured."
         )
+    else:
+        kind, title, text = "ca-live", "LIVE", (
+            "Nightshift runs the models and Zetaris supplies the prices. Spend stays inside the cap you approve, "
+            "and candidates without a verified rate are projected only."
+        )
+    st.markdown(f'<div class="{kind}" role="status"><b>{title}</b><span>{text}</span></div>', unsafe_allow_html=True)
 
 
 def controls() -> tuple[str, bool]:
-    """Yellow hero: wordmark, mode and example rail, then the cost promise."""
+    """Yellow hero, then the mode and idea choice the founder makes before the brief."""
     with st.container(key="hero"):
-        with st.container(key="hero-bar", horizontal=True, vertical_alignment="center"):
-            st.markdown('<div class="ca-brand-hero">Cost<span>.</span>Advisor</div>', unsafe_allow_html=True)
-            with st.container(key="rail"):
-                with st.container(horizontal=True, vertical_alignment="center", gap="small"):
-                    mode = st.radio(
-                        "Mode",
-                        ["Sample (offline)", "Live (Nightshift + Zetaris)"],
-                        key="mode",
-                        horizontal=True,
-                        label_visibility="collapsed",
-                    )
-                    example = st.selectbox(
-                        "Start from example",
-                        svc.list_examples(),
-                        format_func=svc.example_label,
-                        key="example",
-                        label_visibility="collapsed",
-                    )
+        st.markdown('<div class="ca-brand-hero">Cost<span>.</span>Advisor</div>', unsafe_allow_html=True)
         st.markdown(
             '<div class="ca-display">Know what your AI features cost as you grow.</div>'
             '<p class="ca-lede">Measured where a model ran, labeled estimated otherwise. '
@@ -425,30 +460,56 @@ def controls() -> tuple[str, bool]:
             unsafe_allow_html=True,
         )
         st.markdown(WAVE, unsafe_allow_html=True)
+    with st.container(key="start"):
+        st.markdown(
+            '<div class="ca-start"><b>01</b><div>Choose before you continue'
+            "<small>Pick a mode and an idea. The brief below follows this choice.</small></div></div>",
+            unsafe_allow_html=True,
+        )
+        with st.container(key="rail"):
+            with st.container(horizontal=True, vertical_alignment="bottom", gap="small"):
+                mode = st.radio(
+                    "Mode",
+                    ["Sample (offline)", "Live (Nightshift + Zetaris)"],
+                    key="mode",
+                    horizontal=True,
+                )
+                example = st.selectbox(
+                    "Idea",
+                    svc.list_examples(),
+                    format_func=svc.example_label,
+                    key="example",
+                )
     return example, mode.startswith("Sample")
 
 
 def price_data(sample: bool) -> str:
-    if sample:
-        return ""
-    st.caption("Live needs Zetaris, Nightshift and `.env`. Spend is capped by the approved limit below.")
-    with st.expander("Override price data file"):
-        override = st.text_input(
-            "Zetaris bindings file",
-            "",
-            key="bindings",
-            help="Leave empty to use ZETARIS_BINDINGS_FILE from .env.",
-        )
-    found = svc.find_bindings(override)
-    if found["ok"]:
-        counts = found["counts"]
-        st.success(
-            f"Price data: snapshot `{found['snapshot_id'][:8]}`, {counts.get('models', '?')} models, "
-            f"{counts.get('catalog', '?')} catalog rows (from {found['source']})"
-        )
-        return found["path"]
-    st.error("Price data not found: " + found["problem"] + (f" ({found['path']})" if found["path"] else ""))
-    return ""
+    """Gear in the header, beside Deploy. A missing file is still shown in Live, because Run stays off."""
+    with st.container(key="settings-row"):
+        with st.popover("⚙", help="Price data"):
+            st.markdown("**Price data**")
+            st.caption(
+                "Live reads prices from this file. Sample does not. "
+                "Leave the override empty to use ZETARIS_BINDINGS_FILE from `.env`."
+            )
+            override = st.text_input(
+                "Override price data file",
+                "",
+                key="bindings",
+                help="Leave empty to use ZETARIS_BINDINGS_FILE from .env.",
+            )
+            found = svc.find_bindings(override)
+            if found["ok"]:
+                counts = found["counts"]
+                st.success(
+                    f"Price data: snapshot `{found['snapshot_id'][:8]}`, {counts.get('models', '?')} models, "
+                    f"{counts.get('catalog', '?')} catalog rows (from {found['source']})"
+                )
+            else:
+                st.error("Price data not found: " + found["problem"] + (f" ({found['path']})" if found["path"] else ""))
+    if not sample and not found["ok"]:
+        st.error("Price data not found. Open the gear next to Deploy to choose a price file.")
+    return found["path"] if found["ok"] else ""
 
 
 def form(example: str, sample: bool, bindings: str):
@@ -542,6 +603,11 @@ def form(example: str, sample: bool, bindings: str):
             "Approve measured runs and cap what they may spend"
             if not sample
             else "Sample mode runs nothing measurable",
+        )
+        st.caption(
+            "This is the most this run may spend on model calls. It is separate from the monthly AI budget in the brief. "
+            "Live mode sends no model request until you tick approval, and it stops if the next call would pass this cap. "
+            "Sample mode sends nothing, so the cap is unused."
         )
         approved = st.checkbox(
             "I approve measured evaluation runs (live mode only; sample mode runs nothing)",
