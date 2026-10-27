@@ -24,10 +24,10 @@ Updated 2026-10-26. The step-by-step plan and findings table are in [08-v4-Imple
 | Nightshift memory isolation (unique scope per request) | PASS; Examples 1 and 3 re-measured | entries at the end |
 | R6 Task planning, grounded critique (was M09) | Not started | plan Step 9 |
 | R7 Review binding, effective repair (was M10) | Not started | plan Step 10 |
-| R8 Memory changes a later run (was M11) | Not started | plan Step 11 |
+| R8 Memory changes a later run (was M11) | PARTIAL: recalled founder inputs (budget, price, paying fraction) fill blank fields in a later run of the same idea; memory does not change model choice | R8 entry below |
 | R9 Stage totals, revenue, budget fit (was M12) | PASS, offline arithmetic and UI; recommended-stack totals stay unknown until R7 | R9 entry below |
 | R10 Streamlit workflow (was M13) | Trimmed version: live runs from the UI PASS, founder candidate picks, revenue inputs, totals and a live progress panel; no human-review controls (R7); layout not reviewed in a browser | R10 entries below |
-| R11 Release rehearsal (was M14) | Not started | plan Step 14 |
+| R11 Release rehearsal (was M14) | In progress: clean-clone rehearsal on a second machine PASS in sample mode; live re-registration on a clean clone, video and deck pending | R11 entry below |
 
 ## Open items and caveats before submission
 
@@ -37,7 +37,7 @@ Updated 2026-10-26. The step-by-step plan and findings table are in [08-v4-Imple
 - **Estimates versus measurements:** estimates include the brief's assumed production system prompt, which evaluation calls do not send; measured rows may understate an app that sends one (open modelling decision).
 - **Audio:** no audio-output route exists, and audio-input candidates have no audio conversion rate, so their cost is unknown.
 - **Sponsor readiness:** `scripts/smoke_live.py` passed on 2026-10-26 (R11a below) at diagnostic scope. Pack `readiness` still reads `not_verified`: billing and in-run evidence readback are separate dimensions, and this is not end-to-end sponsor proof. Re-run it on the final setup before submission.
-- **Local-only data:** the registered bundles, bindings, catalog copies and R5 artifacts are gitignored. A clean clone must re-collect and re-register sources (`collect_sources.py`, `prepare_source_bundle.py --include-discovered`, `register_sources.py`); this has not been rehearsed on a second machine.
+- **Local-only data:** the registered bundles, bindings, catalog copies and R5 artifacts are gitignored. A clean clone must re-collect and re-register sources (`collect_sources.py`, `prepare_source_bundle.py --include-discovered`, `register_sources.py`); a sample-mode clean clone was rehearsed on a second machine (R11 entry below); this live re-collect and re-register path was not.
 - **Free key:** the NVIDIA key is a free Developer Program key (prototyping only); its rate limits are unknown, and only Ultra and Lightning have verified profiles, so only they are measured; other candidates are projected only. Market-price totals are lower bounds.
 - **Quality:** one sample per pair and pending human-review checks mean no candidate qualifies yet and no quality claim is made.
 - **Required live settings:** thinking off for the Planner and Critic and for both Nemotron routes, a 150 s timeout, and a running evidence publisher (README settings table). Ultra still used 1,015 of 1,024 output tokens on one sample.
@@ -50,7 +50,7 @@ Updated 2026-10-26. The step-by-step plan and findings table are in [08-v4-Imple
 - [x] F04 Dated, cited source snapshots and repeatable registration
 - [x] F05 Shared-core founder UI in both modes (trimmed; no review controls; layout not reviewed in a browser)
 - [ ] F06 Validated representative tasks and rubrics from the planning workflow
-- [ ] F07 Confirmed and accepted memory changes a later run
+- [ ] F07 Confirmed and accepted memory changes a later run (partial: founder inputs fill blanks, R8; model choice unchanged)
 - [x] F08 Composed levers give valid totals; unknown prices preserved
 - [ ] F09 Repaired tokens and quality jointly drive the recommendation
 - [x] F10 Dispatch, spend limits and unknown-outcome recovery
@@ -59,7 +59,7 @@ Updated 2026-10-26. The step-by-step plan and findings table are in [08-v4-Imple
 - [ ] F13 Critic grounding and honest lab independence
 - [ ] F14 Human reviews bound to immutable outputs
 - [x] F15 Traces keep usage; required SKIPs cannot report readiness (Windows unverified)
-- [ ] F16 Documentation, clean-clone rehearsal, founder observations, release artifacts
+- [ ] F16 Documentation, clean-clone rehearsal, founder observations, release artifacts (clean clone PASS in sample mode on a second machine; live clean clone, founder observations and release artifacts open)
 - [x] F17 No candidate or tier hard-coded (optional curated tier hints and an optional override remain)
 
 ## M00 — Baseline and recovery inventory
@@ -496,4 +496,18 @@ Run `ui-20261026-172053` (UI, Live, Example 1, automatic candidates): `complete`
 ### Candidate tiers on run rows (2026-10-26, PASS)
 
 The controller records the tier each candidate was chosen for in each feature (curated, or derived by the rules) and uses it for run rows, actual-route stage rows and OpenRouter projection rows. Test: `tests/test_candidate_selection.py::test_derived_tiers_are_recorded_per_feature_for_the_run_rows`. Live check without approval (Example 1, 0 dispatches): Gemini 3.7 Flash frontier, MiMo v2.5 open-source, Ultra frontier, Lightning mid-tier, DeepSeek V4 Flash open-source. Sample checker PASS for Examples 1–3. Suite 595 passed, 8 skipped.
+
+## R8: memory carries founder inputs into a later run (2026-10-26, PARTIAL)
+
+Code: a completed run saves the budget, price per paying user and paying fraction its own brief stated, with each field's evidence status, as H-MEM kind `founder_input` (alongside the existing `accepted_finding`). The next run of the same project recalls them and fills only fields its brief leaves empty, using the newest value per field. The status is kept, never upgraded; the founder's current input wins; the fill is traced as `hmem_apply` and listed in `limitations` with the source run. Before this change the run saved `accepted_finding` but recalled `confirmed_constraint`, which nothing wrote, so a later run always recalled 0 memories.
+
+Evidence: `tests/test_hmem_founder_inputs.py` (real bridge, network blocked): run 2 with blank fields reproduces run 1's revenue per stage; a current value overrides memory; another project recalls nothing. Sample CLI check on `example_3`: with blank fields and run 1's memory, stage totals gain revenue, AI margin and budget fit (Scale `over` at a 40 USD budget); without memory they have none. The evidence-gap count is unchanged (38), because recalled values keep their original status. A headless drive of the Streamlit UI on `main` (`b9f92df`) showed the same result, the recalled note and the H-MEM trace step.
+
+Not done: memory does not change candidate selection or the model stack, and accepted findings are saved but not read back into a decision.
+
+## R11: clean-clone rehearsal on a second machine (2026-10-26, PASS in sample mode)
+
+The team cloned the repository on a second machine and followed only the README's sample-mode steps. Reported as done by the team; the machine, OS, Python version and test output were not recorded here, and no artifacts from that machine are retained.
+
+Not rehearsed on the second machine: live mode (re-collecting and re-registering sources, Zetaris, Nightshift and the evidence publisher) and Windows. Video and deck are still open.
 
