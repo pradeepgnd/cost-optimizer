@@ -1,28 +1,29 @@
-# Cool ledger light: paper/ink atmosphere, teal accent, Sora + Source Sans 3.
-# Tokens match docs/design.md. Figures (USD, tokens) use IBM Plex Mono via CSS in streamlit_app.py.
+# Bauhaus flat planes: off-white ground, ink, red/blue/yellow fields.
+# Face: Host Grotesk (Google Fonts) stands in for "Bauhaus Host" — see docs/design.md.
+# Tokens: docs/design.md §3. Motion interactions are 0s (instant).
 [theme]
 base = "light"
-primaryColor = "#0F6B5C"
-backgroundColor = "#EEF1F5"
-secondaryBackgroundColor = "#F8FAFC"
-textColor = "#12151A"
-linkColor = "#0F6B5C"
-font = "Source Sans 3:https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600;700&display=swap"
-headingFont = "Sora:https://fonts.googleapis.com/css2?family=Sora:wght@600;700&display=swap"
-headingFontWeights = [700, 700, 600, 600, 600, 600]
-baseRadius = "10px"
-buttonRadius = "10px"
-borderColor = "#C9D1DB"
-dataframeBorderColor = "#C9D1DB"
-dataframeHeaderBackgroundColor = "#F8FAFC"
+primaryColor = "#ff0000"
+backgroundColor = "#f5f4ee"
+secondaryBackgroundColor = "#e8e8e8"
+textColor = "#000000"
+linkColor = "#0000ff"
+font = "Host Grotesk:https://fonts.googleapis.com/css2?family=Host+Grotesk:wght@400;450;500;650;700;750;800&display=swap"
+headingFont = "Host Grotesk:https://fonts.googleapis.com/css2?family=Host+Grotesk:wght@650;700;750;800&display=swap"
+headingFontWeights = [800, 800, 750, 650, 650, 650]
+baseRadius = "none"
+buttonRadius = "none"
+borderColor = "#000000"
+dataframeBorderColor = "#000000"
+dataframeHeaderBackgroundColor = "#ffff00"
 showWidgetBorder = true
-greenColor = "#0F6B5C"
-blueColor = "#1F4E79"
-redColor = "#9B1C1C"
-orangeColor = "#8A5A00"
-chartCategoricalColors = ["#0F6B5C", "#1F4E79", "#6B5B3E", "#5A6570", "#0F6B5C", "#1F4E79"]
+greenColor = "#0000ff"
+blueColor = "#0000ff"
+redColor = "#ff0000"
+orangeColor = "#ffff00"
+chartCategoricalColors = ["#ff0000", "#0000ff", "#ffff00", "#000000", "#ff0000", "#0000ff"]
 
 [theme.sidebar]
-backgroundColor = "#F8FAFC"
-secondaryBackgroundColor = "#EEF1F5"
-borderColor = "#C9D1DB"
+backgroundColor = "#e8e8e8"
+secondaryBackgroundColor = "#f5f4ee"
+borderColor = "#000000"

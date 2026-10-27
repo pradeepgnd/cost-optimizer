@@ -3,6 +3,8 @@
 Design system for the Streamlit DecisionPack UI (`streamlit_app.py` + `app/ui_service.py`).  
 Stack stays Streamlit; all business rules stay in `run.py` / the controller. This doc is the visual and IA source of truth for redesign on branch `shrie-UI-ideas`.
 
+**Direction note (Oct 2026):** the shipped visual system is **Bauhaus** (flat off-white / black / red / blue / yellow). It supersedes the earlier “cool ledger light” teal proposal on this branch; Brief → Run → Results IA is unchanged.
+
 Related: Project plan notes (store) · README Streamlit UI · `Planning/07-Realignment-v4.md`
 
 ---
@@ -65,54 +67,49 @@ Trust chrome (quiet, persistent): mode · snapshot id · spend used/cap · statu
 ## 3. Visual system
 
 ### Direction
-**Cool ledger light** — paper/ink atmosphere with a soft grid or radial wash. Product imagery = stage cost curves and the Planner→Analyst→Critic strip. Not flat white, not neon cyber-dark, not purple-on-white, not cream+terracotta+serif, not broadsheet density.
+**Bauhaus** — flat planes of off-white, black, red, blue, yellow; heavy black seams; square corners; no gradients, glow, soft shadow, or glass. Rare circular primary actions use a hard black offset shadow. Yellow heading blocks, blue secondary actions, red primary CTA. Unequal sidebar/main split where Streamlit allows. Product imagery remains stage cost curves and the Planner→Analyst→Critic strip.
 
 ### Color tokens
 
 | Token | Value | Use |
 |---|---|---|
-| `--bg` | `#EEF1F5` | Page atmosphere |
-| `--surface` | `#F8FAFC` | Interactive surfaces only |
-| `--ink` | `#12151A` | Primary text |
-| `--muted` | `#5A6570` | Captions, secondary |
-| `--line` | `#C9D1DB` | Hairline rules / editor chrome |
-| `--accent` | `#0F6B5C` | Primary actions, active step |
-| `--accent-soft` | `#D5EDE8` | Selected tab / soft fill |
-| `--warn` | `#8A5A00` | SAMPLE/OFFLINE, lower-bound notes |
-| `--danger` | `#9B1C1C` | Stop / failed (text + icon, not color alone) |
-| `--chart-1..4` | `#0F6B5C`, `#1F4E79`, `#6B5B3E`, `#5A6570` | Altair series (colorblind-safer) |
+| `--dp-color-ground` | `#f5f4ee` | Page ground |
+| `--dp-color-ink` | `#000000` | Text, seams, rules |
+| `--dp-color-accent` | `#ff0000` | Primary CTA, brand dot |
+| `--dp-color-field` | `#0000ff` | Active phase, selected tab, secondary buttons |
+| `--dp-color-field-support` | `#ffff00` | Heading blocks, SAMPLE banner, done phase |
+| `--dp-color-quiet` | `#e8e8e8` | Sidebar, quiet panels |
+| `--dp-color-on-field` | `#ffffff` | Text on red/blue fields |
+| Charts | `#ff0000`, `#0000ff`, `#ffff00`, `#000000` | Altair series |
 
-Contrast target: body text ≥ 4.5:1 on `--bg` / `--surface` ([Colorable](https://colorable.jxnblk.com/), [Contrast](https://usecontrast.com/) — see §6).
+Contrast: black on ground/yellow ≥ 4.5:1; white on red/blue for field labels. Do not encode status by color alone (keep text labels).
 
 ### Typography
 
-| Role | Face | Notes |
+| Role | Face / size / weight | Notes |
 |---|---|---|
-| Display / brand | **Sora** 600–700 | Hero brand + section titles; not Inter/Roboto/system |
-| Body | **Source Sans 3** 400–600 | Forms, captions, tables |
-| Figures | **IBM Plex Mono** 500 | USD, tokens, run IDs |
+| Face | **Bauhaus Host**, then **Host Grotesk**, then `sans-serif` | Host Grotesk (Google Fonts) is the loaded web stand-in when Bauhaus Host is unavailable |
+| Display | 800 | Brand + section titles (compact, heavy) |
+| Action | 750 | Buttons |
+| Label | 650 · 15px | Steps, tabs, SAMPLE |
+| Reading | 450 · 17–18px · leading 1.5 | Body copy |
+| Caption | 14px | Trust chrome, hints |
 
-Streamlit: set via `.streamlit/config.toml` `font` / `headingFont` Google Fonts URLs (same pattern as today’s Manrope load).
+Streamlit loads Host Grotesk via `.streamlit/config.toml` + `@import` in `STYLE`.
 
-### Spacing & radius
-- Page max width ~1120–1280px; top padding modest (brand first, not a tall black slab).  
-- Vertical rhythm: 8 / 16 / 24 / 40.  
-- Radius: **8–12px** on interactive controls. Avoid `full`/pill chrome for tabs and buttons.  
-- Section titles: number + title + one hint line (keep current step pattern; restyle markers).
-
-### Motion (exactly three)
-1. Run phases light in sequence (Planner → Analyst → Critic).  
-2. Stage cost line draws left→right when Results open.  
-3. SAMPLE/OFFLINE banner settles once.  
-
-Respect `prefers-reduced-motion` (skip 1–2; keep final semantic state). No ambient glow, particles, or looping neon.
+### Spacing, radius, border, motion
+- Gutter: `clamp(22px, 4.45cqi, 72px)`.
+- Radius: **0** (square); primary Run uses **50%** circle only.
+- Rules: **4px** seams / **3px** compact.
+- Motion: `--dp-motion-interaction: 0s` (instant). Respect `prefers-reduced-motion` (no transform on hover). No ambient animation.
 
 ### Component rules
-- **Default: no cards.** No bordered “metric cards,” no hero media cards, no decorative `st.container(border=True)` around static copy.  
-- **Cards/borders only** for interaction: feature `data_editor`, spend approval block, primary **Run**.  
-- **Tabs:** underline or soft rectangular selected state — not pill capsules.  
-- **Icons:** SVG (Lucide/Heroicons), never emoji-as-icon.  
-- **Charts:** Altair line+point; stages in growth order; tooltip shows USD + measured/estimated basis.
+- **Default: no soft cards.** Heavy black borders only on interactive surfaces: feature editor, spend block, Run.
+- **Tabs:** square selected blue field — not pills.
+- **SAMPLE banner:** yellow field + 4px black rule.
+- **Primary Run:** red circle, 4px black border, hard `6px 6px 0` black offset shadow.
+- **Secondary (New run):** blue square field.
+- **Charts:** Altair line+point; stages in growth order; Bauhaus chart colors.
 
 ---
 
@@ -121,12 +118,12 @@ Respect `prefers-reduced-motion` (skip 1–2; keep final semantic state). No amb
 | Concern | Do |
 |---|---|
 | Boundary | UI builds `RunRequest` → `ui_service.submit_run` → `run.py`. No economics/dispatch in the front end. |
-| Theme | Replace lime/dark tokens in `.streamlit/config.toml`; restyle `STYLE` in `streamlit_app.py`. |
-| Hero | Brand name largest; one sentence; **no** capability pill row; **no** glow eyebrow. CTA = form + Run. |
+| Theme | Bauhaus tokens in `.streamlit/config.toml` + `STYLE` CSS variables (`--dp-*`). |
+| Hero | Brand name largest; one sentence; black seam under hero; CTA = form + circular red Run. |
 | Progress | Primary UI = three-phase timeline from `progress_rows` / trace `agent_name`; raw table under expander. |
 | Results | Open on totals + one feature chart; demote four `st.metric` tiles to one status line. |
 | Labels | Founder language on tabs: *Cost by stage* · *Will it pass checks?* · *What we still don’t know* · *Show your work*. |
-| Mode | SAMPLE/OFFLINE banner uses `--warn`; live never displays secret values from `.env`. |
+| Mode | SAMPLE/OFFLINE banner is yellow field + black rule; live never displays secret values from `.env`. |
 | Persistence | One run ID → one stored result under `data/ui/` (unchanged). |
 | Tests | Keep `tests/test_streamlit_app.py` + `tests/test_ui_service.py` green after CSS/copy changes. |
 | Restart | After theme/module edits, restart Streamlit (cached imports). |
@@ -158,9 +155,9 @@ Use when validating or extending tokens — cite the category, pick one tool:
 
 ---
 
-## 6. Checklist vs current lime-on-black UI
+## 6. Checklist vs prior themes
 
-Current baseline (`.streamlit/config.toml` + `STYLE`): near-black `#050505`, lime `#8cff2e`, Manrope, pill tabs, glow eyebrow, capability pills, metric cards, bordered step containers.
+Prior on this branch: cool ledger teal/light, then lime-on-black. Target now: Bauhaus flat planes.
 
 | Target | Current | Redesign |
 |---|---|---|
