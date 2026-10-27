@@ -10,6 +10,7 @@ import re
 import subprocess
 import sys
 import time
+from decimal import Decimal
 from pathlib import Path
 
 from pydantic import ValidationError
@@ -256,6 +257,168 @@ def stop_reason(result: dict) -> str:
         if event.get("status") in ("error", "needs_input", "denied", "partial", "failed") and event.get("output_summary") and event.get("action") != "complete":
             reasons.append(f"{event.get('agent_name')} {event.get('action')}: {event['output_summary']}")
     return "; ".join(dict.fromkeys(reasons))[:600]
+
+
+def _money(value):
+    if value is None or value == "":
+        return None
+    try:
+        return Decimal(str(value))
+    except Exception:
+        return None
+
+
+def _model_tiers(pack: dict) -> dict[str, str]:
+    """Route id to tier, from the shortlist, the feature runs, and the cost rows (including OpenRouter ids)."""
+    tiers = {}
+    for entry in pack.get("candidate_shortlist") or []:
+        if entry.get("tier"):
+            tiers.setdefault(entry["model_id"], entry["tier"])
+    for run in pack.get("feature_runs") or []:
+        if run.get("tier") and not run.get("is_repair"):
+            tiers[run["model_id"]] = run["tier"]
+    for table in (pack.get("stage_tables") or []) + (pack.get("openrouter_projection_tables") or []):
+        for row in table.get("rows") or []:
+            if row.get("tier"):
+                tiers[row["model_id"]] = row["tier"]
+    return tiers
+
+
+def _price_scope(totals: list[dict]) -> str:
+    if any(row.get("pricing_scope") != "actual_route" for row in totals):
+        return "openrouter_listed_token_scenario"
+    return "actual_route"
+
+
+def _token_basis(pack: dict, scope: str, model_id: str) -> str:
+    tables = pack.get("openrouter_projection_tables") if scope != "actual_route" else pack.get("stage_tables")
+    bases = {row.get("token_basis") for table in tables or [] for row in table.get("rows") or []
+             if row.get("model_id") == model_id and row.get("token_basis")}
+    if bases == {"measured"}:
+        return "measured"
+    if bases == {"estimated"}:
+        return "estimated"
+    if len(bases) > 1:
+        return "mixed"
+    return "unknown"
+
+
+def _quality_note(pack: dict, model_id: str) -> str:
+    bare = model_id.removeprefix("openrouter/")
+    stack = [entry for entry in pack.get("model_stack") or [] if entry.get("model_id") in {model_id, bare}]
+    qualified = sorted({entry["feature_id"] for entry in stack if entry.get("status") == "recommended"})
+    if qualified:
+        return f"Quality-qualified for {', '.join(qualified)}, where every critical check passed."
+    statuses = {entry.get("status") for entry in pack.get("model_stack") or []}
+    if statuses and statuses <= {"requires_live_run"}:
+        return "Quality was not measured. A live run is required before a model is quality-qualified."
+    return "Not quality-qualified yet. Critical checks, including human review, have not all passed."
+
+
+def _coverage(row: dict) -> int:
+    return sum(value is not None for value in (row.get("feature_costs") or {}).values())
+
+
+def _choose_among(rows: list[dict], stages: list[str], budget, rank) -> dict | None:
+    """Furthest stage where a total still fits the budget, then the best model there by rank.
+    With no budget, the best model at the largest stage."""
+    by_stage: dict[str, list[dict]] = {}
+    for row in rows:
+        if row.get("monthly_usd") is not None:
+            by_stage.setdefault(row["stage"], []).append(row)
+    if not by_stage:
+        return None
+    if budget is not None:
+        for stage in reversed(stages):
+            fitting = [row for row in by_stage.get(stage, []) if row.get("budget_fit") == "within"]
+            if fitting:
+                return min(fitting, key=rank)
+    for stage in reversed(stages):
+        if by_stage.get(stage):
+            return min(by_stage[stage], key=rank)
+    return None
+
+
+def _choose_tier_model(rows: list[dict], stages: list[str], budget) -> dict | None:
+    """A model priced for every feature wins. Otherwise the one priced for the most features,
+    so a tier is still named when some features have no price."""
+    by_cost = lambda row: (Decimal(str(row["monthly_usd"])), row["model_id"])
+    complete = [row for row in rows if row.get("complete")]
+    chosen = _choose_among(complete, stages, budget, by_cost)
+    if chosen is not None:
+        return chosen
+    partial = [row for row in rows if not row.get("complete") and _coverage(row)]
+    return _choose_among(partial, stages, budget, lambda row: (-_coverage(row), *by_cost(row)))
+
+
+def _tier_reason(row: dict, label: str, budget_text, basis: str, quality: str) -> str:
+    name = row["model_id"].removeprefix("openrouter/")
+    fit = row.get("budget_fit")
+    where = f"{row['stage']} ({row['active_users']} users), ${row['monthly_usd']}/month"
+    if budget_text in (None, ""):
+        lead = (f"{name} is the cheapest {label} model at your largest stage, {where}. "
+                "No monthly AI budget was set.")
+    elif fit == "within":
+        lead = (f"{name} is the cheapest {label} model that still fits your ${budget_text}/month budget "
+                f"at the furthest such stage, {where}.")
+    elif fit == "over":
+        lead = (f"{name} is the cheapest {label} model at {where}. "
+                f"It is over your ${budget_text}/month budget, and no {label} model in this run fits.")
+    else:
+        lead = (f"{name} is the cheapest {label} model at {where}. "
+                "The total is a lower bound, so whether it fits the budget is unknown.")
+    if not row.get("complete") and row.get("note"):
+        note = str(row["note"]).rstrip(".")
+        lead += " " + note[0].upper() + note[1:] + "."
+    tokens = {"measured": "Token counts are measured.",
+              "estimated": "Token counts are estimated.",
+              "mixed": "Some token counts are measured and some are estimated."}.get(basis, "")
+    return " ".join(part for part in (lead, tokens, quality) if part)
+
+
+def tier_recommendations(pack: dict) -> list[dict]:
+    """One frontier model and one open-source model from the models already costed in this run.
+
+    The pick is a cost fit for the budget and growth stages the founder entered. It uses the same
+    single-model stage totals as the cost view. A model priced for every feature is preferred; if none
+    is, the model priced for the most features is named and the unpriced features are listed.
+    Quality qualification is reported from the model stack and is not decided here.
+    """
+    totals = pack.get("stage_totals") or []
+    singles = [row for row in totals if row.get("scenario") == "single_model"]
+    if not singles:
+        return []
+    scope = _price_scope(totals)
+    rows = [row for row in singles if row.get("pricing_scope") == scope]
+    tiers = _model_tiers(pack)
+    stages, seen = [], set()
+    for row in sorted(rows, key=lambda item: (item.get("active_users") or 0, item.get("stage") or "")):
+        if row.get("stage") not in seen:
+            seen.add(row["stage"])
+            stages.append(row["stage"])
+    budget_text = pack.get("monthly_ai_budget_usd")
+    budget = _money(budget_text)
+    picks = []
+    for tier, label in (("frontier", "frontier"), ("open_source", "open-source")):
+        def tier_of(model_id):
+            if model_id in tiers:
+                return tiers[model_id]
+            return tiers.get(str(model_id).removeprefix("openrouter/"))
+
+        chosen = _choose_tier_model([row for row in rows if tier_of(row.get("model_id")) == tier], stages, budget)
+        if chosen is None:
+            compared = any(tier_name == tier for tier_name in tiers.values())
+            reason = (f"No {label} model was priced for every feature, so none is picked." if compared
+                      else f"No {label} model was compared in this run.")
+            picks.append({"tier": tier, "model_id": None, "monthly_usd": None, "stage": None,
+                          "active_users": None, "token_basis": None, "budget_fit": None, "reason": reason})
+            continue
+        basis = _token_basis(pack, scope, chosen["model_id"])
+        picks.append({"tier": tier, "model_id": chosen["model_id"], "monthly_usd": chosen["monthly_usd"],
+                      "stage": chosen["stage"], "active_users": chosen["active_users"], "token_basis": basis,
+                      "budget_fit": chosen.get("budget_fit"),
+                      "reason": _tier_reason(chosen, label, budget_text, basis, _quality_note(pack, chosen["model_id"]))})
+    return picks
 
 
 def outbox_hint(result: dict) -> str:
