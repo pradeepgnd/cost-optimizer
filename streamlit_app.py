@@ -5,7 +5,9 @@
 The UI holds no business rules. It builds a RunRequest, hands it to `run.py` through app/ui_service.py, and renders the
 serialized DecisionPack. A run ID owns one stored result: rerenders and double clicks load it and never start a second run.
 
-Visual system and IA: docs/design.md (Bauhaus; Brief → Run → Results).
+Visual system: .superdesign/design-system.md and
+.superdesign/drafts/cost-advisor-hyper-saturated-fluid.html (Hyper-Saturated Fluid).
+Information architecture stays Brief → Run → Results.
 """
 from __future__ import annotations
 
@@ -23,238 +25,324 @@ st.set_page_config(page_title="Cost.Advisor", layout="wide")
 if not os.getenv("COST_ADVISOR_NO_DOTENV"):
     load_dotenv()   # the same settings run.py reads; values are never displayed
 
-# Bauhaus tokens (docs/design.md). Face stack: "Bauhaus Host", "Host Grotesk", sans-serif —
-# Host Grotesk is the loaded Google Font stand-in when Bauhaus Host is unavailable.
+# Hyper-Saturated Fluid tokens. Palette is Cyber Yellow, Deep Onyx, Charcoal,
+# Deep Gray, and white. Inter is the face. Glass panels and pills replace the
+# previous flat Bauhaus seams.
 STYLE = """
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Host+Grotesk:wght@400;450;500;650;700;750;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
 :root {
-  --dp-color-ground: #f5f4ee;
-  --dp-color-ink: #000000;
-  --dp-color-accent: #ff0000;
-  --dp-color-field: #0000ff;
-  --dp-color-field-support: #ffff00;
-  --dp-color-quiet: #e8e8e8;
-  --dp-color-on-field: #ffffff;
-  --dp-typography-face: "Bauhaus Host", "Host Grotesk", sans-serif;
-  --dp-typography-body: 18px;
-  --dp-typography-reading: 17px;
-  --dp-typography-label: 15px;
-  --dp-typography-caption: 14px;
-  --dp-typography-weight-display: 800;
-  --dp-typography-weight-action: 750;
-  --dp-typography-weight-label: 650;
-  --dp-typography-weight-reading: 450;
+  --dp-color-ground: #0A0A0A;
+  --dp-color-ink: #FFFFFF;
+  --dp-color-accent: #FDE047;
+  --dp-color-field: #171717;
+  --dp-color-field-support: #262626;
+  --dp-color-quiet: #171717;
+  --dp-color-on-field: #0A0A0A;
+  --dp-color-muted: #A3A3A3;
+  --dp-typography-face: "Inter", sans-serif;
+  --dp-typography-mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --dp-typography-body: 16px;
+  --dp-typography-reading: 16px;
+  --dp-typography-label: 12px;
+  --dp-typography-caption: 13px;
+  --dp-typography-weight-display: 900;
+  --dp-typography-weight-action: 700;
+  --dp-typography-weight-label: 700;
+  --dp-typography-weight-reading: 400;
   --dp-typography-reading-leading: 1.5;
   --dp-spacing-gutter: clamp(22px, 4.45cqi, 72px);
-  --dp-radius-square: 0;
-  --dp-radius-circle: 50%;
-  --dp-border-rule: 4px;
-  --dp-border-compact: 3px;
-  --dp-motion-interaction: 0s;
+  --dp-radius-panel: 32px;
+  --dp-radius-control: 16px;
+  --dp-radius-pill: 999px;
+  --dp-glass: rgba(255, 255, 255, 0.03);
+  --dp-glass-line: rgba(255, 255, 255, 0.2);
+  --dp-motion-enter: 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+  --dp-motion-press: 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
-html, body, [class*="css"], .stApp {
+html, body, .stApp {
   font-family: var(--dp-typography-face);
   font-size: var(--dp-typography-body);
   font-weight: var(--dp-typography-weight-reading);
   color: var(--dp-color-ink);
   background: var(--dp-color-ground) !important;
+  -webkit-font-smoothing: antialiased;
 }
-.stApp { background: var(--dp-color-ground) !important; }
-h1, h2, h3, .ca-brand-hero, .ca-brand, .ca-step div, .ca-phase strong {
+.stApp { background: var(--dp-color-ground) !important; overflow-x: hidden; }
+header[data-testid="stHeader"] { background: #0A0A0A !important; }
+h1, h2, h3, .ca-step div, .ca-phase strong {
   font-family: var(--dp-typography-face);
-  font-weight: var(--dp-typography-weight-display);
+  font-weight: 800;
   letter-spacing: -0.03em;
   color: var(--dp-color-ink);
 }
-.ca-mono, code, pre { font-family: var(--dp-typography-face) !important; font-weight: 650; }
+.ca-mono, code, pre { font-family: var(--dp-typography-mono) !important; font-weight: 500; }
+code { background: #262626 !important; color: var(--dp-color-accent) !important; border-radius: 8px; }
 .block-container {
-  padding-top: 1.5rem;
+  padding-top: 0.75rem;
   padding-left: var(--dp-spacing-gutter);
   padding-right: var(--dp-spacing-gutter);
-  max-width: 1180px;
+  max-width: 1280px;
 }
-section[data-testid="stSidebar"] {
-  background: var(--dp-color-quiet) !important;
-  border-right: var(--dp-border-rule) solid var(--dp-color-ink) !important;
-  min-width: 15rem !important;
-  max-width: 18rem !important;
+section[data-testid="stSidebar"],
+[data-testid="stSidebarCollapsedControl"] { display: none !important; }
+@keyframes ca-rise {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: none; }
 }
-section[data-testid="stSidebar"] > div { background: var(--dp-color-quiet) !important; }
-.ca-hero {
-  position: relative; overflow: hidden;
-  padding: 1.5rem 0 1.25rem; margin-bottom: 1rem;
-  background: var(--dp-color-ground);
-  border-bottom: var(--dp-border-rule) solid var(--dp-color-ink);
-  border-radius: var(--dp-radius-square);
+.st-key-hero {
+  --hero-pad: max(22px, calc(50vw - 640px));
+  width: 100vw;
+  box-sizing: border-box;
+  margin-left: calc(50% - 50vw);
+  margin-right: calc(50% - 50vw);
+  margin-bottom: 1.5rem;
+  padding: 1.35rem var(--hero-pad) 0;
+  background: var(--dp-color-accent) !important;
+  color: var(--dp-color-on-field);
+  border-bottom-right-radius: clamp(80px, 11vw, 144px);
+  border-bottom-left-radius: clamp(32px, 4vw, 56px);
+  overflow: hidden;
+  position: relative;
+}
+.st-key-hero-bar {
+  width: 100%;
+  justify-content: space-between !important;
+  align-items: center !important;
+  margin-bottom: 2.75rem;
+  gap: 1.25rem;
 }
 .ca-brand-hero {
-  font-size: clamp(2.4rem, 5vw, 3.6rem); line-height: 1; font-weight: var(--dp-typography-weight-display);
-  margin: 0 0 .65rem; color: var(--dp-color-ink);
+  font-size: 1.5rem; line-height: 1; font-weight: 900;
+  letter-spacing: -0.04em; margin: 0; color: #0A0A0A;
 }
-.ca-brand-hero span { color: var(--dp-color-accent); }
-.ca-hero p {
-  color: var(--dp-color-ink); font-size: var(--dp-typography-reading);
-  font-weight: var(--dp-typography-weight-reading); line-height: var(--dp-typography-reading-leading);
-  max-width: 52ch; margin: 0;
+.ca-display {
+  font-size: clamp(2.6rem, 7vw, 5.4rem); line-height: 0.92; font-weight: 900;
+  letter-spacing: -0.045em; color: #0A0A0A; max-width: 16ch; margin: 0 0 1.1rem;
 }
+.ca-lede {
+  color: #0A0A0A; font-size: clamp(1.05rem, 2vw, 1.45rem); font-weight: 500;
+  line-height: 1.45; max-width: 38rem; margin: 0 0 0.5rem; opacity: 0.9;
+}
+.ca-wave {
+  display: block; width: calc(100% + 2 * var(--hero-pad)); max-width: none;
+  height: clamp(64px, 9vw, 128px); margin-left: calc(-1 * var(--hero-pad)); margin-bottom: -1px;
+}
+.st-key-rail {
+  background: #0A0A0A;
+  border-radius: var(--dp-radius-pill);
+  padding: 0.35rem 0.85rem 0.35rem 0.35rem;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.28);
+}
+.st-key-rail [data-testid="stRadio"] [role="radiogroup"] {
+  display: flex; gap: 0.2rem; background: #171717; border-radius: var(--dp-radius-pill); padding: 0.2rem;
+}
+.st-key-rail [data-testid="stRadio"] [role="radiogroup"] > label {
+  border-radius: var(--dp-radius-pill); padding: 0.4rem 0.85rem; margin: 0; cursor: pointer; color: #A3A3A3;
+}
+.st-key-rail [data-testid="stRadio"] [data-baseweb="radio"] { display: none !important; }
+.st-key-rail [data-testid="stRadio"] [role="radiogroup"] > label:has(input:checked) {
+  background: #FDE047; color: #0A0A0A; font-weight: 600;
+}
+.st-key-rail [data-testid="stRadio"] [role="radiogroup"] > label:has(input:checked) * { color: #0A0A0A !important; }
+.st-key-rail [data-baseweb="select"] > div {
+  background: transparent !important; border: none !important; box-shadow: none !important;
+}
+.st-key-rail [data-baseweb="select"] * { color: #D4D4D4 !important; }
 .ca-sample {
-  margin: 0 0 1rem; padding: .75rem 1rem;
-  background: var(--dp-color-field-support); color: var(--dp-color-ink);
-  border: var(--dp-border-rule) solid var(--dp-color-ink); border-radius: var(--dp-radius-square);
-  font-size: var(--dp-typography-label); font-weight: var(--dp-typography-weight-label);
-  transition: none; animation: none;
+  margin: 0 0 1rem; padding: 1.15rem 1.35rem;
+  background: var(--dp-glass); color: #D4D4D4;
+  border: 1px solid rgba(253, 224, 71, 0.3); border-radius: var(--dp-radius-panel);
+  backdrop-filter: blur(24px); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  font-size: var(--dp-typography-caption); font-weight: 400;
+  animation: ca-rise var(--dp-motion-enter) both;
 }
-.ca-step { display: flex; align-items: stretch; gap: 0; margin: .25rem 0 1rem; border: var(--dp-border-rule) solid var(--dp-color-ink); }
+.ca-sample b {
+  display: block; margin-bottom: 0.2rem; color: var(--dp-color-accent);
+  font-size: var(--dp-typography-label); font-weight: 700; letter-spacing: 0.14em;
+}
+.ca-step { display: flex; align-items: flex-start; gap: 0.75rem; margin: 0 0 1rem; border: none; background: transparent; }
 .ca-step b {
-  display: inline-grid; place-items: center; min-width: 2.75rem; padding: .55rem .4rem;
-  background: var(--dp-color-field-support); color: var(--dp-color-ink);
-  border-right: var(--dp-border-rule) solid var(--dp-color-ink); border-radius: var(--dp-radius-square);
-  font-weight: var(--dp-typography-weight-display); font-size: var(--dp-typography-label);
+  display: inline-grid; place-items: center; width: 2rem; height: 2rem; min-width: 2rem; padding: 0;
+  background: rgba(255, 255, 255, 0.1); color: #FFFFFF;
+  border: none; border-radius: var(--dp-radius-pill);
+  font-weight: 700; font-size: 0.85rem;
 }
 .ca-step div {
-  flex: 1; padding: .55rem .85rem; background: var(--dp-color-field-support);
-  font-size: 1.15rem; font-weight: var(--dp-typography-weight-display); line-height: 1.15;
+  flex: 1; padding: 0.15rem 0 0; background: transparent; color: #FFFFFF;
+  font-size: 1.45rem; font-weight: 700; line-height: 1.15; letter-spacing: -0.03em;
 }
 .ca-step small {
-  display: block; margin-top: .2rem; color: var(--dp-color-ink);
-  font-size: var(--dp-typography-caption); font-weight: var(--dp-typography-weight-reading);
-  letter-spacing: 0; line-height: var(--dp-typography-reading-leading);
+  display: block; margin-top: 0.25rem; color: var(--dp-color-muted);
+  font-size: var(--dp-typography-caption); font-weight: 400; letter-spacing: 0; line-height: 1.4;
 }
-.ca-brand {
-  font-size: 1.15rem; font-weight: var(--dp-typography-weight-display);
-  margin-bottom: .4rem; color: var(--dp-color-ink);
-}
-.ca-brand span { color: var(--dp-color-accent); }
 .ca-status {
-  margin: 0 0 1rem; padding: .65rem .85rem;
-  background: var(--dp-color-quiet); color: var(--dp-color-ink);
-  border: var(--dp-border-compact) solid var(--dp-color-ink); border-radius: var(--dp-radius-square);
-  font-size: var(--dp-typography-label); font-weight: var(--dp-typography-weight-reading);
+  display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0 0 1rem; padding: 0.45rem;
+  background: #171717; color: #D4D4D4;
+  border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 1rem;
+  font-family: var(--dp-typography-mono); font-size: 0.72rem; font-weight: 500;
+  letter-spacing: 0.06em; text-transform: uppercase;
 }
-.ca-status b { font-weight: var(--dp-typography-weight-label); }
-.ca-trust { font-size: var(--dp-typography-caption); color: var(--dp-color-ink); margin: .25rem 0 .75rem; }
+.ca-status .ca-pill {
+  padding: 0.3rem 0.75rem; border-radius: var(--dp-radius-pill); background: rgba(255, 255, 255, 0.06);
+}
+.ca-status b { font-weight: 700; color: #FFFFFF; }
+.ca-trust {
+  font-family: var(--dp-typography-mono); font-size: 0.75rem; letter-spacing: 0.04em;
+  color: #737373; margin: 0.35rem 0 0.85rem;
+}
 .ca-pipeline {
-  display: grid; grid-template-columns: repeat(3, 1fr); gap: 0;
-  margin: .5rem 0 1rem; border: var(--dp-border-rule) solid var(--dp-color-ink);
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem;
+  margin: 0.5rem 0 1rem; padding: 0.5rem;
+  background: var(--dp-glass); border: 1px solid var(--dp-glass-line); border-radius: var(--dp-radius-panel);
+  backdrop-filter: blur(24px); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
 }
 .ca-phase {
-  padding: .85rem 1rem; background: var(--dp-color-quiet); border-radius: var(--dp-radius-square);
-  border-right: var(--dp-border-compact) solid var(--dp-color-ink);
-  transition: none; animation: none;
+  padding: 0.9rem 1rem; background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 1rem; color: #FFFFFF;
 }
-.ca-phase:last-child { border-right: none; }
-.ca-phase[data-state="pending"] { opacity: .45; }
-.ca-phase[data-state="active"] { background: var(--dp-color-field); color: var(--dp-color-on-field); }
+.ca-phase:last-child { border-right: 1px solid rgba(255, 255, 255, 0.08); }
+.ca-phase[data-state="pending"] { opacity: 0.45; }
+.ca-phase[data-state="active"],
+.ca-phase[data-state="done"] {
+  background: rgba(253, 224, 71, 0.1); border-color: rgba(253, 224, 71, 0.22);
+}
 .ca-phase[data-state="active"] strong,
-.ca-phase[data-state="active"] span,
-.ca-phase[data-state="active"] em { color: var(--dp-color-on-field); }
-.ca-phase[data-state="done"] { background: var(--dp-color-field-support); }
+.ca-phase[data-state="done"] strong { color: var(--dp-color-accent); }
 .ca-phase strong {
-  display: block; font-size: var(--dp-typography-label);
-  font-weight: var(--dp-typography-weight-display); margin-bottom: .25rem;
+  display: block; font-size: 0.9rem; font-weight: 700; margin-bottom: 0.25rem; color: #FFFFFF;
 }
-.ca-phase span {
-  display: block; font-size: var(--dp-typography-caption);
-  font-weight: var(--dp-typography-weight-reading); line-height: 1.35;
+.ca-phase span, .ca-phase em {
+  display: block; font-size: var(--dp-typography-caption); font-weight: 400;
+  line-height: 1.35; color: var(--dp-color-muted);
 }
-.ca-phase em {
-  display: block; margin-top: .45rem; font-style: normal;
-  font-size: var(--dp-typography-caption); font-weight: var(--dp-typography-weight-label);
-}
+.ca-phase em { margin-top: 0.4rem; font-style: normal; font-weight: 600; color: #E5E5E5; }
 .ca-locked {
-  margin: .75rem 0; padding: .75rem 1rem;
-  border: var(--dp-border-compact) solid var(--dp-color-ink); border-radius: var(--dp-radius-square);
-  background: var(--dp-color-quiet); color: var(--dp-color-ink);
-  font-size: var(--dp-typography-reading); font-weight: var(--dp-typography-weight-reading);
+  margin: 0.75rem 0; padding: 0.85rem 1rem;
+  border: 1px solid rgba(253, 224, 71, 0.3); border-radius: 0.75rem;
+  background: rgba(253, 224, 71, 0.1); color: var(--dp-color-accent);
+  font-size: var(--dp-typography-reading); font-weight: 500;
 }
-.ca-chart-wrap { animation: none; }
 div[data-testid="stVerticalBlockBorderWrapper"] {
-  border-radius: var(--dp-radius-square) !important;
-  background: var(--dp-color-quiet) !important;
-  border: var(--dp-border-rule) solid var(--dp-color-ink) !important;
+  border-radius: var(--dp-radius-panel) !important;
+  background: var(--dp-glass) !important;
+  border: 1px solid var(--dp-glass-line) !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(24px);
+  animation: ca-rise var(--dp-motion-enter) both;
 }
 div[data-testid="stTabs"] [role="tablist"] {
-  gap: 0; padding: 0; border-radius: 0; background: transparent;
-  border: none; border-bottom: var(--dp-border-rule) solid var(--dp-color-ink);
+  gap: 0.4rem; padding: 0.4rem; border-radius: var(--dp-radius-panel) var(--dp-radius-panel) 0 0;
+  background: transparent; border: none; border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   width: 100%; margin-bottom: 1rem;
 }
 div[data-testid="stTab"] {
-  border-radius: var(--dp-radius-square); padding: .55rem 1rem;
-  background: var(--dp-color-quiet); border: var(--dp-border-compact) solid var(--dp-color-ink);
-  border-bottom: none; margin-right: -3px; transition: none;
+  border-radius: 0.75rem; padding: 0.55rem 1.1rem; background: transparent; border: none; transition: background 0.2s ease;
 }
-div[data-testid="stTab"]:hover { background: var(--dp-color-field-support); }
-div[data-testid="stTab"][aria-selected="true"] {
-  background: var(--dp-color-field); border-color: var(--dp-color-ink);
-}
+div[data-testid="stTab"] p { color: #A3A3A3 !important; font-weight: 500; }
+div[data-testid="stTab"]:hover { background: rgba(255, 255, 255, 0.05); }
+div[data-testid="stTab"]:hover p { color: #FFFFFF !important; }
+div[data-testid="stTab"][aria-selected="true"] { background: var(--dp-color-accent); border: none; }
 div[data-testid="stTab"][aria-selected="true"] p {
-  color: var(--dp-color-on-field) !important; font-weight: var(--dp-typography-weight-label);
+  color: #0A0A0A !important; font-weight: 600;
 }
+[data-testid="stTextInput"] [data-testid="stWidgetLabel"] p,
+[data-testid="stTextArea"] [data-testid="stWidgetLabel"] p,
+[data-testid="stSelectbox"] [data-testid="stWidgetLabel"] p,
+[data-testid="stMultiSelect"] [data-testid="stWidgetLabel"] p {
+  color: #A3A3A3 !important; font-size: 0.72rem !important; font-weight: 700 !important;
+  letter-spacing: 0.12em !important; text-transform: uppercase !important;
+}
+[data-baseweb="input"] > div,
+[data-baseweb="textarea"] > div,
+[data-baseweb="select"] > div {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  border-radius: var(--dp-radius-control) !important;
+}
+.st-key-rail [data-baseweb="select"] > div { background: transparent !important; border-color: transparent !important; }
+[data-baseweb="input"]:focus-within > div,
+[data-baseweb="textarea"]:focus-within > div,
+[data-baseweb="select"]:focus-within > div {
+  border-color: #FDE047 !important; background: rgba(255, 255, 255, 0.08) !important;
+}
+input, textarea { color: #FFFFFF !important; caret-color: #FDE047; }
+div[data-testid="stAlert"] {
+  background: #171717 !important; color: #FFFFFF !important;
+  border: 1px solid rgba(253, 224, 71, 0.45) !important; border-radius: var(--dp-radius-control) !important;
+}
+div[data-testid="stAlert"] p, div[data-testid="stAlert"] div { color: #FFFFFF !important; }
+div[data-testid="stMetricValue"] { color: var(--dp-color-accent) !important; }
+div[data-testid="stExpander"] details, [data-testid="stExpander"] {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: var(--dp-radius-control) !important;
+}
+[data-testid="stDataFrame"] { border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 1rem; overflow: hidden; }
+hr, [data-testid="stDivider"] { border-color: rgba(255, 255, 255, 0.1) !important; }
 button[data-testid="stBaseButton-primary"] {
-  border-radius: var(--dp-radius-circle) !important;
-  min-width: 4.75rem !important; min-height: 4.75rem !important;
-  padding: .85rem !important;
+  border-radius: var(--dp-radius-pill) !important;
+  min-width: 0 !important; min-height: 0 !important;
+  padding: 0.75rem 1.75rem !important;
   background: var(--dp-color-accent) !important;
-  border: var(--dp-border-rule) solid var(--dp-color-ink) !important;
-  box-shadow: 6px 6px 0 var(--dp-color-ink) !important;
-  transition: none !important;
+  border: none !important;
+  box-shadow: 0 0 20px rgba(253, 224, 71, 0.3) !important;
+  transition: transform var(--dp-motion-press), box-shadow 0.2s ease !important;
 }
 button[data-testid="stBaseButton-primary"]:hover {
-  box-shadow: 4px 4px 0 var(--dp-color-ink) !important;
-  transform: translate(2px, 2px);
+  box-shadow: 0 0 30px rgba(253, 224, 71, 0.5) !important; transform: none;
 }
-button[data-testid="stBaseButton-primary"] p {
-  color: var(--dp-color-on-field) !important; font-weight: var(--dp-typography-weight-action) !important;
+button[data-testid="stBaseButton-primary"]:active { transform: scale(0.95); }
+button[data-testid="stBaseButton-primary"] p,
+button[data-testid="stBaseButton-primary"] span {
+  color: #0A0A0A !important; font-weight: 700 !important;
 }
 button[data-testid="stBaseButton-secondary"],
 button[kind="secondary"] {
-  border-radius: var(--dp-radius-square) !important;
-  background: var(--dp-color-field) !important;
-  color: var(--dp-color-on-field) !important;
-  border: var(--dp-border-compact) solid var(--dp-color-ink) !important;
-  box-shadow: none !important; transition: none !important;
+  border-radius: var(--dp-radius-pill) !important;
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: #FFFFFF !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  box-shadow: none !important;
+  transition: transform var(--dp-motion-press), background 0.2s ease !important;
 }
-button[data-testid="stBaseButton-secondary"] p { color: var(--dp-color-on-field) !important; font-weight: var(--dp-typography-weight-action) !important; }
+button[data-testid="stBaseButton-secondary"]:hover { background: rgba(255, 255, 255, 0.18) !important; }
+button[data-testid="stBaseButton-secondary"]:active { transform: scale(0.95); }
+button[data-testid="stBaseButton-secondary"] p { color: #FFFFFF !important; font-weight: 600 !important; }
 *:focus-visible {
-  outline: var(--dp-border-compact) solid var(--dp-color-field) !important;
+  outline: 2px solid var(--dp-color-accent) !important;
   outline-offset: 2px !important;
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation: none !important; transition: none !important; scroll-behavior: auto !important;
   }
-  button[data-testid="stBaseButton-primary"]:hover { transform: none; }
+  button[data-testid="stBaseButton-primary"]:active,
+  button[data-testid="stBaseButton-secondary"]:active { transform: none; }
 }
 @media (max-width: 720px) {
   .ca-pipeline { grid-template-columns: 1fr; }
-  .ca-phase { border-right: none; border-bottom: var(--dp-border-compact) solid var(--dp-color-ink); }
-  .ca-phase:last-child { border-bottom: none; }
-  .ca-hero { padding: 1.1rem 0 .9rem; }
-  section[data-testid="stSidebar"] { max-width: 100% !important; min-width: 100% !important; }
+  .st-key-hero-bar { align-items: flex-start !important; }
+  .ca-display { font-size: clamp(2.2rem, 12vw, 3.2rem); }
 }
 </style>
 """
 
-CHART_COLORS = ["#ff0000", "#0000ff", "#ffff00", "#000000"]
+CHART_COLORS = ["#FDE047", "#FFFFFF", "#A3A3A3", "#525252"]
 
 
 def style():
     st.markdown(STYLE, unsafe_allow_html=True)
 
 
-def hero():
-    st.markdown(
-        """<div class="ca-hero"><div class="ca-brand-hero">Cost<span>.</span>Advisor</div>
-<p>Know what your AI features cost at every growth stage — measured where a model ran, labeled estimated otherwise.</p>
-</div>""",
-        unsafe_allow_html=True,
-    )
+WAVE = """<svg class="ca-wave" viewBox="0 0 1440 120" preserveAspectRatio="none" aria-hidden="true">
+<path fill="#0A0A0A" d="M0,120 C320,0 720,150 1440,40 L1440,120 L0,120 Z"></path>
+</svg>"""
 
 
 def step(number: int, title: str, hint: str = ""):
     st.markdown(
-        f'<div class="ca-step"><b>{number:02d}</b><div>{title}'
+        f'<div class="ca-step"><b>{number}</b><div>{title}'
         + (f"<small>{hint}</small>" if hint else "")
         + "</div></div>",
         unsafe_allow_html=True,
@@ -278,6 +366,15 @@ def stage_chart(frame: pd.DataFrame, series: str, value: str):
             ),
             tooltip=["stage", series, alt.Tooltip(f"{value}:Q", format=",.2f")],
         )
+        .configure(background="transparent")
+        .configure_view(strokeWidth=0)
+        .configure_axis(
+            labelColor="#A3A3A3",
+            titleColor="#FFFFFF",
+            gridColor="rgba(255,255,255,0.08)",
+            domainColor="rgba(255,255,255,0.16)",
+        )
+        .configure_legend(labelColor="#FFFFFF", titleColor="#FFFFFF")
     )
     st.markdown('<div class="ca-chart-wrap">', unsafe_allow_html=True)
     st.altair_chart(chart, width="stretch")
@@ -294,48 +391,64 @@ def num(value):
 def banner(pack: dict | None, sample: bool):
     if (pack or {}).get("execution_mode") == "sample" or (pack is None and sample):
         st.markdown(
-            '<div class="ca-sample" role="status">SAMPLE/OFFLINE: no network calls, no model executed. '
-            "Tokens are estimated and nothing here is measured.</div>",
+            '<div class="ca-sample" role="status"><b>SAMPLE/OFFLINE</b>'
+            "<span>No network calls, no model executed. Tokens are estimated and nothing here is measured.</span></div>",
             unsafe_allow_html=True,
         )
 
 
-def sidebar() -> tuple[str, bool, str]:
-    with st.sidebar:
-        st.markdown('<div class="ca-brand">Cost<span>.</span>Advisor</div>', unsafe_allow_html=True)
-        mode = st.radio("Mode", ["Sample (offline)", "Live (Nightshift + Zetaris)"], key="mode")
-        sample = mode.startswith("Sample")
-        st.caption(
-            "Sample makes zero network calls."
-            if sample
-            else "Live needs Zetaris, Nightshift and `.env`. Spend is capped by the approved limit below."
+def controls() -> tuple[str, bool]:
+    """Yellow hero: wordmark, mode and example rail, then the cost promise."""
+    with st.container(key="hero"):
+        with st.container(key="hero-bar", horizontal=True, vertical_alignment="center"):
+            st.markdown('<div class="ca-brand-hero">Cost<span>.</span>Advisor</div>', unsafe_allow_html=True)
+            with st.container(key="rail"):
+                with st.container(horizontal=True, vertical_alignment="center", gap="small"):
+                    mode = st.radio(
+                        "Mode",
+                        ["Sample (offline)", "Live (Nightshift + Zetaris)"],
+                        key="mode",
+                        horizontal=True,
+                        label_visibility="collapsed",
+                    )
+                    example = st.selectbox(
+                        "Start from example",
+                        svc.list_examples(),
+                        format_func=svc.example_label,
+                        key="example",
+                        label_visibility="collapsed",
+                    )
+        st.markdown(
+            '<div class="ca-display">Know what your AI features cost as you grow.</div>'
+            '<p class="ca-lede">Measured where a model ran, labeled estimated otherwise. '
+            "No invented savings, just transparent operating costs.</p>",
+            unsafe_allow_html=True,
         )
-        example = st.selectbox("Start from example", svc.list_examples(), format_func=svc.example_label, key="example")
-        st.caption("Every number is an editable assumption.")
-        bindings = ""
-        if not sample:
-            with st.expander("Override price data file"):
-                override = st.text_input(
-                    "Zetaris bindings file",
-                    "",
-                    key="bindings",
-                    help="Leave empty to use ZETARIS_BINDINGS_FILE from .env.",
-                )
-            found = svc.find_bindings(override)
-            if found["ok"]:
-                counts = found["counts"]
-                st.success(
-                    f"Price data: snapshot `{found['snapshot_id'][:8]}`, {counts.get('models', '?')} models, "
-                    f"{counts.get('catalog', '?')} catalog rows (from {found['source']})"
-                )
-                bindings = found["path"]
-            else:
-                st.error(
-                    "Price data not found: "
-                    + found["problem"]
-                    + (f" ({found['path']})" if found["path"] else "")
-                )
-    return example, sample, bindings
+        st.markdown(WAVE, unsafe_allow_html=True)
+    return example, mode.startswith("Sample")
+
+
+def price_data(sample: bool) -> str:
+    if sample:
+        return ""
+    st.caption("Live needs Zetaris, Nightshift and `.env`. Spend is capped by the approved limit below.")
+    with st.expander("Override price data file"):
+        override = st.text_input(
+            "Zetaris bindings file",
+            "",
+            key="bindings",
+            help="Leave empty to use ZETARIS_BINDINGS_FILE from .env.",
+        )
+    found = svc.find_bindings(override)
+    if found["ok"]:
+        counts = found["counts"]
+        st.success(
+            f"Price data: snapshot `{found['snapshot_id'][:8]}`, {counts.get('models', '?')} models, "
+            f"{counts.get('catalog', '?')} catalog rows (from {found['source']})"
+        )
+        return found["path"]
+    st.error("Price data not found: " + found["problem"] + (f" ({found['path']})" if found["path"] else ""))
+    return ""
 
 
 def form(example: str, sample: bool, bindings: str):
@@ -343,16 +456,17 @@ def form(example: str, sample: bool, bindings: str):
     brief = template["brief"]
     key = lambda name: f"{example}:{name}"
 
-    step(1, "Brief", "Idea, features, and growth assumptions")
-    idea = st.text_area("Product idea", brief["product_concept"], key=key("idea"), height=90)
-    user = st.text_input("Target user", brief["target_user"], key=key("user"))
-
-    st.caption(
-        "2 to 5 AI features. Modality: any of "
-        + ", ".join(svc.MODALITIES)
-        + " (comma-separated). Usage values are assumptions. Audio and image features are priced, not executed."
-    )
     with st.container(border=True):
+        step(1, "Brief", "Idea, features, and growth assumptions")
+        st.caption("Every number is an editable assumption.")
+        idea = st.text_area("Product idea", brief["product_concept"], key=key("idea"), height=90)
+        user = st.text_input("Target user", brief["target_user"], key=key("user"))
+
+        st.caption(
+            "2 to 5 AI features. Modality: any of "
+            + ", ".join(svc.MODALITIES)
+            + " (comma-separated). Usage values are assumptions. Audio and image features are priced, not executed."
+        )
         rows = pd.DataFrame(
             [
                 {
@@ -374,52 +488,52 @@ def form(example: str, sample: bool, bindings: str):
             column_config={"mode": st.column_config.SelectboxColumn(options=["interactive", "background"])},
         )
 
-    st.markdown("**Growth stages** (assumed)")
-    stages = st.data_editor(
-        pd.DataFrame(brief["growth_stages"])[["name", "active_users"]],
-        num_rows="dynamic",
-        width="stretch",
-        key=key("stages"),
-    )
-
-    usage = brief.get("usage") or {}
-    with st.expander("Assumptions (budget, revenue, switch threshold)", expanded=False):
-        left, right = st.columns(2)
-        threshold = left.text_input(
-            "Switch threshold (USD/month)", str(brief.get("switch_threshold_usd", "100")), key=key("thr")
-        )
-        ceiling = right.text_input(
-            "Monthly AI budget ceiling (USD, optional)", brief.get("monthly_ai_budget_usd") or "", key=key("ceil")
-        )
-        left, right = st.columns(2)
-        price = left.text_input(
-            "Price per paying user per month (USD, optional)",
-            str(usage.get("subscription_price_usd") or ""),
-            key=key("price"),
-            help="With the paying fraction, gives revenue per stage. Assumed.",
-        )
-        fraction = right.text_input(
-            "Paying fraction of active users (0 to 1, optional)",
-            str(usage.get("paying_fraction") or ""),
-            key=key("fraction"),
-            help="e.g. 0.08 for 8% of active users paying. Assumed.",
+        st.markdown("**Growth stages** (assumed)")
+        stages = st.data_editor(
+            pd.DataFrame(brief["growth_stages"])[["name", "active_users"]],
+            num_rows="dynamic",
+            width="stretch",
+            key=key("stages"),
         )
 
-    with st.expander("Advanced: candidate models (optional)", expanded=False):
-        st.caption("Leave empty to let the app choose per feature.")
-        options = svc.candidate_options(sample, bindings)
-        picks = st.multiselect(
-            "Choose up to 3, at most one per tier (frontier, mid-tier, open-source).",
-            list(options),
-            format_func=lambda mid: options.get(mid, mid),
-            max_selections=3,
-            key=f"picks:{'sample' if sample else 'live'}",
-        )
-        if picks:
-            st.caption(
-                "Your picks replace the automatic choice for every feature. A pick that can't handle a feature's "
-                "modality is skipped for that feature; two picks in the same tier stop the run with a message."
+        usage = brief.get("usage") or {}
+        with st.expander("Assumptions (budget, revenue, switch threshold)", expanded=False):
+            left, right = st.columns(2)
+            threshold = left.text_input(
+                "Switch threshold (USD/month)", str(brief.get("switch_threshold_usd", "100")), key=key("thr")
             )
+            ceiling = right.text_input(
+                "Monthly AI budget ceiling (USD, optional)", brief.get("monthly_ai_budget_usd") or "", key=key("ceil")
+            )
+            left, right = st.columns(2)
+            price = left.text_input(
+                "Price per paying user per month (USD, optional)",
+                str(usage.get("subscription_price_usd") or ""),
+                key=key("price"),
+                help="With the paying fraction, gives revenue per stage. Assumed.",
+            )
+            fraction = right.text_input(
+                "Paying fraction of active users (0 to 1, optional)",
+                str(usage.get("paying_fraction") or ""),
+                key=key("fraction"),
+                help="e.g. 0.08 for 8% of active users paying. Assumed.",
+            )
+
+        with st.expander("Advanced: candidate models (optional)", expanded=False):
+            st.caption("Leave empty to let the app choose per feature.")
+            options = svc.candidate_options(sample, bindings)
+            picks = st.multiselect(
+                "Choose up to 3, at most one per tier (frontier, mid-tier, open-source).",
+                list(options),
+                format_func=lambda mid: options.get(mid, mid),
+                max_selections=3,
+                key=f"picks:{'sample' if sample else 'live'}",
+            )
+            if picks:
+                st.caption(
+                    "Your picks replace the automatic choice for every feature. A pick that can't handle a feature's "
+                    "modality is skipped for that feature; two picks in the same tier stop the run with a message."
+                )
 
     with st.container(border=True):
         step(
@@ -561,10 +675,12 @@ def totals_view(pack: dict):
 
 def status_line(pack: dict):
     st.markdown(
-        f'<p class="ca-status">Status <b>{pack["status"]}</b> · Mode '
-        f'<span class="ca-mono">{pack["execution_mode"]}</span> · Evaluation spend (USD) '
-        f'<span class="ca-mono">{pack["spend_usd"]}</span> · Model requests '
-        f'<span class="ca-mono">{pack["dispatch_count"]}</span></p>',
+        '<div class="ca-status" role="status">'
+        f'<span class="ca-pill">Status <b>{pack["status"]}</b></span>'
+        f'<span class="ca-pill">Mode <span class="ca-mono">{pack["execution_mode"]}</span></span>'
+        f'<span class="ca-pill">Evaluation spend (USD) <span class="ca-mono">{pack["spend_usd"]}</span></span>'
+        f'<span class="ca-pill">Model requests <span class="ca-mono">{pack["dispatch_count"]}</span></span>'
+        "</div>",
         unsafe_allow_html=True,
     )
 
@@ -748,8 +864,8 @@ def results(pack: dict):
 
 def main():
     style()
-    example, sample, bindings = sidebar()
-    hero()
+    example, sample = controls()
+    bindings = price_data(sample)
     state = st.session_state
     state.setdefault("run_id", svc.new_run_id())
     stored = svc.load_result(state["run_id"])
@@ -788,10 +904,9 @@ def main():
             "model request (status needs_input). Tick the approval box above to measure."
         )
     blocked = parsed is None or state.get("busy", False) or (not sample and not bindings)
-    with st.container(border=True):
-        left, right, _ = st.columns([1, 1, 8], gap="small")
-        run_clicked = left.button("Run", type="primary", disabled=blocked)
-        if right.button("New run", type="secondary"):
+    with st.container(border=True, horizontal=True, vertical_alignment="center", gap="small"):
+        run_clicked = st.button("Run", type="primary", disabled=blocked)
+        if st.button("New run", type="secondary"):
             state["run_id"], state["outcome"] = svc.new_run_id(), None
             st.rerun()
     if run_clicked and parsed is not None:
