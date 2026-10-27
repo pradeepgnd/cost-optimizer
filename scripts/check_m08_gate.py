@@ -50,6 +50,8 @@ def check(bindings: Path, bundle: Path | None = None, request: Path | None = Non
     result = {"checked_at": datetime.now(timezone.utc).isoformat(), "kind": "read_only_m08_gate",
               "bindings": str(bindings), "mapping_status": selected["mapping_status"],
               "route_map_manifest": str(manifest_path) if manifest_path.exists() else None,
+              "route_map_source": "bundle_manifest" if manifest_path.exists() else
+              f"committed_fallback (no manifest at {manifest_path}; pass --bundle)",
               "selection_matches_current": selected_candidates == current_candidates,
               "run_id": run_request.run_id if run_request else None,
               "candidate_tiers": list(candidate_tiers), "validation_subset": validation_subset,
@@ -110,7 +112,8 @@ def main() -> int:
     report = check(args.bindings, args.bundle, args.request)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
-    print(f"M08 gate: {report['status']}; {len(report['routes'])} selected routes; no completions sent. Report: {args.output}")
+    print(f"M08 gate: {report['status']}; {len(report['routes'])} selected routes; route map: {report['route_map_source']}; "
+          f"no completions sent. Report: {args.output}")
     return 0 if report["status"].startswith("ready_for_bounded_") else 1
 
 

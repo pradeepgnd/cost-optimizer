@@ -175,7 +175,8 @@ python scripts/register_sources.py --bundle <BUNDLE_DIR> --storage data/source_e
 python scripts/check_zetaris_sources.py --bindings data/localstack/bindings.json \
     --catalog-id nvidia/nemotron-3-ultra-550b-a55b --round-trip --storage data/source_examples/localstack.json \
     --run-id verify-001 --output-dir data/localstack/verify-001
-python scripts/check_m08_gate.py --bindings data/localstack/bindings.json --output data/localstack/gate.json
+python scripts/check_m08_gate.py --bindings data/localstack/bindings.json --bundle <BUNDLE_DIR> \
+    --output data/localstack/gate.json
 export ZETARIS_BINDINGS_FILE=$PWD/data/localstack/bindings.json
 python scripts/check_openrouter_projection.py --input input_examples/example_3.json \
     --bindings data/localstack/bindings.json --output-dir data/localstack/preview-001
@@ -185,7 +186,7 @@ python scripts/smoke_live.py
 What to look for:
 
 - **Steps 5 and 6:** registration `status: pass` with `current_pointer_updated: false`; the Zetaris check passes `SELECT 1`, a typed model read and the evidence write and readback, with `model_completions: 0`.
-- **Steps 7 and 8:** the gate shows `ready_for_bounded_dispatch`, with the Planner and Critic routes at `billing_gate: pass` and most other routes `blocked`. Blocked is correct: those candidates are projected only. With the committed `routes.selected.json` (`mapping_status: planned`) the gate reports `incomplete` even when every route passes; a clean clone sees this until an observed route map is committed. `smoke_live.py` reports H-MEM and discovery separately; a required SKIP is an incomplete result, not a pass.
+- **Steps 7 and 8:** the gate shows `ready_for_bounded_dispatch`, with the Planner and Critic routes at `billing_gate: pass` and most other routes `blocked`. Blocked is correct: those candidates are projected only. Pass the same `--bundle <BUNDLE_DIR>` as registration: the gate reads the discovery-observed route map from that bundle. Without it, the gate looks for the bundle next to the bindings file, and if none is there it falls back to the committed `routes.selected.json` (`mapping_status: planned`) and reports `incomplete` even when every route passes; `route_map_source` in the report says which map was read. `smoke_live.py` reports H-MEM and discovery separately; a required SKIP is an incomplete result, not a pass.
 - **Candidate selection:** open `preview-001/pack.json`. Each feature lists its own candidates, and an audio-out feature with no capable route shows a `candidates:<feature>` evidence gap.
 - **Your Nightshift must offer** `nvidia/nemotron-3-ultra-550b-a55b` and `nvidia/nemotron-3.5-lightning-30b-a3b`, or the bundle step stops with "mapped route was not offered". Edit `routes.selected.json` to the Planner and Critic routes you have.
 - **Warning:** the two curated profiles in `routes.selected.json` assume a free NVIDIA Developer Program key (verified $0 rate, prototyping only). If your Nightshift key is paid or different, write profiles from your own billing terms before any live run.
