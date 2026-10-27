@@ -14,6 +14,7 @@ from __future__ import annotations
 import json
 import os
 from html import escape
+from pathlib import Path
 
 import altair as alt
 import pandas as pd
@@ -105,6 +106,11 @@ section[data-testid="stSidebar"],
   border-bottom-left-radius: clamp(32px, 4vw, 56px);
   overflow: hidden;
   position: relative;
+}
+.st-key-hero-copy-row { width: 100%; margin-bottom: .25rem; }
+.st-key-hero-art { flex: 0 0 112px; width: 112px; margin: 0 !important; }
+.st-key-hero-art [data-testid="stImage"] img {
+  display: block; width: 100%; height: auto; filter: drop-shadow(0 8px 12px rgba(10,10,10,.16));
 }
 .st-key-hero-bar {
   width: 100%;
@@ -214,10 +220,6 @@ section[data-testid="stSidebar"],
   background: rgba(34, 197, 94, 0.2); color: #4ade80;
 }
 .ca-status b { font-weight: 700; color: inherit; }
-.ca-run-id {
-  font-family: var(--dp-typography-mono); font-size: 0.72rem; letter-spacing: 0.06em;
-  color: #737373; margin: 0 0 0.75rem; text-transform: uppercase;
-}
 .ca-pipeline {
   display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem;
   margin: 0.5rem 0 1.25rem; padding: 0.5rem;
@@ -314,6 +316,19 @@ div[data-testid="stTabs"] {
 .ca-pill[data-tone="neutral"] { color: #D4D4D4; background: #262626; }
 .ca-pill[data-tone="yellow"] { color: #FDE047; background: rgba(253,224,71,.12); }
 .ca-pill[data-tone="blue"] { color: #60A5FA; background: rgba(59,130,246,.18); }
+.ca-cheapest-tag {
+  display: inline-flex; align-items: center; width: fit-content; margin: 0 0 .7rem;
+  padding: .32rem .7rem; color: #4ADE80; background: rgba(34,197,94,.16);
+  border: 1px solid rgba(74,222,128,.26); border-radius: 999px;
+  font-size: .66rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase;
+}
+.st-key-ca-rec-card-cheapest [data-testid="stVerticalBlockBorderWrapper"] {
+  border-color: rgba(74,222,128,.55) !important;
+  box-shadow: 0 0 0 1px rgba(74,222,128,.15), 0 8px 32px rgba(0,0,0,.2) !important;
+}
+.ca-html-table .token-estimate { color: #FDE047; font: 650 .9rem ui-monospace,monospace; }
+.ca-html-table .token-actual { color: #4ADE80; font: 650 .9rem ui-monospace,monospace; }
+.ca-html-table .token-missing { color: #737373; font: 500 .86rem ui-monospace,monospace; }
 .st-key-ca-selector-card { height: 100%; padding: 1rem; background: rgba(255,255,255,.025); border: 1px solid rgba(255,255,255,.08); border-radius: 20px; }
 .st-key-ca-selector-card label { color: #737373 !important; font-size: .65rem !important; font-weight: 750 !important; letter-spacing: .13em !important; text-transform: uppercase; }
 @media (max-width: 900px) {
@@ -451,6 +466,7 @@ button[data-testid="stBaseButton-secondary"] p { color: #FFFFFF !important; font
 @media (max-width: 720px) {
   .ca-pipeline { grid-template-columns: 1fr; }
   .st-key-hero-bar { align-items: flex-start !important; }
+  .st-key-hero-art { display: none !important; }
   .ca-display { font-size: clamp(2.4rem, 12vw, 3.4rem); }
   .st-key-eval-actions {
     border-left: none; border-top: 1px solid rgba(255, 255, 255, 0.1);
@@ -461,6 +477,7 @@ button[data-testid="stBaseButton-secondary"] p { color: #FFFFFF !important; font
 """
 
 CHART_COLORS = ["#FDE047", "#FFFFFF", "#A3A3A3", "#525252"]
+CALCULATOR_ART = Path(__file__).resolve().parent / "assets" / "cost-advisor-calculator.svg"
 
 
 def style():
@@ -481,35 +498,94 @@ def step(number: int, title: str, hint: str = ""):
 
 
 def stage_chart(frame: pd.DataFrame, series: str, value: str):
-    """Monthly cost per stage in the Hyper-Saturated Fluid palette."""
-    order = list(dict.fromkeys(frame["stage"]))
+    """Show a polished cost trajectory and mark the lowest priced option per stage."""
+    data = frame.copy()
+    data[value] = pd.to_numeric(data[value], errors="coerce")
+    data = data.dropna(subset=[value])
+    if data.empty:
+        st.info("No priced options to chart for these stages.")
+        return
+
+    order = list(dict.fromkeys(data["stage"]))
+    data["_selection"] = data[value].eq(data.groupby("stage")[value].transform("min"))
+    data["_selection_label"] = data["_selection"].map(
+        {True: "Lowest shown", False: "Other priced option"}
+    )
+    base = alt.Chart(data)
+    x = alt.X(
+        "stage:N",
+        sort=order,
+        title=None,
+        axis=alt.Axis(labelAngle=0, labelPadding=12, tickSize=0, domain=False),
+    )
+    y = alt.Y(
+        f"{value}:Q",
+        title=None,
+        scale=alt.Scale(zero=True),
+        axis=alt.Axis(format="$,.0f", grid=True, gridDash=[2, 4], tickCount=5, domain=False, labelPadding=8),
+    )
+    color = alt.Color(
+        f"{series}:N",
+        title=None,
+        scale=alt.Scale(range=CHART_COLORS),
+        legend=alt.Legend(
+            orient="top",
+            direction="horizontal",
+            columns=3,
+            labelLimit=220,
+            symbolType="stroke",
+            symbolStrokeWidth=3,
+            symbolSize=120,
+            padding=10,
+        ),
+    )
+    tooltip = [
+        alt.Tooltip("stage:N", title="Growth stage"),
+        alt.Tooltip(f"{series}:N", title="Model"),
+        alt.Tooltip(f"{value}:Q", title="Monthly cost", format="$,.2f"),
+        alt.Tooltip("_selection_label:N", title="Selection"),
+    ]
+    area = base.mark_area(opacity=0.065, interpolate="monotone", clip=True).encode(
+        x=x, y=y, color=color
+    )
+    line = base.mark_line(
+        interpolate="monotone", strokeWidth=3, strokeCap="round", clip=True
+    ).encode(x=x, y=y, color=color)
+    points = base.mark_point(
+        filled=True, size=78, stroke="#0A0A0A", strokeWidth=2, clip=True
+    ).encode(x=x, y=y, color=color, tooltip=tooltip)
+    lowest_points = (
+        base.transform_filter(alt.datum._selection)
+        .mark_point(filled=True, size=150, color="#4ADE80", stroke="#0A0A0A", strokeWidth=2, clip=True)
+        .encode(x=x, y=y, tooltip=tooltip)
+    )
     chart = (
-        alt.Chart(frame.dropna(subset=[value]))
-        .mark_line(point=True, strokeWidth=2.5)
-        .encode(
-            x=alt.X("stage:N", sort=order, title=None, axis=alt.Axis(labelAngle=0)),
-            y=alt.Y(f"{value}:Q", title="USD per month"),
-            color=alt.Color(
-                f"{series}:N",
-                title=None,
-                scale=alt.Scale(range=CHART_COLORS),
-                legend=alt.Legend(orient="bottom", columns=2, labelLimit=460),
-            ),
-            tooltip=["stage", series, alt.Tooltip(f"{value}:Q", format=",.2f")],
-        )
+        alt.layer(area, line, points, lowest_points)
+        .resolve_scale(color="shared")
+        .properties(height=300, padding={"left": 12, "right": 14, "top": 4, "bottom": 8})
         .configure(background="transparent")
-        .configure_view(strokeWidth=0)
+        .configure_view(stroke="transparent")
         .configure_axis(
             labelColor="#A3A3A3",
-            titleColor="#FFFFFF",
-            gridColor="rgba(255,255,255,0.08)",
-            domainColor="rgba(255,255,255,0.16)",
+            labelFont="Inter",
+            labelFontSize=11,
+            titleColor="#D4D4D4",
+            titleFont="Inter",
+            titleFontSize=11,
+            gridColor="rgba(255,255,255,0.09)",
+            gridOpacity=0.8,
+            tickColor="transparent",
         )
-        .configure_legend(labelColor="#FFFFFF", titleColor="#FFFFFF")
+        .configure_legend(
+            labelColor="#D4D4D4",
+            labelFont="Inter",
+            labelFontSize=11,
+            titleColor="#FFFFFF",
+        )
     )
-    st.markdown('<div class="ca-chart-wrap">', unsafe_allow_html=True)
-    st.altair_chart(chart, width="stretch")
-    st.markdown("</div>", unsafe_allow_html=True)
+    with st.container(border=True):
+        st.caption("Monthly AI cost · USD")
+        st.altair_chart(chart, width="stretch")
 
 def num(value):
     try:
@@ -531,7 +607,7 @@ def banner(pack: dict | None, sample: bool):
 
 
 def controls() -> tuple[str, bool]:
-    """Yellow liquid hero: Cost.Advisor wordmark, Sample/Live pills, Idea example rail, headline."""
+    """Yellow liquid hero: Cost.Advisor wordmark, controls, headline, and calculator art."""
     with st.container(key="hero"):
         with st.container(key="hero-bar", horizontal=True, vertical_alignment="center"):
             st.markdown('<div class="ca-brand-hero">Cost<span>.</span>Advisor</div>', unsafe_allow_html=True)
@@ -551,15 +627,20 @@ def controls() -> tuple[str, bool]:
                         key="example",
                         label_visibility="collapsed",
                     )
-        st.markdown(
-            '<div class="ca-display">Know what your AI features cost as you grow.</div>'
-            '<p class="ca-lede">Measured where a model ran, labeled estimated otherwise. '
-            "No invented savings, just transparent operating costs.</p>",
-            unsafe_allow_html=True,
-        )
+        with st.container(key="hero-copy-row"):
+            copy_col, art_col = st.columns([4.5, 1], vertical_alignment="center", gap="small")
+            with copy_col:
+                st.markdown(
+                    '<div class="ca-display">Know what your AI features cost as you grow.</div>'
+                    '<p class="ca-lede">Measured where a model ran, labeled estimated otherwise. '
+                    "No invented savings, just transparent operating costs.</p>",
+                    unsafe_allow_html=True,
+                )
+            with art_col:
+                with st.container(key="hero-art"):
+                    st.image(CALCULATOR_ART, width=112, alt="Cost Advisor calculator")
         st.markdown(WAVE, unsafe_allow_html=True)
     return example, mode.startswith("Sample")
-
 
 def price_data(sample: bool) -> str:
     if sample:
@@ -617,7 +698,7 @@ def form(example: str, sample: bool, bindings: str):
             num_rows="dynamic",
             width="stretch",
             key=key("features"),
-            column_config={"mode": st.column_config.SelectboxColumn(options=["interactive", "background"])},
+            column_config={"feature_id": None, "mode": st.column_config.SelectboxColumn(options=["interactive", "background"])},
         )
 
         st.markdown("**Growth stages** (assumed)")
@@ -708,7 +789,7 @@ def cost_rows(pack: dict) -> tuple[list[dict], str]:
             "feature": t["feature_id"],
             "stage": r["stage"],
             "users": r["active_users"],
-            "model": r["model_id"].removeprefix("openrouter/"),
+            "model": display_model_id(r["model_id"], r.get("tier")),
             "tokens": r["token_basis"],
             "monthly USD": num(r["gross_monthly_usd"]),
             "lower bound": r["lower_bound"],
@@ -744,14 +825,97 @@ def html_table(
 
 def display_number(value, *, currency: bool = False) -> str:
     amount = num(value)
-    if amount is None:
+    if amount is None or pd.isna(amount):
         return "—"
     return f"${amount:,.2f}" if currency else f"{amount:,.0f}"
 
 
+def display_model_id(model_id: str, tier: str | None = None) -> str:
+    normalized = str(model_id).removeprefix("openrouter/")
+    if normalized.startswith("sample/") and normalized.endswith("-placeholder"):
+        label = normalized.removeprefix("sample/").removesuffix("-placeholder").replace("-", " ").title()
+        return f"{label} sample"
+    return normalized
+
+
+def feature_label_map(pack: dict) -> dict[str, str]:
+    """Use saved brief descriptions as readable feature names; never render internal IDs."""
+    feature_ids = list(dict.fromkeys(
+        [str(run.get("feature_id")) for run in pack.get("feature_runs") or [] if run.get("feature_id")]
+        + [str(table.get("feature_id")) for table in pack.get("stage_tables") or [] if table.get("feature_id")]
+        + [str(table.get("feature_id")) for table in pack.get("openrouter_projection_tables") or []
+           if table.get("feature_id")]
+    ))
+    descriptions = {}
+    try:
+        request_path = svc.result_path(str(pack["run_id"])).with_name(f"{pack['run_id']}.request.json")
+        request = json.loads(request_path.read_text(encoding="utf-8"))
+        descriptions = {
+            str(item.get("feature_id")): str(item.get("description") or "")
+            for item in request.get("brief", {}).get("ai_features", [])
+        }
+    except (KeyError, OSError, ValueError):
+        pass
+
+    labels, counts = {}, {}
+    for index, feature_id in enumerate(feature_ids, start=1):
+        description = descriptions.get(feature_id, "")
+        label = description.split("(", 1)[0].split(".", 1)[0].strip(" .–—")
+        if not label:
+            suffix = feature_id.partition("_")[2].replace("_", " ").strip()
+            label = suffix.title() if suffix else f"Feature {index}"
+        counts[label.casefold()] = counts.get(label.casefold(), 0) + 1
+        if counts[label.casefold()] > 1:
+            label = f"{label} {counts[label.casefold()]}"
+        labels[feature_id] = label
+    return labels
+
+
+def humanize_feature_text(text: str, labels: dict[str, str]) -> str:
+    for feature_id, label in sorted(labels.items(), key=lambda item: len(item[0]), reverse=True):
+        text = text.replace(feature_id, label)
+    return text
+
+
+def cost_comparison_table(frame: pd.DataFrame) -> str:
+    """Show the lowest priced model at each stage without overstating unknown prices."""
+    lowest_rows = set()
+    for _, group in frame.groupby("stage", sort=False):
+        priced = [(index, num(row.get("monthly USD"))) for index, row in group.iterrows()]
+        priced = [(index, price) for index, price in priced if price is not None]
+        if len(priced) < 2:
+            continue
+        lowest = min(price for _, price in priced)
+        lowest_rows.update(index for index, price in priced if price == lowest)
+
+    rows = []
+    for index, row in frame.iterrows():
+        amount = display_number(row.get("monthly USD"), currency=True)
+        if bool(row.get("lower bound")) and amount != "—":
+            amount = "≥ " + amount
+        selection = (
+            '<span class="ca-cheapest-tag">Lowest shown</span>'
+            if index in lowest_rows
+            else '<span class="ca-pill" data-tone="neutral">—</span>'
+        )
+        rows.append([
+            escape(str(row.get("stage") or "—")),
+            display_number(row.get("users")),
+            escape(str(row.get("model") or "—")),
+            f'<span class="mono-value">{amount}</span>',
+            selection,
+        ])
+    return html_table(
+        ["Growth stage", "Users", "Model", "Monthly AI cost", "Selection"],
+        rows,
+        numeric={1, 3},
+        center={4},
+    )
+
+
 SCENARIO_LABEL = {
-    "cheapest_per_feature": "Cheapest model per feature (cost only, quality not checked)",
-    "recommended": "Recommended stack (quality-qualified models only)",
+    "cheapest_per_feature": "Lowest cost per feature",
+    "recommended": "Quality-qualified stack",
 }
 
 
@@ -793,10 +957,10 @@ def totals_view(pack: dict):
     scoped = [t for t in totals if t["pricing_scope"] == scope]
     heading, picker = st.columns([3.4, 1.2], vertical_alignment="center")
     with heading:
-        st.markdown('<h3 class="ca-section-title">Monthly AI cost, all features together</h3>', unsafe_allow_html=True)
-        st.caption("Priced by stage · lower bound when costs are unknown · build costs are separate")
+        st.markdown('<h3 class="ca-section-title">Monthly AI cost by growth stage</h3>', unsafe_allow_html=True)
+        st.caption("AI costs only · build costs shown separately")
     label = lambda o: (
-        "Cheapest · cost only"
+        "Lowest cost per feature"
         if o[0] == "cheapest_per_feature"
         else SCENARIO_LABEL.get(o[0]) or f"Same model for every feature: {o[1].removeprefix('openrouter/')}"
     )
@@ -816,7 +980,7 @@ def totals_view(pack: dict):
     default_index = next(i for i, option in enumerate(option_labels) if options[option] == default_key)
     with picker:
         with st.container(key="ca-selector-card"):
-            selected = st.selectbox("How models are chosen", option_labels, index=default_index, key="total_scenario")
+            selected = st.selectbox("Model selection", option_labels, index=default_index, key="total_scenario")
     choice = options[selected]
     rows = [t for t in scoped if (t["scenario"], t["model_id"]) == choice]
     frame = pd.DataFrame(
@@ -877,11 +1041,8 @@ def totals_view(pack: dict):
         if pack["execution_mode"] == "sample"
         else "your actual route's verified rate"
     )
-    st.caption(
-        f"Priced at the {price}. AI-only: other operating costs are not included, and build costs are separate. "
-        "Lower bound: some cost is unknown or not priced, so the true total is at least this, and the "
-        "contribution at most this. " + " ".join(n[0].upper() + n[1:] + "." for n in notes)
-    )
+    st.caption(f"Price source: {price}. Unknown items make totals a lower bound. "
+               + " ".join(n[0].upper() + n[1:] + "." for n in notes))
     compare = pd.DataFrame(
         [
             {"stage": t["stage"], "choice": label((t["scenario"], t["model_id"])), "USD": num(t["monthly_usd"])}
@@ -908,39 +1069,90 @@ def status_line(pack: dict) -> str:
     )
 
 
-def recommendation_view(pack: dict):
-    """One frontier model and one open-source model, after the run has costed them."""
+def recommendation_view(pack: dict, labels: dict[str, str]):
+    """Show the cost comparison across the two tier picks."""
     picks = svc.tier_recommendations(pack)
     if not picks:
         return
+    picks = [pick for pick in picks if pick.get("model_id")]
+    if not picks:
+        return
+    stage_values = {pick.get("stage") for pick in picks}
+    user_values = {pick.get("active_users") for pick in picks}
+    comparable = len(picks) > 1 and len(stage_values) == 1 and len(user_values) == 1
+    lowest_model_id = None
+    if comparable:
+        priced = [(pick, num(pick.get("monthly_usd"))) for pick in picks]
+        priced = [(pick, price) for pick, price in priced if price is not None]
+        if len(priced) == len(picks):
+            lowest_model_id = min(priced, key=lambda item: item[1])[0]["model_id"]
+
     st.markdown("**Recommendation**")
-    st.caption("One frontier model and one open-source model from the models compared in this run. "
-               "Each is the cheapest of its tier that still fits your monthly AI budget at the furthest growth stage. "
-               "With no budget, each is the cheapest at your largest stage. "
-               "If a model is not priced for every feature, the card names the features left out. "
-               "This is a cost fit for the requirements you entered. "
-               "A model is quality-qualified only when every critical check, including human review, passes.")
+    budget = pack.get("monthly_ai_budget_usd")
+    has_budget = budget not in (None, "", "0", "0.0", "0.00", 0)
+    st.caption(
+        "Lowest-cost fit per tier at the furthest stage."
+        if has_budget
+        else "Lowest cost per tier at the largest stage."
+    )
+    if comparable:
+        st.caption("The green tag compares these cards at the same stage.")
     titles = {"frontier": "Frontier", "open_source": "Open source"}
-    fit_label = {"within": "within budget", "over": "over budget", "unknown": "budget fit unknown",
-                 "no_budget": "no budget set"}
+    fit_label = {"within": "Within budget", "over": "Over budget", "unknown": "Fit unknown",
+                 "no_budget": "No budget"}
+    basis_label = {"measured": "Actual tokens", "estimated": "Estimated tokens",
+                   "mixed": "Mixed token counts", "unknown": "Token count unknown"}
     cols = st.columns(2)
     for col, pick in zip(cols, picks):
         with col:
-            with st.container(border=True):
+            is_lowest = (
+                lowest_model_id is not None
+                and str(pick["model_id"]).removeprefix("openrouter/")
+                == str(lowest_model_id).removeprefix("openrouter/")
+            )
+            card_key = "ca-rec-card-cheapest" if is_lowest else f"ca-rec-card-{pick['tier']}"
+            with st.container(border=True, key=card_key):
+                if is_lowest:
+                    st.markdown('<span class="ca-cheapest-tag">Lowest shown</span>', unsafe_allow_html=True)
                 st.markdown(f"**{titles[pick['tier']]}**")
-                if pick["model_id"]:
-                    st.markdown(f"`{pick['model_id'].removeprefix('openrouter/')}`")
-                    st.metric("Monthly AI cost (USD)", pick["monthly_usd"])
-                    st.caption(f"{pick['stage']} · {pick['active_users']} users · {pick['token_basis']} tokens · "
-                               f"{fit_label.get(pick['budget_fit'], pick['budget_fit'])}")
-                st.markdown(pick["reason"])
+                model_id = display_model_id(pick["model_id"], pick["tier"])
+                st.markdown(f"**{escape(model_id)}**")
+                st.metric("Monthly AI cost", display_number(pick["monthly_usd"], currency=True))
+                st.caption(
+                    f"{pick['stage']} · {display_number(pick['active_users'])} users · "
+                    f"{basis_label.get(pick['token_basis'], 'Token count unknown')} · "
+                    f"{fit_label.get(pick['budget_fit'], 'Fit unknown')}"
+                )
+                reason = str(pick.get("reason") or "")
+                note = []
+                lower_reason = reason.lower()
+                marker = "cost unknown for "
+                missing_start = lower_reason.find(marker)
+                missing = ""
+                if missing_start >= 0:
+                    missing_start += len(marker)
+                    missing_end = lower_reason.find(", so the total", missing_start)
+                    if missing_end < 0:
+                        missing_end = reason.find(".", missing_start)
+                    missing = reason[missing_start:missing_end].strip()
+                if missing:
+                    note.append("No price: " + humanize_feature_text(missing, labels))
+                lower_reason = reason.lower()
+                if "quality-qualified for" in lower_reason:
+                    note.append("Critical checks passed")
+                elif "quality was not measured" in lower_reason:
+                    note.append("Quality not checked")
+                else:
+                    note.append("Quality review pending")
+                st.caption(" · ".join(note))
 
 
 def results(pack: dict):
+    labels = feature_label_map(pack)
     st.markdown(
         '<header class="ca-results-head"><div><h2 class="ca-results-title">'
         '<span class="ca-results-number">3</span>DecisionPack Results</h2>'
-        f'<p class="ca-results-run">Run <code>{escape(str(pack["run_id"]))}</code></p></div>'
+        '</div>'
         + status_line(pack)
         + '</header>',
         unsafe_allow_html=True,
@@ -958,7 +1170,7 @@ def results(pack: dict):
             st.error("Why it stopped: " + why)
             if svc.setup_hint(why):
                 st.warning(svc.setup_hint(why))
-    recommendation_view(pack)
+    recommendation_view(pack, labels)
     tabs = st.tabs(
         [
             "Cost by stage",
@@ -972,42 +1184,46 @@ def results(pack: dict):
 
     with tabs[0]:
         totals_view(pack)
-        st.markdown("**Measured versus estimated tokens**")
+        st.markdown('<h3 class="ca-section-title">Estimated vs actual token counts</h3>', unsafe_allow_html=True)
+        st.caption("Actual counts appear only after a model runs live.")
         token_rows = []
         for run in runs:
             executed = bool(run.get("executed"))
-            state_label = "Measured" if executed else "Projected only"
-            detail = str(run.get("model_id") or "")
-            reason = str(run.get("not_executed_reason") or "")
-            if reason:
-                detail += (" · " if detail else "") + reason
+            state_label = "Actual run" if executed else "Estimate only"
+            state_tone = "green" if executed else "yellow"
+            estimated = run.get("estimated") or {}
+            actual = run.get("measured_mean") or {}
+            estimated_value = display_number(estimated.get("output_tokens"))
+            actual_value = display_number(actual.get("output_tokens"))
             token_rows.append(
                 [
-                    escape(str(run["feature_id"]))
-                    + (f'<span class="sub-value">{escape(detail)}</span>' if detail else ""),
-                    f'<span class="ca-pill" data-tone="{"green" if executed else "neutral"}">{state_label}</span>',
-                    f'<span class="mono-value">{display_number(run["estimated"].get("output_tokens"))}</span>',
-                    f'<span class="mono-value">{display_number((run.get("measured_mean") or {}).get("output_tokens"))}</span>',
+                    escape(labels.get(str(run["feature_id"]), "Feature")),
+                    f'<span class="ca-pill" data-tone="{state_tone}">{state_label}</span>',
+                    f'<span class="{"token-estimate" if estimated_value != "—" else "token-missing"}">{estimated_value}</span>',
+                    f'<span class="{"token-actual" if actual_value != "—" else "token-missing"}">{actual_value}</span>',
                 ]
             )
         st.markdown(
-            html_table(["Feature", "State", "Est. output", "Meas. output"], token_rows, numeric={2, 3}),
+            html_table(["Feature", "Run status", "Estimated tokens", "Actual tokens"], token_rows, numeric={2, 3}),
             unsafe_allow_html=True,
         )
-        st.markdown("**What each feature would cost per month as you grow**")
+        st.markdown('<h3 class="ca-section-title">Feature cost by growth stage</h3>', unsafe_allow_html=True)
         if not rows:
             st.write("No cost rows in this pack.")
         else:
             frame = pd.DataFrame(rows)
-            pick = st.selectbox("Feature", list(dict.fromkeys(frame["feature"])), key="cost_feature")
-            subset = frame[frame["feature"] == pick]
+            feature_ids = list(dict.fromkeys(frame["feature"]))
+            feature_options = {}
+            for index, feature_id in enumerate(feature_ids, start=1):
+                label = labels.get(str(feature_id), f"Feature {index}")
+                if label in feature_options:
+                    label = f"{label} {index}"
+                feature_options[label] = feature_id
+            selected_label = st.selectbox("Feature", list(feature_options), key="cost_feature")
+            subset = frame[frame["feature"] == feature_options[selected_label]]
             stage_chart(subset, "model", "monthly USD")
-            st.dataframe(subset.drop(columns="feature"), width="stretch", hide_index=True)
-            st.caption(
-                f"Priced at the {label}. 'measured' rows use token counts from real model runs; 'estimated' rows "
-                "are projected only (the model was not run). Lower bound: some lines, such as reasoning, are not "
-                "priced. This is not your Nightshift bill and not a recommendation."
-            )
+            st.markdown(cost_comparison_table(subset), unsafe_allow_html=True)
+            st.caption("Green markers and tags show the lowest priced option per stage.")
 
     with tabs[1]:
         st.markdown('<h3 class="ca-check-title">Deterministic checks decide quality. The Critic only flags.</h3>', unsafe_allow_html=True)
@@ -1035,7 +1251,7 @@ def results(pack: dict):
                 tone = "green" if result == "pass" else "red" if result == "fail" else "blue"
                 check_rows.append(
                     [
-                        escape(str(check["feature"])),
+                        escape(labels.get(str(check["feature"]), "Feature")),
                         escape(str(check["model"])),
                         escape(str(check["check"])),
                         f'<span class="ca-pill" data-tone="{tone}">{escape(result.title())}</span>',
@@ -1055,19 +1271,20 @@ def results(pack: dict):
         findings = [f for c in pack.get("critiques", []) for f in c.get("findings", [])]
         st.markdown(f"**Critic flags ({len(findings)})**")
         if findings:
-            st.dataframe(
-                pd.DataFrame(
-                    [{k: f.get(k) for k in ("kind", "severity", "feature_id", "model_id", "claim")} for f in findings]
-                ),
-                width="stretch",
-                hide_index=True,
-            )
+            flag_rows = [
+                {"kind": f.get("kind"), "severity": f.get("severity"),
+                 "feature": labels.get(str(f.get("feature_id")), "Feature"),
+                 "model": display_model_id(f.get("model_id") or ""),
+                 "claim": humanize_feature_text(str(f.get("claim") or ""), labels)}
+                for f in findings
+            ]
+            st.dataframe(pd.DataFrame(flag_rows), width="stretch", hide_index=True)
 
     with tabs[2]:
         if pack.get("questions"):
             st.markdown("**Questions to resolve**")
             for item in pack["questions"]:
-                st.write("- " + item)
+                st.write("- " + humanize_feature_text(str(item), labels))
         if pack["risks"]:
             st.dataframe(
                 pd.DataFrame([{k: r.get(k) for k in ("severity", "description", "origin")} for r in pack["risks"]]),
@@ -1075,13 +1292,13 @@ def results(pack: dict):
                 hide_index=True,
             )
         for item in pack["limitations"]:
-            st.write("- " + item)
+            st.write("- " + humanize_feature_text(str(item), labels))
         with st.expander(f"Evidence gaps ({len(pack['evidence_gaps'])}): unknown or assumed values, never filled in"):
             st.dataframe(pd.DataFrame(pack["evidence_gaps"]), width="stretch", hide_index=True)
         with st.expander("Build panel (secondary; never added to running costs)"):
             panel = pack["build_panel"]
             for item in panel.get("reasons", []) + panel.get("questions", []):
-                st.write("- " + item)
+                st.write("- " + humanize_feature_text(str(item), labels))
         st.caption(pack["disclaimer"])
 
     with tabs[3]:
@@ -1101,14 +1318,14 @@ def results(pack: dict):
         st.download_button(
             "Download decision pack (JSON)",
             json.dumps(pack, indent=2),
-            file_name=f"{pack['run_id']}{suffix}.pack.json",
+            file_name=f"decision-pack{suffix}.pack.json",
             mime="application/json",
         )
         if events:
             st.download_button(
                 "Download trace (JSONL)",
                 svc.trace_text(pack),
-                file_name=f"{pack['run_id']}{suffix}.trace.jsonl",
+                file_name=f"decision-pack{suffix}.trace.jsonl",
             )
 
 
@@ -1130,10 +1347,6 @@ def main():
             with st.container():
                 approved, max_spend = evaluation_spend(example, sample)
             with st.container(key="eval-actions"):
-                st.markdown(
-                    f'<p class="ca-run-id">RUN_ID: <span class="ca-mono">{state["run_id"]}</span></p>',
-                    unsafe_allow_html=True,
-                )
                 request = svc.build_request(
                     template,
                     run_id=state["run_id"],

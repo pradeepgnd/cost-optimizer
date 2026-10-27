@@ -74,7 +74,7 @@ def test_live_shaped_pack_shows_market_costs_checks_and_critic_flags():
     at.run()
     assert not at.exception
     assert 'class="ca-sample"' not in _markdown_text(at)  # live packs may mention SAMPLE in limitations text
-    assert any("market reference price" in c.value for c in at.caption)
+    assert any("Price source:" in c.value for c in at.caption)
     assert "Recommendations locked until human review" in _markdown_text(at)
     text = _markdown_text(at).lower()
     assert "pending human review" in text
@@ -106,7 +106,7 @@ def test_sample_run_shows_monthly_totals_with_revenue():
     assert 'class="ca-html-table"' in text
     assert "AI cost (USD)" in text and "Revenue (USD)" in text
     assert "$60.00" in text  # 50 users × 8% paying × $15 per paying user
-    assert any("sample placeholder prices" in c.value and "AI-only" in c.value for c in at.caption)
+    assert any("sample placeholder prices" in c.value and "lower bound" in c.value for c in at.caption)
     text = " ".join(item.value for item in at.markdown)
     assert "Recommendation" in text
-    assert "sample/frontier-placeholder" in text and "sample/open-source-placeholder" in text
+    assert "Frontier sample" in text and "Open Source sample" in text
