@@ -117,50 +117,72 @@ section[data-testid="stSidebar"],
   letter-spacing: -0.04em; margin: 0; color: #0A0A0A;
 }
 .ca-display {
-  font-size: clamp(2.6rem, 7vw, 5.4rem); line-height: 0.92; font-weight: 900;
-  letter-spacing: -0.045em; color: #0A0A0A; max-width: 16ch; margin: 0 0 1.1rem;
+  font-size: clamp(3rem, 8vw, 6rem); line-height: 0.9; font-weight: 900;
+  letter-spacing: -0.05em; color: #0A0A0A; max-width: 18ch; margin: 0 0 1.5rem;
 }
 .ca-lede {
-  color: #0A0A0A; font-size: clamp(1.05rem, 2vw, 1.45rem); font-weight: 500;
-  line-height: 1.45; max-width: 38rem; margin: 0 0 0.5rem; opacity: 0.9;
+  color: #0A0A0A; font-size: clamp(1.15rem, 2.2vw, 1.5rem); font-weight: 500;
+  line-height: 1.5; max-width: 36rem; margin: 0 0 0.75rem; opacity: 0.9;
 }
 .ca-wave {
   display: block; width: calc(100% + 2 * var(--hero-pad)); max-width: none;
-  height: clamp(64px, 9vw, 128px); margin-left: calc(-1 * var(--hero-pad)); margin-bottom: -1px;
+  height: clamp(80px, 11vw, 144px); margin-left: calc(-1 * var(--hero-pad)); margin-bottom: -1px;
 }
 .st-key-rail {
-  background: #0A0A0A;
-  border-radius: var(--dp-radius-pill);
-  padding: 0.35rem 0.85rem 0.35rem 0.35rem;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.28);
+  background: #0A0A0A !important;
+  border-radius: var(--dp-radius-pill) !important;
+  padding: 0.4rem 0.9rem 0.4rem 0.4rem !important;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 .st-key-rail [data-testid="stRadio"] [role="radiogroup"] {
-  display: flex; gap: 0.2rem; background: #171717; border-radius: var(--dp-radius-pill); padding: 0.2rem;
+  display: flex; gap: 0.15rem; background: #171717; border-radius: var(--dp-radius-pill); padding: 0.2rem;
 }
 .st-key-rail [data-testid="stRadio"] [role="radiogroup"] > label {
-  border-radius: var(--dp-radius-pill); padding: 0.4rem 0.85rem; margin: 0; cursor: pointer; color: #A3A3A3;
+  border-radius: var(--dp-radius-pill); padding: 0.45rem 1rem; margin: 0; cursor: pointer;
+  color: #A3A3A3; font-size: 0.875rem; font-weight: 600; transition: color 0.15s ease, background 0.15s ease;
 }
 .st-key-rail [data-testid="stRadio"] [data-baseweb="radio"] { display: none !important; }
 .st-key-rail [data-testid="stRadio"] [role="radiogroup"] > label:has(input:checked) {
-  background: #FDE047; color: #0A0A0A; font-weight: 600;
+  background: #FDE047 !important; color: #0A0A0A !important; font-weight: 600;
 }
-.st-key-rail [data-testid="stRadio"] [role="radiogroup"] > label:has(input:checked) * { color: #0A0A0A !important; }
+.st-key-rail [data-testid="stRadio"] [role="radiogroup"] > label:has(input:checked) * {
+  color: #0A0A0A !important; font-weight: 600 !important;
+}
+.st-key-rail [data-testid="stSelectbox"] {
+  min-width: 11rem;
+}
 .st-key-rail [data-baseweb="select"] > div {
   background: transparent !important; border: none !important; box-shadow: none !important;
+  min-height: 2.25rem !important;
 }
-.st-key-rail [data-baseweb="select"] * { color: #D4D4D4 !important; }
+.st-key-rail [data-baseweb="select"] *,
+.st-key-rail [data-baseweb="select"] svg {
+  color: #D4D4D4 !important; fill: #A3A3A3 !important;
+}
+.st-key-rail [data-baseweb="select"]:focus-within > div {
+  background: rgba(255, 255, 255, 0.06) !important; border-radius: var(--dp-radius-pill) !important;
+}
 .ca-sample {
-  margin: 0 0 1rem; padding: 1.15rem 1.35rem;
+  display: flex; align-items: flex-start; gap: 1rem;
+  margin: 0 0 1.25rem; padding: 1.35rem 1.5rem;
   background: var(--dp-glass); color: #D4D4D4;
   border: 1px solid rgba(253, 224, 71, 0.3); border-radius: var(--dp-radius-panel);
   backdrop-filter: blur(24px); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
   font-size: var(--dp-typography-caption); font-weight: 400;
   animation: ca-rise var(--dp-motion-enter) both;
 }
-.ca-sample b {
-  display: block; margin-bottom: 0.2rem; color: var(--dp-color-accent);
-  font-size: var(--dp-typography-label); font-weight: 700; letter-spacing: 0.14em;
+.ca-sample-icon {
+  flex: 0 0 auto; width: 2.5rem; height: 2.5rem; border-radius: 999px;
+  display: inline-grid; place-items: center;
+  background: #FDE047; color: #0A0A0A; font-size: 1.1rem; font-weight: 800;
 }
+.ca-sample-body { flex: 1; min-width: 0; }
+.ca-sample b {
+  display: block; margin-bottom: 0.25rem; color: var(--dp-color-accent);
+  font-size: var(--dp-typography-label); font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase;
+}
+.ca-sample span { color: #D4D4D4; }
 .ca-step { display: flex; align-items: flex-start; gap: 0.75rem; margin: 0 0 1rem; border: none; background: transparent; }
 .ca-step b {
   display: inline-grid; place-items: center; width: 2rem; height: 2rem; min-width: 2rem; padding: 0;
@@ -177,35 +199,48 @@ section[data-testid="stSidebar"],
   font-size: var(--dp-typography-caption); font-weight: 400; letter-spacing: 0; line-height: 1.4;
 }
 .ca-status {
-  display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0 0 1rem; padding: 0.45rem;
+  display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0 0 1rem; padding: 0.5rem;
   background: #171717; color: #D4D4D4;
-  border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 1rem;
   font-family: var(--dp-typography-mono); font-size: 0.72rem; font-weight: 500;
-  letter-spacing: 0.06em; text-transform: uppercase;
+  letter-spacing: 0.08em; text-transform: uppercase;
 }
 .ca-status .ca-pill {
-  padding: 0.3rem 0.75rem; border-radius: var(--dp-radius-pill); background: rgba(255, 255, 255, 0.06);
+  padding: 0.3rem 0.75rem; border-radius: var(--dp-radius-pill); background: rgba(255, 255, 255, 0.05);
+  color: #D4D4D4;
 }
-.ca-status b { font-weight: 700; color: #FFFFFF; }
-.ca-trust {
-  font-family: var(--dp-typography-mono); font-size: 0.75rem; letter-spacing: 0.04em;
-  color: #737373; margin: 0.35rem 0 0.85rem;
+.ca-status .ca-pill-ok {
+  background: rgba(34, 197, 94, 0.2); color: #4ade80;
+}
+.ca-status b { font-weight: 700; color: inherit; }
+.ca-run-id {
+  font-family: var(--dp-typography-mono); font-size: 0.72rem; letter-spacing: 0.06em;
+  color: #737373; margin: 0 0 0.75rem; text-transform: uppercase;
 }
 .ca-pipeline {
   display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem;
-  margin: 0.5rem 0 1rem; padding: 0.5rem;
+  margin: 0.5rem 0 1.25rem; padding: 0.5rem;
   background: var(--dp-glass); border: 1px solid var(--dp-glass-line); border-radius: var(--dp-radius-panel);
   backdrop-filter: blur(24px); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
 }
 .ca-phase {
-  padding: 0.9rem 1rem; background: rgba(255, 255, 255, 0.03);
+  display: flex; align-items: flex-start; gap: 0.85rem;
+  padding: 1rem; background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 1rem; color: #FFFFFF;
 }
-.ca-phase:last-child { border-right: 1px solid rgba(255, 255, 255, 0.08); }
+.ca-phase-mark {
+  flex: 0 0 auto; width: 1.75rem; height: 1.75rem; margin-top: 0.1rem;
+  border-radius: 999px; display: inline-grid; place-items: center;
+  background: rgba(255, 255, 255, 0.1); color: #A3A3A3; font-size: 0.75rem; font-weight: 800;
+}
 .ca-phase[data-state="pending"] { opacity: 0.45; }
 .ca-phase[data-state="active"],
 .ca-phase[data-state="done"] {
   background: rgba(253, 224, 71, 0.1); border-color: rgba(253, 224, 71, 0.22);
+}
+.ca-phase[data-state="active"] .ca-phase-mark,
+.ca-phase[data-state="done"] .ca-phase-mark {
+  background: #FDE047; color: #0A0A0A;
 }
 .ca-phase[data-state="active"] strong,
 .ca-phase[data-state="done"] strong { color: var(--dp-color-accent); }
@@ -217,6 +252,14 @@ section[data-testid="stSidebar"],
   line-height: 1.35; color: var(--dp-color-muted);
 }
 .ca-phase em { margin-top: 0.4rem; font-style: normal; font-weight: 600; color: #E5E5E5; }
+.st-key-eval-run {
+  align-items: stretch !important;
+}
+.st-key-eval-actions {
+  border-left: 1px solid rgba(255, 255, 255, 0.1);
+  padding-left: 1.5rem;
+  margin-left: 0.5rem;
+}
 .ca-locked {
   margin: 0.75rem 0; padding: 0.85rem 1rem;
   border: 1px solid rgba(253, 224, 71, 0.3); border-radius: 0.75rem;
@@ -231,20 +274,31 @@ div[data-testid="stVerticalBlockBorderWrapper"] {
   backdrop-filter: blur(24px);
   animation: ca-rise var(--dp-motion-enter) both;
 }
+div[data-testid="stTabs"] {
+  background: var(--dp-glass); border: 1px solid var(--dp-glass-line); border-radius: var(--dp-radius-panel);
+  backdrop-filter: blur(24px); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2); overflow: hidden;
+  padding: 0.35rem 0.35rem 0.85rem;
+}
 div[data-testid="stTabs"] [role="tablist"] {
-  gap: 0.4rem; padding: 0.4rem; border-radius: var(--dp-radius-panel) var(--dp-radius-panel) 0 0;
+  gap: 0.4rem; padding: 0.4rem; border-radius: 0;
   background: transparent; border: none; border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  width: 100%; margin-bottom: 1rem;
+  width: 100%; margin-bottom: 0.5rem;
 }
 div[data-testid="stTab"] {
-  border-radius: 0.75rem; padding: 0.55rem 1.1rem; background: transparent; border: none; transition: background 0.2s ease;
+  border-radius: 0.75rem; padding: 0.7rem 1.35rem; background: transparent; border: none;
+  transition: background 0.2s ease, color 0.2s ease;
 }
-div[data-testid="stTab"] p { color: #A3A3A3 !important; font-weight: 500; }
+div[data-testid="stTab"] p { color: #A3A3A3 !important; font-weight: 500; font-size: 0.875rem; }
 div[data-testid="stTab"]:hover { background: rgba(255, 255, 255, 0.05); }
 div[data-testid="stTab"]:hover p { color: #FFFFFF !important; }
-div[data-testid="stTab"][aria-selected="true"] { background: var(--dp-color-accent); border: none; }
-div[data-testid="stTab"][aria-selected="true"] p {
-  color: #0A0A0A !important; font-weight: 600;
+/* tab-active: yellow fill, onyx type — matches Hyper-Saturated HTML */
+div[data-testid="stTab"][aria-selected="true"],
+div[data-testid="stTab"].tab-active {
+  background: #FDE047 !important; border: none !important;
+}
+div[data-testid="stTab"][aria-selected="true"] p,
+div[data-testid="stTab"].tab-active p {
+  color: #0A0A0A !important; font-weight: 600 !important;
 }
 [data-testid="stTextInput"] [data-testid="stWidgetLabel"] p,
 [data-testid="stTextArea"] [data-testid="stWidgetLabel"] p,
@@ -257,16 +311,48 @@ div[data-testid="stTab"][aria-selected="true"] p {
 [data-baseweb="textarea"] > div,
 [data-baseweb="select"] > div {
   background: rgba(255, 255, 255, 0.05) !important;
-  border-color: rgba(255, 255, 255, 0.1) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
   border-radius: var(--dp-radius-control) !important;
+  box-shadow: none !important;
 }
-.st-key-rail [data-baseweb="select"] > div { background: transparent !important; border-color: transparent !important; }
+.st-key-rail [data-baseweb="select"] > div {
+  background: transparent !important; border-color: transparent !important;
+}
 [data-baseweb="input"]:focus-within > div,
 [data-baseweb="textarea"]:focus-within > div,
 [data-baseweb="select"]:focus-within > div {
   border-color: #FDE047 !important; background: rgba(255, 255, 255, 0.08) !important;
 }
 input, textarea { color: #FFFFFF !important; caret-color: #FDE047; }
+/* Dropdown menus: dark glass + yellow selected row (not default Streamlit chrome) */
+[data-baseweb="popover"] [data-baseweb="menu"],
+ul[role="listbox"] {
+  background: #171717 !important;
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  border-radius: 1rem !important;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.55) !important;
+  padding: 0.35rem !important;
+}
+[data-baseweb="menu"] li,
+ul[role="listbox"] li,
+[role="option"] {
+  border-radius: 0.65rem !important;
+  color: #E5E5E5 !important;
+}
+[data-baseweb="menu"] li[aria-selected="true"],
+ul[role="listbox"] li[aria-selected="true"],
+[role="option"][aria-selected="true"],
+[data-baseweb="menu"] li:hover,
+ul[role="listbox"] li:hover,
+[role="option"]:hover {
+  background: #FDE047 !important;
+  color: #0A0A0A !important;
+}
+[data-baseweb="menu"] li[aria-selected="true"] *,
+ul[role="listbox"] li[aria-selected="true"] *,
+[role="option"][aria-selected="true"] * {
+  color: #0A0A0A !important;
+}
 div[data-testid="stAlert"] {
   background: #171717 !important; color: #FFFFFF !important;
   border: 1px solid rgba(253, 224, 71, 0.45) !important; border-radius: var(--dp-radius-control) !important;
@@ -323,7 +409,11 @@ button[data-testid="stBaseButton-secondary"] p { color: #FFFFFF !important; font
 @media (max-width: 720px) {
   .ca-pipeline { grid-template-columns: 1fr; }
   .st-key-hero-bar { align-items: flex-start !important; }
-  .ca-display { font-size: clamp(2.2rem, 12vw, 3.2rem); }
+  .ca-display { font-size: clamp(2.4rem, 12vw, 3.4rem); }
+  .st-key-eval-actions {
+    border-left: none; border-top: 1px solid rgba(255, 255, 255, 0.1);
+    padding-left: 0; padding-top: 1.25rem; margin-left: 0; margin-top: 0.5rem;
+  }
 }
 </style>
 """
@@ -391,14 +481,17 @@ def num(value):
 def banner(pack: dict | None, sample: bool):
     if (pack or {}).get("execution_mode") == "sample" or (pack is None and sample):
         st.markdown(
-            '<div class="ca-sample" role="status"><b>SAMPLE/OFFLINE</b>'
-            "<span>No network calls, no model executed. Tokens are estimated and nothing here is measured.</span></div>",
+            '<div class="ca-sample" role="status">'
+            '<div class="ca-sample-icon" aria-hidden="true">i</div>'
+            '<div class="ca-sample-body"><b>SAMPLE/OFFLINE</b>'
+            "<span>No network calls, no model executed. Tokens are estimated and nothing here is measured.</span>"
+            "</div></div>",
             unsafe_allow_html=True,
         )
 
 
 def controls() -> tuple[str, bool]:
-    """Yellow hero: wordmark, mode and example rail, then the cost promise."""
+    """Yellow liquid hero: Cost.Advisor wordmark, Sample/Live pills, Idea example rail, headline."""
     with st.container(key="hero"):
         with st.container(key="hero-bar", horizontal=True, vertical_alignment="center"):
             st.markdown('<div class="ca-brand-hero">Cost<span>.</span>Advisor</div>', unsafe_allow_html=True)
@@ -406,7 +499,7 @@ def controls() -> tuple[str, bool]:
                 with st.container(horizontal=True, vertical_alignment="center", gap="small"):
                     mode = st.radio(
                         "Mode",
-                        ["Sample (offline)", "Live (Nightshift + Zetaris)"],
+                        ["Sample (offline)", "Live"],
                         key="mode",
                         horizontal=True,
                         label_visibility="collapsed",
@@ -535,22 +628,26 @@ def form(example: str, sample: bool, bindings: str):
                     "modality is skipped for that feature; two picks in the same tier stop the run with a message."
                 )
 
-    with st.container(border=True):
-        step(
-            2,
-            "Evaluation spend",
-            "Approve measured runs and cap what they may spend"
-            if not sample
-            else "Sample mode runs nothing measurable",
-        )
-        approved = st.checkbox(
-            "I approve measured evaluation runs (live mode only; sample mode runs nothing)",
-            value=False,
-            key=key("approved"),
-        )
-        max_spend = st.text_input("Maximum evaluation spend (USD)", "0.50", key=key("spend"))
+    return template, idea, user, features, stages, threshold, ceiling, picks, price, fraction
 
-    return template, idea, user, features, stages, threshold, ceiling, approved, max_spend, picks, price, fraction
+
+def evaluation_spend(example: str, sample: bool) -> tuple[bool, str]:
+    """Glass card 2: Evaluation Spend controls (Run / New run sit beside this in main)."""
+    key = lambda name: f"{example}:{name}"
+    step(
+        2,
+        "Evaluation Spend",
+        "Approve measured runs and cap what they may spend"
+        if not sample
+        else "Sample mode runs nothing measurable.",
+    )
+    approved = st.checkbox(
+        "I approve measured evaluation runs (live mode only; sample mode runs nothing)",
+        value=False,
+        key=key("approved"),
+    )
+    max_spend = st.text_input("Maximum evaluation spend (USD)", "0.50", key=key("spend"))
+    return approved, max_spend
 
 
 def to_feature_rows(frame: pd.DataFrame) -> list[dict]:
@@ -589,16 +686,18 @@ SCENARIO_LABEL = {
 
 
 def pipeline_view(events: list[dict], summary: dict):
-    """Founder-facing Planner → Analyst → Critic strip; raw steps stay under an expander."""
+    """Founder-facing Planner → Analyst → Critic highlight strip; raw steps stay under an expander."""
     phases = svc.pipeline_phases(events)
     cells = []
     for phase in phases:
         detail = phase.get("detail") or ("in progress" if phase["state"] == "active" else "")
+        mark = "✓" if phase["state"] in ("active", "done") else "·"
         cells.append(
-            f'<div class="ca-phase" data-state="{phase["state"]}"><strong>{phase["name"]}</strong>'
-            f'<span>{phase["copy"]}</span>'
+            f'<div class="ca-phase" data-state="{phase["state"]}">'
+            f'<span class="ca-phase-mark" aria-hidden="true">{mark}</span>'
+            f'<div><strong>{phase["name"]}</strong><span>{phase["copy"]}</span>'
             + (f"<em>{detail}</em>" if detail else "")
-            + "</div>"
+            + "</div></div>"
         )
     st.markdown('<div class="ca-pipeline">' + "".join(cells) + "</div>", unsafe_allow_html=True)
     st.caption(
@@ -674,12 +773,16 @@ def totals_view(pack: dict):
 
 
 def status_line(pack: dict):
+    ok = pack["status"] == "complete"
+    status_cls = "ca-pill ca-pill-ok" if ok else "ca-pill"
+    spend = pack["spend_usd"]
+    spend_txt = f"${spend}" if not str(spend).startswith("$") else str(spend)
     st.markdown(
         '<div class="ca-status" role="status">'
-        f'<span class="ca-pill">Status <b>{pack["status"]}</b></span>'
-        f'<span class="ca-pill">Mode <span class="ca-mono">{pack["execution_mode"]}</span></span>'
-        f'<span class="ca-pill">Evaluation spend (USD) <span class="ca-mono">{pack["spend_usd"]}</span></span>'
-        f'<span class="ca-pill">Model requests <span class="ca-mono">{pack["dispatch_count"]}</span></span>'
+        f'<span class="{status_cls}">Status: <b>{pack["status"]}</b></span>'
+        f'<span class="ca-pill">Mode: <span class="ca-mono">{pack["execution_mode"]}</span></span>'
+        f'<span class="ca-pill">Spend: <span class="ca-mono">{spend_txt}</span></span>'
+        f'<span class="ca-pill">Reqs: <span class="ca-mono">{pack["dispatch_count"]}</span></span>'
         "</div>",
         unsafe_allow_html=True,
     )
@@ -714,7 +817,7 @@ def recommendation_view(pack: dict):
 
 
 def results(pack: dict):
-    step(3, "Results", f"DecisionPack for run {pack['run_id']}")
+    step(3, "DecisionPack Results", f"Run {pack['run_id']}")
     status_line(pack)
     status = pack["status"]
     if status != "complete":
@@ -728,6 +831,11 @@ def results(pack: dict):
                 st.warning(svc.setup_hint(why))
     for item in pack.get("questions", []):
         st.write("- " + item)
+
+    events = [json.loads(line) for line in svc.trace_text(pack).splitlines() if line.strip()]
+    if events:
+        summary, _ = svc.progress_rows(events)
+        pipeline_view(events, summary)
 
     recommendation_view(pack)
     tabs = st.tabs(
@@ -834,7 +942,6 @@ def results(pack: dict):
         st.caption(pack["disclaimer"])
 
     with tabs[3]:
-        events = [json.loads(line) for line in svc.trace_text(pack).splitlines() if line.strip()]
         st.markdown("**Every Zetaris query, model request and memory operation, in order**")
         if events:
             st.dataframe(
@@ -872,30 +979,40 @@ def main():
     outcome = state.get("outcome") or ({"result": stored, "reused": True} if stored else None)
     banner(outcome["result"] if outcome and "execution_mode" in outcome["result"] else None, sample)
 
-    template, idea, user, features, stages, threshold, ceiling, approved, max_spend, picks, price, fraction = form(
+    template, idea, user, features, stages, threshold, ceiling, picks, price, fraction = form(
         example, sample, bindings
     )
-    st.markdown(
-        f'<p class="ca-trust">Run ID <span class="ca-mono">{state["run_id"]}</span>. '
-        "A run ID runs once; use New run for another.</p>",
-        unsafe_allow_html=True,
-    )
-    request = svc.build_request(
-        template,
-        run_id=state["run_id"],
-        idea=idea,
-        user=user,
-        features=to_feature_rows(features),
-        stages=stages.to_dict("records"),
-        switch_threshold=threshold,
-        monthly_ceiling=ceiling,
-        approved=approved or sample,
-        max_spend=max_spend,
-        candidate_models=picks,
-        subscription_price=price,
-        paying_fraction=fraction,
-    )
-    parsed, problem = svc.validate(request)
+    with st.container(border=True, key="eval-run"):
+        with st.container(horizontal=True, vertical_alignment="center", gap="medium"):
+            with st.container():
+                approved, max_spend = evaluation_spend(example, sample)
+            with st.container(key="eval-actions"):
+                st.markdown(
+                    f'<p class="ca-run-id">RUN_ID: <span class="ca-mono">{state["run_id"]}</span></p>',
+                    unsafe_allow_html=True,
+                )
+                request = svc.build_request(
+                    template,
+                    run_id=state["run_id"],
+                    idea=idea,
+                    user=user,
+                    features=to_feature_rows(features),
+                    stages=stages.to_dict("records"),
+                    switch_threshold=threshold,
+                    monthly_ceiling=ceiling,
+                    approved=approved or sample,
+                    max_spend=max_spend,
+                    candidate_models=picks,
+                    subscription_price=price,
+                    paying_fraction=fraction,
+                )
+                parsed, problem = svc.validate(request)
+                blocked = parsed is None or state.get("busy", False) or (not sample and not bindings)
+                with st.container(horizontal=True, vertical_alignment="center", gap="small"):
+                    run_clicked = st.button("Run", type="primary", disabled=blocked)
+                    if st.button("New run", type="secondary"):
+                        state["run_id"], state["outcome"] = svc.new_run_id(), None
+                        st.rerun()
     if problem:
         st.error("Fix the inputs: " + problem)
     if not sample and not approved:
@@ -903,12 +1020,6 @@ def main():
             "Approval is not ticked: a live run will read prices and pick candidates, then stop before any "
             "model request (status needs_input). Tick the approval box above to measure."
         )
-    blocked = parsed is None or state.get("busy", False) or (not sample and not bindings)
-    with st.container(border=True, horizontal=True, vertical_alignment="center", gap="small"):
-        run_clicked = st.button("Run", type="primary", disabled=blocked)
-        if st.button("New run", type="secondary"):
-            state["run_id"], state["outcome"] = svc.new_run_id(), None
-            st.rerun()
     if run_clicked and parsed is not None:
         state["busy"] = True
         try:

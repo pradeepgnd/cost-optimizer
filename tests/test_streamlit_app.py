@@ -37,7 +37,9 @@ def test_sample_form_runs_once_and_shows_the_offline_label():
     text = _markdown_text(at)
     assert "SAMPLE/OFFLINE" in text
     assert "Status" in text and "complete" in text
-    assert "Evaluation spend (USD)" in text
+    assert "Spend:" in text
+    assert "DecisionPack Results" in text
+    assert "ca-pipeline" in text and "Planner" in text
     run_id = at.session_state["run_id"]
     pack = svc.load_result(run_id)
     assert pack["execution_mode"] == "sample" and pack["status"] == "complete"
@@ -83,7 +85,7 @@ def test_live_mode_shows_which_price_data_it_will_use_or_blocks_run(tmp_path, mo
     monkeypatch.setattr(svc, "DEFAULT_BINDINGS", tmp_path / "missing.json")
     monkeypatch.delenv("ZETARIS_BINDINGS_FILE", raising=False)
     at = AppTest.from_file(str(ROOT / "streamlit_app.py"), default_timeout=120).run()
-    at.radio(key="mode").set_value("Live (Nightshift + Zetaris)").run()
+    at.radio(key="mode").set_value("Live").run()
     assert any("Price data not found" in e.value for e in at.error)
     assert next(b for b in at.button if b.label == "Run").disabled
     bindings = tmp_path / "b.json"
