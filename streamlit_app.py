@@ -5,12 +5,13 @@
 The UI holds no business rules. It builds a RunRequest, hands it to `run.py` through app/ui_service.py, and renders the
 serialized DecisionPack. A run ID owns one stored result: rerenders and double clicks load it and never start a second run.
 
-Visual system and IA: docs/design.md (Bauhaus; Brief → Run → Results).
+Visual system: .superdesign/drafts/cost-advisor-hyper-saturated-fluid.html.
 """
 from __future__ import annotations
 
 import json
 import os
+from pathlib import Path
 
 import altair as alt
 import pandas as pd
@@ -23,230 +24,20 @@ st.set_page_config(page_title="Cost.Advisor", layout="wide")
 if not os.getenv("COST_ADVISOR_NO_DOTENV"):
     load_dotenv()   # the same settings run.py reads; values are never displayed
 
-# Bauhaus tokens (docs/design.md). Face stack: "Bauhaus Host", "Host Grotesk", sans-serif —
-# Host Grotesk is the loaded Google Font stand-in when Bauhaus Host is unavailable.
-STYLE = """
-<style>
-@import url('https://fonts.googleapis.com/css2?family=Host+Grotesk:wght@400;450;500;650;700;750;800&display=swap');
-:root {
-  --dp-color-ground: #f5f4ee;
-  --dp-color-ink: #000000;
-  --dp-color-accent: #ff0000;
-  --dp-color-field: #0000ff;
-  --dp-color-field-support: #ffff00;
-  --dp-color-quiet: #e8e8e8;
-  --dp-color-on-field: #ffffff;
-  --dp-typography-face: "Bauhaus Host", "Host Grotesk", sans-serif;
-  --dp-typography-body: 18px;
-  --dp-typography-reading: 17px;
-  --dp-typography-label: 15px;
-  --dp-typography-caption: 14px;
-  --dp-typography-weight-display: 800;
-  --dp-typography-weight-action: 750;
-  --dp-typography-weight-label: 650;
-  --dp-typography-weight-reading: 450;
-  --dp-typography-reading-leading: 1.5;
-  --dp-spacing-gutter: clamp(22px, 4.45cqi, 72px);
-  --dp-radius-square: 0;
-  --dp-radius-circle: 50%;
-  --dp-border-rule: 4px;
-  --dp-border-compact: 3px;
-  --dp-motion-interaction: 0s;
-}
-html, body, [class*="css"], .stApp {
-  font-family: var(--dp-typography-face);
-  font-size: var(--dp-typography-body);
-  font-weight: var(--dp-typography-weight-reading);
-  color: var(--dp-color-ink);
-  background: var(--dp-color-ground) !important;
-}
-.stApp { background: var(--dp-color-ground) !important; }
-h1, h2, h3, .ca-brand-hero, .ca-brand, .ca-step div, .ca-phase strong {
-  font-family: var(--dp-typography-face);
-  font-weight: var(--dp-typography-weight-display);
-  letter-spacing: -0.03em;
-  color: var(--dp-color-ink);
-}
-.ca-mono, code, pre { font-family: var(--dp-typography-face) !important; font-weight: 650; }
-.block-container {
-  padding-top: 1.5rem;
-  padding-left: var(--dp-spacing-gutter);
-  padding-right: var(--dp-spacing-gutter);
-  max-width: 1180px;
-}
-section[data-testid="stSidebar"] {
-  background: var(--dp-color-quiet) !important;
-  border-right: var(--dp-border-rule) solid var(--dp-color-ink) !important;
-  min-width: 15rem !important;
-  max-width: 18rem !important;
-}
-section[data-testid="stSidebar"] > div { background: var(--dp-color-quiet) !important; }
-.ca-hero {
-  position: relative; overflow: hidden;
-  padding: 1.5rem 0 1.25rem; margin-bottom: 1rem;
-  background: var(--dp-color-ground);
-  border-bottom: var(--dp-border-rule) solid var(--dp-color-ink);
-  border-radius: var(--dp-radius-square);
-}
-.ca-brand-hero {
-  font-size: clamp(2.4rem, 5vw, 3.6rem); line-height: 1; font-weight: var(--dp-typography-weight-display);
-  margin: 0 0 .65rem; color: var(--dp-color-ink);
-}
-.ca-brand-hero span { color: var(--dp-color-accent); }
-.ca-hero p {
-  color: var(--dp-color-ink); font-size: var(--dp-typography-reading);
-  font-weight: var(--dp-typography-weight-reading); line-height: var(--dp-typography-reading-leading);
-  max-width: 52ch; margin: 0;
-}
-.ca-sample {
-  margin: 0 0 1rem; padding: .75rem 1rem;
-  background: var(--dp-color-field-support); color: var(--dp-color-ink);
-  border: var(--dp-border-rule) solid var(--dp-color-ink); border-radius: var(--dp-radius-square);
-  font-size: var(--dp-typography-label); font-weight: var(--dp-typography-weight-label);
-  transition: none; animation: none;
-}
-.ca-step { display: flex; align-items: stretch; gap: 0; margin: .25rem 0 1rem; border: var(--dp-border-rule) solid var(--dp-color-ink); }
-.ca-step b {
-  display: inline-grid; place-items: center; min-width: 2.75rem; padding: .55rem .4rem;
-  background: var(--dp-color-field-support); color: var(--dp-color-ink);
-  border-right: var(--dp-border-rule) solid var(--dp-color-ink); border-radius: var(--dp-radius-square);
-  font-weight: var(--dp-typography-weight-display); font-size: var(--dp-typography-label);
-}
-.ca-step div {
-  flex: 1; padding: .55rem .85rem; background: var(--dp-color-field-support);
-  font-size: 1.15rem; font-weight: var(--dp-typography-weight-display); line-height: 1.15;
-}
-.ca-step small {
-  display: block; margin-top: .2rem; color: var(--dp-color-ink);
-  font-size: var(--dp-typography-caption); font-weight: var(--dp-typography-weight-reading);
-  letter-spacing: 0; line-height: var(--dp-typography-reading-leading);
-}
-.ca-brand {
-  font-size: 1.15rem; font-weight: var(--dp-typography-weight-display);
-  margin-bottom: .4rem; color: var(--dp-color-ink);
-}
-.ca-brand span { color: var(--dp-color-accent); }
-.ca-status {
-  margin: 0 0 1rem; padding: .65rem .85rem;
-  background: var(--dp-color-quiet); color: var(--dp-color-ink);
-  border: var(--dp-border-compact) solid var(--dp-color-ink); border-radius: var(--dp-radius-square);
-  font-size: var(--dp-typography-label); font-weight: var(--dp-typography-weight-reading);
-}
-.ca-status b { font-weight: var(--dp-typography-weight-label); }
-.ca-trust { font-size: var(--dp-typography-caption); color: var(--dp-color-ink); margin: .25rem 0 .75rem; }
-.ca-pipeline {
-  display: grid; grid-template-columns: repeat(3, 1fr); gap: 0;
-  margin: .5rem 0 1rem; border: var(--dp-border-rule) solid var(--dp-color-ink);
-}
-.ca-phase {
-  padding: .85rem 1rem; background: var(--dp-color-quiet); border-radius: var(--dp-radius-square);
-  border-right: var(--dp-border-compact) solid var(--dp-color-ink);
-  transition: none; animation: none;
-}
-.ca-phase:last-child { border-right: none; }
-.ca-phase[data-state="pending"] { opacity: .45; }
-.ca-phase[data-state="active"] { background: var(--dp-color-field); color: var(--dp-color-on-field); }
-.ca-phase[data-state="active"] strong,
-.ca-phase[data-state="active"] span,
-.ca-phase[data-state="active"] em { color: var(--dp-color-on-field); }
-.ca-phase[data-state="done"] { background: var(--dp-color-field-support); }
-.ca-phase strong {
-  display: block; font-size: var(--dp-typography-label);
-  font-weight: var(--dp-typography-weight-display); margin-bottom: .25rem;
-}
-.ca-phase span {
-  display: block; font-size: var(--dp-typography-caption);
-  font-weight: var(--dp-typography-weight-reading); line-height: 1.35;
-}
-.ca-phase em {
-  display: block; margin-top: .45rem; font-style: normal;
-  font-size: var(--dp-typography-caption); font-weight: var(--dp-typography-weight-label);
-}
-.ca-locked {
-  margin: .75rem 0; padding: .75rem 1rem;
-  border: var(--dp-border-compact) solid var(--dp-color-ink); border-radius: var(--dp-radius-square);
-  background: var(--dp-color-quiet); color: var(--dp-color-ink);
-  font-size: var(--dp-typography-reading); font-weight: var(--dp-typography-weight-reading);
-}
-.ca-chart-wrap { animation: none; }
-div[data-testid="stVerticalBlockBorderWrapper"] {
-  border-radius: var(--dp-radius-square) !important;
-  background: var(--dp-color-quiet) !important;
-  border: var(--dp-border-rule) solid var(--dp-color-ink) !important;
-}
-div[data-testid="stTabs"] [role="tablist"] {
-  gap: 0; padding: 0; border-radius: 0; background: transparent;
-  border: none; border-bottom: var(--dp-border-rule) solid var(--dp-color-ink);
-  width: 100%; margin-bottom: 1rem;
-}
-div[data-testid="stTab"] {
-  border-radius: var(--dp-radius-square); padding: .55rem 1rem;
-  background: var(--dp-color-quiet); border: var(--dp-border-compact) solid var(--dp-color-ink);
-  border-bottom: none; margin-right: -3px; transition: none;
-}
-div[data-testid="stTab"]:hover { background: var(--dp-color-field-support); }
-div[data-testid="stTab"][aria-selected="true"] {
-  background: var(--dp-color-field); border-color: var(--dp-color-ink);
-}
-div[data-testid="stTab"][aria-selected="true"] p {
-  color: var(--dp-color-on-field) !important; font-weight: var(--dp-typography-weight-label);
-}
-button[data-testid="stBaseButton-primary"] {
-  border-radius: var(--dp-radius-circle) !important;
-  min-width: 4.75rem !important; min-height: 4.75rem !important;
-  padding: .85rem !important;
-  background: var(--dp-color-accent) !important;
-  border: var(--dp-border-rule) solid var(--dp-color-ink) !important;
-  box-shadow: 6px 6px 0 var(--dp-color-ink) !important;
-  transition: none !important;
-}
-button[data-testid="stBaseButton-primary"]:hover {
-  box-shadow: 4px 4px 0 var(--dp-color-ink) !important;
-  transform: translate(2px, 2px);
-}
-button[data-testid="stBaseButton-primary"] p {
-  color: var(--dp-color-on-field) !important; font-weight: var(--dp-typography-weight-action) !important;
-}
-button[data-testid="stBaseButton-secondary"],
-button[kind="secondary"] {
-  border-radius: var(--dp-radius-square) !important;
-  background: var(--dp-color-field) !important;
-  color: var(--dp-color-on-field) !important;
-  border: var(--dp-border-compact) solid var(--dp-color-ink) !important;
-  box-shadow: none !important; transition: none !important;
-}
-button[data-testid="stBaseButton-secondary"] p { color: var(--dp-color-on-field) !important; font-weight: var(--dp-typography-weight-action) !important; }
-*:focus-visible {
-  outline: var(--dp-border-compact) solid var(--dp-color-field) !important;
-  outline-offset: 2px !important;
-}
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
-    animation: none !important; transition: none !important; scroll-behavior: auto !important;
-  }
-  button[data-testid="stBaseButton-primary"]:hover { transform: none; }
-}
-@media (max-width: 720px) {
-  .ca-pipeline { grid-template-columns: 1fr; }
-  .ca-phase { border-right: none; border-bottom: var(--dp-border-compact) solid var(--dp-color-ink); }
-  .ca-phase:last-child { border-bottom: none; }
-  .ca-hero { padding: 1.1rem 0 .9rem; }
-  section[data-testid="stSidebar"] { max-width: 100% !important; min-width: 100% !important; }
-}
-</style>
-"""
+CHART_COLORS = ["#fde047", "#a78bfa", "#34d399", "#fb7185"]
 
-CHART_COLORS = ["#ff0000", "#0000ff", "#ffff00", "#000000"]
+# The reference design lives in .superdesign/drafts/cost-advisor-hyper-saturated-fluid.html.
+THEME = Path(__file__).with_name("streamlit_theme.css").read_text()
 
 
 def style():
-    st.markdown(STYLE, unsafe_allow_html=True)
+    st.markdown("<style>" + THEME + "</style>", unsafe_allow_html=True)
 
 
 def hero():
     st.markdown(
-        """<div class="ca-hero"><div class="ca-brand-hero">Cost<span>.</span>Advisor</div>
-<p>Know what your AI features cost at every growth stage — measured where a model ran, labeled estimated otherwise.</p>
+        """<div class="ca-hero"><h1>Know what your AI features cost as you grow.</h1>
+<p>Measured where a model ran, labeled estimated otherwise. No invented savings, just transparent operating costs.</p>
 </div>""",
         unsafe_allow_html=True,
     )
@@ -254,7 +45,7 @@ def hero():
 
 def step(number: int, title: str, hint: str = ""):
     st.markdown(
-        f'<div class="ca-step"><b>{number:02d}</b><div>{title}'
+        f'<div class="ca-step"><b>{number}</b><div>{title}'
         + (f"<small>{hint}</small>" if hint else "")
         + "</div></div>",
         unsafe_allow_html=True,
@@ -278,6 +69,10 @@ def stage_chart(frame: pd.DataFrame, series: str, value: str):
             ),
             tooltip=["stage", series, alt.Tooltip(f"{value}:Q", format=",.2f")],
         )
+        .configure(background="#101010")
+        .configure_axis(labelColor="#c4c4c4", titleColor="#c4c4c4", gridColor="#333333", domainColor="#555555")
+        .configure_legend(labelColor="#e5e5e5")
+        .configure_view(stroke=None)
     )
     st.markdown('<div class="ca-chart-wrap">', unsafe_allow_html=True)
     st.altair_chart(chart, width="stretch")
@@ -294,48 +89,55 @@ def num(value):
 def banner(pack: dict | None, sample: bool):
     if (pack or {}).get("execution_mode") == "sample" or (pack is None and sample):
         st.markdown(
-            '<div class="ca-sample" role="status">SAMPLE/OFFLINE: no network calls, no model executed. '
-            "Tokens are estimated and nothing here is measured.</div>",
+            '<div class="ca-sample" role="status"><span class="ca-info">i</span><div>'
+            '<strong>SAMPLE/OFFLINE</strong><p>No network calls, no model executed. '
+            "Tokens are estimated and nothing here is measured.</p></div></div>",
             unsafe_allow_html=True,
         )
 
 
-def sidebar() -> tuple[str, bool, str]:
-    with st.sidebar:
-        st.markdown('<div class="ca-brand">Cost<span>.</span>Advisor</div>', unsafe_allow_html=True)
-        mode = st.radio("Mode", ["Sample (offline)", "Live (Nightshift + Zetaris)"], key="mode")
-        sample = mode.startswith("Sample")
-        st.caption(
-            "Sample makes zero network calls."
-            if sample
-            else "Live needs Zetaris, Nightshift and `.env`. Spend is capped by the approved limit below."
+def controls() -> tuple[str, bool]:
+    """The reference's top rail is made of native Streamlit controls."""
+    with st.container(key="ca_header"):
+        with st.container(key="ca_header_content"):
+            brand, rail = st.columns([1, 2], vertical_alignment="center")
+            with brand:
+                st.markdown('<div class="ca-brand">Cost<span>.</span>Advisor</div>', unsafe_allow_html=True)
+            with rail:
+                mode_col, example_col = st.columns([1.25, 1], vertical_alignment="center")
+                with mode_col:
+                    mode = st.radio(
+                        "Mode", ["Sample (offline)", "Live (Nightshift + Zetaris)"],
+                        key="mode", horizontal=True, label_visibility="collapsed",
+                    )
+                with example_col:
+                    example = st.selectbox(
+                        "Start from example", svc.list_examples(),
+                        format_func=svc.example_label, key="example", label_visibility="collapsed",
+                    )
+            hero()
+    return example, mode.startswith("Sample")
+
+
+def price_data(sample: bool) -> str:
+    if sample:
+        return ""
+    st.caption("Live needs Zetaris, Nightshift and `.env`. Evaluation spend is capped below.")
+    with st.expander("Override price data file"):
+        override = st.text_input(
+            "Zetaris bindings file", "", key="bindings",
+            help="Leave empty to use ZETARIS_BINDINGS_FILE from .env.",
         )
-        example = st.selectbox("Start from example", svc.list_examples(), format_func=svc.example_label, key="example")
-        st.caption("Every number is an editable assumption.")
-        bindings = ""
-        if not sample:
-            with st.expander("Override price data file"):
-                override = st.text_input(
-                    "Zetaris bindings file",
-                    "",
-                    key="bindings",
-                    help="Leave empty to use ZETARIS_BINDINGS_FILE from .env.",
-                )
-            found = svc.find_bindings(override)
-            if found["ok"]:
-                counts = found["counts"]
-                st.success(
-                    f"Price data: snapshot `{found['snapshot_id'][:8]}`, {counts.get('models', '?')} models, "
-                    f"{counts.get('catalog', '?')} catalog rows (from {found['source']})"
-                )
-                bindings = found["path"]
-            else:
-                st.error(
-                    "Price data not found: "
-                    + found["problem"]
-                    + (f" ({found['path']})" if found["path"] else "")
-                )
-    return example, sample, bindings
+    found = svc.find_bindings(override)
+    if found["ok"]:
+        counts = found["counts"]
+        st.success(
+            f"Price data: snapshot `{found['snapshot_id'][:8]}`, {counts.get('models', '?')} models, "
+            f"{counts.get('catalog', '?')} catalog rows (from {found['source']})"
+        )
+        return found["path"]
+    st.error("Price data not found: " + found["problem"] + (f" ({found['path']})" if found["path"] else ""))
+    return ""
 
 
 def form(example: str, sample: bool, bindings: str):
@@ -343,85 +145,87 @@ def form(example: str, sample: bool, bindings: str):
     brief = template["brief"]
     key = lambda name: f"{example}:{name}"
 
-    step(1, "Brief", "Idea, features, and growth assumptions")
-    idea = st.text_area("Product idea", brief["product_concept"], key=key("idea"), height=90)
-    user = st.text_input("Target user", brief["target_user"], key=key("user"))
+    with st.container(border=True, key="ca_brief"):
+        step(1, "Brief", "Idea, features, and growth assumptions")
+        idea_col, user_col = st.columns(2)
+        idea = idea_col.text_area("Product idea", brief["product_concept"], key=key("idea"), height=120)
+        user = user_col.text_input("Target user", brief["target_user"], key=key("user"))
 
-    st.caption(
-        "2 to 5 AI features. Modality: any of "
-        + ", ".join(svc.MODALITIES)
-        + " (comma-separated). Usage values are assumptions. Audio and image features are priced, not executed."
-    )
-    with st.container(border=True):
-        rows = pd.DataFrame(
-            [
-                {
-                    "feature_id": f["feature_id"],
-                    "description": f["description"],
-                    "example_input": f["example_input"],
-                    "mode": f["mode"],
-                    "modality": ", ".join(f["modality"]),
-                    "uses_per_user_month": str(f["uses_per_user_month"]),
-                }
-                for f in brief["ai_features"]
-            ]
+        st.caption(
+            "2 to 5 AI features. Modality: any of "
+            + ", ".join(svc.MODALITIES)
+            + " (comma-separated). Usage values are assumptions. Audio and image features are priced, not executed."
         )
-        features = st.data_editor(
-            rows,
-            num_rows="dynamic",
-            width="stretch",
-            key=key("features"),
-            column_config={"mode": st.column_config.SelectboxColumn(options=["interactive", "background"])},
-        )
-
-    st.markdown("**Growth stages** (assumed)")
-    stages = st.data_editor(
-        pd.DataFrame(brief["growth_stages"])[["name", "active_users"]],
-        num_rows="dynamic",
-        width="stretch",
-        key=key("stages"),
-    )
-
-    usage = brief.get("usage") or {}
-    with st.expander("Assumptions (budget, revenue, switch threshold)", expanded=False):
-        left, right = st.columns(2)
-        threshold = left.text_input(
-            "Switch threshold (USD/month)", str(brief.get("switch_threshold_usd", "100")), key=key("thr")
-        )
-        ceiling = right.text_input(
-            "Monthly AI budget ceiling (USD, optional)", brief.get("monthly_ai_budget_usd") or "", key=key("ceil")
-        )
-        left, right = st.columns(2)
-        price = left.text_input(
-            "Price per paying user per month (USD, optional)",
-            str(usage.get("subscription_price_usd") or ""),
-            key=key("price"),
-            help="With the paying fraction, gives revenue per stage. Assumed.",
-        )
-        fraction = right.text_input(
-            "Paying fraction of active users (0 to 1, optional)",
-            str(usage.get("paying_fraction") or ""),
-            key=key("fraction"),
-            help="e.g. 0.08 for 8% of active users paying. Assumed.",
-        )
-
-    with st.expander("Advanced: candidate models (optional)", expanded=False):
-        st.caption("Leave empty to let the app choose per feature.")
-        options = svc.candidate_options(sample, bindings)
-        picks = st.multiselect(
-            "Choose up to 3, at most one per tier (frontier, mid-tier, open-source).",
-            list(options),
-            format_func=lambda mid: options.get(mid, mid),
-            max_selections=3,
-            key=f"picks:{'sample' if sample else 'live'}",
-        )
-        if picks:
-            st.caption(
-                "Your picks replace the automatic choice for every feature. A pick that can't handle a feature's "
-                "modality is skipped for that feature; two picks in the same tier stop the run with a message."
+        with st.container(border=True):
+            rows = pd.DataFrame(
+                [
+                    {
+                        "feature_id": f["feature_id"],
+                        "description": f["description"],
+                        "example_input": f["example_input"],
+                        "mode": f["mode"],
+                        "modality": ", ".join(f["modality"]),
+                        "uses_per_user_month": str(f["uses_per_user_month"]),
+                    }
+                    for f in brief["ai_features"]
+                ]
+            )
+            features = st.data_editor(
+                rows,
+                num_rows="dynamic",
+                width="stretch",
+                key=key("features"),
+                column_config={"mode": st.column_config.SelectboxColumn(options=["interactive", "background"])},
             )
 
-    with st.container(border=True):
+        st.markdown("**Growth stages** (assumed)")
+        stages = st.data_editor(
+            pd.DataFrame(brief["growth_stages"])[["name", "active_users"]],
+            num_rows="dynamic",
+            width="stretch",
+            key=key("stages"),
+        )
+
+        usage = brief.get("usage") or {}
+        with st.expander("Assumptions (budget, revenue, switch threshold)", expanded=False):
+            left, right = st.columns(2)
+            threshold = left.text_input(
+                "Switch threshold (USD/month)", str(brief.get("switch_threshold_usd", "100")), key=key("thr")
+            )
+            ceiling = right.text_input(
+                "Monthly AI budget ceiling (USD, optional)", brief.get("monthly_ai_budget_usd") or "", key=key("ceil")
+            )
+            left, right = st.columns(2)
+            price = left.text_input(
+                "Price per paying user per month (USD, optional)",
+                str(usage.get("subscription_price_usd") or ""),
+                key=key("price"),
+                help="With the paying fraction, gives revenue per stage. Assumed.",
+            )
+            fraction = right.text_input(
+                "Paying fraction of active users (0 to 1, optional)",
+                str(usage.get("paying_fraction") or ""),
+                key=key("fraction"),
+                help="e.g. 0.08 for 8% of active users paying. Assumed.",
+            )
+
+        with st.expander("Advanced: candidate models (optional)", expanded=False):
+            st.caption("Leave empty to let the app choose per feature.")
+            options = svc.candidate_options(sample, bindings)
+            picks = st.multiselect(
+                "Choose up to 3, at most one per tier (frontier, mid-tier, open-source).",
+                list(options),
+                format_func=lambda mid: options.get(mid, mid),
+                max_selections=3,
+                key=f"picks:{'sample' if sample else 'live'}",
+            )
+            if picks:
+                st.caption(
+                    "Your picks replace the automatic choice for every feature. A pick that can't handle a feature's "
+                    "modality is skipped for that feature; two picks in the same tier stop the run with a message."
+                )
+
+    with st.container(border=True, key="ca_eval"):
         step(
             2,
             "Evaluation spend",
@@ -435,8 +239,9 @@ def form(example: str, sample: bool, bindings: str):
             key=key("approved"),
         )
         max_spend = st.text_input("Maximum evaluation spend (USD)", "0.50", key=key("spend"))
+        actions = st.empty()
 
-    return template, idea, user, features, stages, threshold, ceiling, approved, max_spend, picks, price, fraction
+    return template, idea, user, features, stages, threshold, ceiling, approved, max_spend, picks, price, fraction, actions
 
 
 def to_feature_rows(frame: pd.DataFrame) -> list[dict]:
@@ -598,8 +403,11 @@ def recommendation_view(pack: dict):
 
 
 def results(pack: dict):
-    step(3, "Results", f"DecisionPack for run {pack['run_id']}")
+    step(3, "DecisionPack Results", f"Run {pack['run_id']}")
     status_line(pack)
+    events = [json.loads(line) for line in svc.trace_text(pack).splitlines() if line.strip()]
+    if events:
+        pipeline_view(events, svc.progress_rows(events)[0])
     status = pack["status"]
     if status != "complete":
         st.info("This result is " + status + ". Missing or unknown evidence is listed below, not filled in.")
@@ -718,7 +526,6 @@ def results(pack: dict):
         st.caption(pack["disclaimer"])
 
     with tabs[3]:
-        events = [json.loads(line) for line in svc.trace_text(pack).splitlines() if line.strip()]
         st.markdown("**Every Zetaris query, model request and memory operation, in order**")
         if events:
             st.dataframe(
@@ -746,17 +553,15 @@ def results(pack: dict):
             )
 
 
-def main():
-    style()
-    example, sample, bindings = sidebar()
-    hero()
+def run_page(example: str, sample: bool):
+    bindings = price_data(sample)
     state = st.session_state
     state.setdefault("run_id", svc.new_run_id())
     stored = svc.load_result(state["run_id"])
     outcome = state.get("outcome") or ({"result": stored, "reused": True} if stored else None)
     banner(outcome["result"] if outcome and "execution_mode" in outcome["result"] else None, sample)
 
-    template, idea, user, features, stages, threshold, ceiling, approved, max_spend, picks, price, fraction = form(
+    template, idea, user, features, stages, threshold, ceiling, approved, max_spend, picks, price, fraction, actions = form(
         example, sample, bindings
     )
     st.markdown(
@@ -788,8 +593,8 @@ def main():
             "model request (status needs_input). Tick the approval box above to measure."
         )
     blocked = parsed is None or state.get("busy", False) or (not sample and not bindings)
-    with st.container(border=True):
-        left, right, _ = st.columns([1, 1, 8], gap="small")
+    with actions.container():
+        left, right, _ = st.columns([1, 1, 4], gap="small")
         run_clicked = left.button("Run", type="primary", disabled=blocked)
         if right.button("New run", type="secondary"):
             state["run_id"], state["outcome"] = svc.new_run_id(), None
@@ -819,9 +624,13 @@ def main():
             state["busy"] = False
         st.rerun()
 
-    st.divider()
     if outcome is None:
-        st.info("Fill in the brief and press Run. Sample mode needs no accounts.")
+        st.markdown(
+            '<div class="ca-empty"><span>03 / DECISIONPACK</span>'
+            '<h2>Your results will appear here.</h2>'
+            '<p>Fill in the brief and press Run. Sample mode needs no accounts.</p></div>',
+            unsafe_allow_html=True,
+        )
     elif "code" in outcome["result"]:
         st.error(f"{outcome['result']['code']}: {outcome['result']['message']}")
     else:
@@ -830,6 +639,13 @@ def main():
             if outcome["result"].get("status") != "complete":
                 st.warning("This run ID already ran. After fixing the setup or inputs, press New run, then Run.")
         results(outcome["result"])
+
+
+def main():
+    style()
+    example, sample = controls()
+    with st.container(key="ca_body"):
+        run_page(example, sample)
 
 
 main()

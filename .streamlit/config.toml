@@ -1,29 +1,27 @@
-# Bauhaus flat planes: off-white ground, ink, red/blue/yellow fields.
-# Face: Host Grotesk (Google Fonts) stands in for "Bauhaus Host" — see docs/design.md.
-# Tokens: docs/design.md §3. Motion interactions are 0s (instant).
+# Dark native widgets for the fluid reference design.
 [theme]
-base = "light"
-primaryColor = "#ff0000"
-backgroundColor = "#f5f4ee"
-secondaryBackgroundColor = "#e8e8e8"
-textColor = "#000000"
-linkColor = "#0000ff"
-font = "Host Grotesk:https://fonts.googleapis.com/css2?family=Host+Grotesk:wght@400;450;500;650;700;750;800&display=swap"
-headingFont = "Host Grotesk:https://fonts.googleapis.com/css2?family=Host+Grotesk:wght@650;700;750;800&display=swap"
-headingFontWeights = [800, 800, 750, 650, 650, 650]
-baseRadius = "none"
-buttonRadius = "none"
-borderColor = "#000000"
-dataframeBorderColor = "#000000"
-dataframeHeaderBackgroundColor = "#ffff00"
+base = "dark"
+primaryColor = "#FDE047"
+backgroundColor = "#0A0A0A"
+secondaryBackgroundColor = "#171717"
+textColor = "#F6F6F6"
+linkColor = "#FDE047"
+font = "Inter:https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
+headingFont = "Inter:https://fonts.googleapis.com/css2?family=Inter:wght@600;700;800;900&display=swap"
+headingFontWeights = [900, 800, 750, 700, 700, 700]
+baseRadius = "1rem"
+buttonRadius = "full"
+borderColor = "#343434"
+dataframeBorderColor = "#343434"
+dataframeHeaderBackgroundColor = "#202020"
 showWidgetBorder = true
-greenColor = "#0000ff"
-blueColor = "#0000ff"
-redColor = "#ff0000"
-orangeColor = "#ffff00"
-chartCategoricalColors = ["#ff0000", "#0000ff", "#ffff00", "#000000", "#ff0000", "#0000ff"]
+greenColor = "#34d399"
+blueColor = "#a78bfa"
+redColor = "#fb7185"
+orangeColor = "#fde047"
+chartCategoricalColors = ["#fde047", "#a78bfa", "#34d399", "#fb7185"]
 
 [theme.sidebar]
-backgroundColor = "#e8e8e8"
-secondaryBackgroundColor = "#f5f4ee"
-borderColor = "#000000"
+backgroundColor = "#171717"
+secondaryBackgroundColor = "#0A0A0A"
+borderColor = "#343434"
