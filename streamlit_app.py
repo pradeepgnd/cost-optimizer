@@ -449,6 +449,11 @@ def banner(pack: dict | None, sample: bool):
     st.markdown(f'<div class="{kind}" role="status"><b>{title}</b><span>{text}</span></div>', unsafe_allow_html=True)
 
 
+def start_new_run():
+    """A different mode or idea is a different run: give it a fresh run ID and drop the previous result."""
+    st.session_state["run_id"], st.session_state["outcome"] = svc.new_run_id(), None
+
+
 def controls() -> tuple[str, bool]:
     """Yellow hero, then the mode and idea choice the founder makes before the brief."""
     with st.container(key="hero"):
@@ -473,12 +478,14 @@ def controls() -> tuple[str, bool]:
                     ["Sample (offline)", "Live (Nightshift + Zetaris)"],
                     key="mode",
                     horizontal=True,
+                    on_change=start_new_run,
                 )
                 example = st.selectbox(
                     "Idea",
                     svc.list_examples(),
                     format_func=svc.example_label,
                     key="example",
+                    on_change=start_new_run,
                 )
     return example, mode.startswith("Sample")
 

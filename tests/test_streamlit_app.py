@@ -49,6 +49,20 @@ def test_sample_form_runs_once_and_shows_the_offline_label():
     assert not at.exception and sorted(p.name for p in svc.UI_DIR.iterdir()) == before
 
 
+def test_switching_the_idea_starts_a_new_run_and_hides_the_previous_result(monkeypatch):
+    ids = iter(f"ui-switch-{n}" for n in range(1, 10))
+    monkeypatch.setattr(svc, "new_run_id", lambda prefix="ui": next(ids))
+    at = app()
+    next(b for b in at.button if b.label == "Run").click().run()
+    first = at.session_state["run_id"]
+    assert svc.load_result(first)["status"] == "complete"
+    other = next(name for name in svc.list_examples() if name != at.selectbox(key="example").value)
+    at.selectbox(key="example").set_value(other).run()
+    assert not at.exception
+    assert at.session_state["run_id"] != first and at.session_state["outcome"] is None
+    assert any("Fill in the brief" in i.value for i in at.info)
+
+
 def test_invalid_input_disables_run_and_shows_the_problem():
     at = app()
     next(t for t in at.text_input if t.label.startswith("Maximum evaluation spend")).set_value("-5").run()

@@ -73,6 +73,18 @@ def test_a_run_id_runs_once_and_the_second_call_reuses_the_stored_result():
     assert svc.load_result("ui-test-1") == pack
 
 
+def test_a_reused_run_id_with_a_different_brief_is_refused_without_running():
+    template = svc.load_template("example_3")
+    first = svc.submit_run(svc.build_request(template, **form_args(template)), sample=True)
+    assert first["result"]["status"] == "complete"
+    before = sorted(p.name for p in svc.UI_DIR.iterdir())
+    changed = svc.build_request(template, **form_args(template, idea="A different idea"))
+    refused = svc.submit_run(changed, sample=True)
+    assert refused["result"]["code"] == "run_id_reused" and not refused["reused"]
+    assert sorted(p.name for p in svc.UI_DIR.iterdir()) == before
+    assert svc.load_result("ui-test-1") == first["result"]
+
+
 def test_run_ids_are_validated_before_touching_the_filesystem():
     with pytest.raises(ValueError):
         svc.result_path("../escape")
