@@ -75,9 +75,9 @@ def candidate_options(sample: bool, bindings_path: str = "") -> dict[str, str]:
 
 
 EXAMPLE_LABELS = {
-    "example_1": "Idea A · Speech",
-    "example_2": "Idea B · Payments",
-    "example_3": "Idea C · Writing",
+    "example_1": "Idea: Speech triage",
+    "example_2": "Idea: Payments assist",
+    "example_3": "Idea: Writing coach",
 }
 
 

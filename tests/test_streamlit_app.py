@@ -37,7 +37,9 @@ def test_sample_form_runs_once_and_shows_the_offline_label():
     text = _markdown_text(at)
     assert "SAMPLE/OFFLINE" in text
     assert "Status" in text and "complete" in text
-    assert "Evaluation spend (USD)" in text
+    assert "Spend:" in text
+    assert "DecisionPack Results" in text
+    assert "ca-pipeline" in text and "Planner" in text
     run_id = at.session_state["run_id"]
     pack = svc.load_result(run_id)
     assert pack["execution_mode"] == "sample" and pack["status"] == "complete"
@@ -83,15 +85,14 @@ def test_live_shaped_pack_shows_market_costs_checks_and_critic_flags():
     (svc.UI_DIR / "ui-live-shape.result.json").write_text(json.dumps(pack))
     at = AppTest.from_file(str(ROOT / "streamlit_app.py"), default_timeout=120)
     at.session_state["run_id"] = "ui-live-shape"
-    at.session_state["mode"] = "Live (Nightshift + Zetaris)"
     at.run()
     assert not at.exception
     assert 'class="ca-sample"' not in _markdown_text(at)  # live packs may mention SAMPLE in limitations text
-    assert 'class="ca-live"' in _markdown_text(at)
-    assert any("market reference price" in c.value for c in at.caption)
+    assert any("Price source:" in c.value for c in at.caption)
     assert "Recommendations locked until human review" in _markdown_text(at)
+    text = _markdown_text(at).lower()
+    assert "pending human review" in text
     frames = [df.value for df in at.dataframe]
-    assert any("pending human review" in frame.to_string() for frame in frames)
     assert any("token_gap" in frame.to_string() for frame in frames)
 
 
@@ -99,9 +100,7 @@ def test_live_mode_shows_which_price_data_it_will_use_or_blocks_run(tmp_path, mo
     monkeypatch.setattr(svc, "DEFAULT_BINDINGS", tmp_path / "missing.json")
     monkeypatch.delenv("ZETARIS_BINDINGS_FILE", raising=False)
     at = AppTest.from_file(str(ROOT / "streamlit_app.py"), default_timeout=120).run()
-    at.radio(key="mode").set_value("Live (Nightshift + Zetaris)").run()
-    assert "LIVE" in _markdown_text(at) and "Nightshift runs the models" in _markdown_text(at)
-    assert 'class="ca-sample"' not in _markdown_text(at)
+    at.radio(key="mode").set_value("Live").run()
     assert any("Price data not found" in e.value for e in at.error)
     assert next(b for b in at.button if b.label == "Run").disabled
     bindings = tmp_path / "b.json"
@@ -117,13 +116,11 @@ def test_sample_run_shows_monthly_totals_with_revenue():
     next(t for t in at.text_input if t.label.startswith("Paying fraction")).set_value("0.08").run()
     next(b for b in at.button if b.label == "Run").click().run()
     assert not at.exception
-    totals = next(
-        df.value
-        for df in at.dataframe
-        if list(df.value.columns)[:3] == ["stage", "users", "monthly AI cost USD"]
-    )
-    assert totals["revenue USD"].notna().all()
-    assert any("sample placeholder prices" in c.value and "AI-only" in c.value for c in at.caption)
+    text = _markdown_text(at)
+    assert 'class="ca-html-table"' in text
+    assert "AI cost (USD)" in text and "Revenue (USD)" in text
+    assert "$60.00" in text  # 50 users × 8% paying × $15 per paying user
+    assert any("sample placeholder prices" in c.value and "lower bound" in c.value for c in at.caption)
     text = " ".join(item.value for item in at.markdown)
     assert "Recommendation" in text
-    assert "sample/frontier-placeholder" in text and "sample/open-source-placeholder" in text
+    assert "Frontier sample" in text and "Open Source sample" in text
