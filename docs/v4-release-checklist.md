@@ -27,6 +27,7 @@ Updated 2026-10-26. The step-by-step plan and findings table are in [08-v4-Imple
 | R8 Memory changes a later run (was M11) | PARTIAL: recalled founder inputs (budget, price, paying fraction) fill blank fields in a later run of the same idea; memory does not change model choice | R8 entry below |
 | R9 Stage totals, revenue, budget fit (was M12) | PASS, offline arithmetic and UI; recommended-stack totals stay unknown until R7 | R9 entry below |
 | R10 Streamlit workflow (was M13) | Trimmed version: live runs from the UI PASS, founder candidate picks, revenue inputs, totals and a live progress panel; no human-review controls (R7); layout not reviewed in a browser | R10 entries below |
+| Live proof runs (published) | PASS: examples 1–3 and an H-MEM recall run, all `complete`, $0, evidence written back (2026-10-27) | `output_examples/live/`, entry below |
 | R11 Release rehearsal (was M14) | In progress: clean-clone rehearsal on a second machine PASS in sample mode; live re-registration on a clean clone, video and deck pending | R11 entry below |
 
 ## Open items and caveats before submission
@@ -510,4 +511,10 @@ Not done: memory does not change candidate selection or the model stack, and acc
 The team cloned the repository on a second machine and followed only the README's sample-mode steps. Reported as done by the team; the machine, OS, Python version and test output were not recorded here, and no artifacts from that machine are retained.
 
 Not rehearsed on the second machine: live mode (re-collecting and re-registering sources, Zetaris, Nightshift and the evidence publisher) and Windows. Video and deck are still open.
+
+## Live proof runs, published (2026-10-27, PASS)
+
+Four live runs on application code identical to `main` at `1bdc9c7`, 02:37–02:41 UTC, via `run.py` with the evidence publisher running: `live-ex1-`, `live-ex2-`, `live-ex3-` and `live-ex3-recall-20261027T023748Z`. All ended `complete` with $0 spend and an empty outbox (10, 14, 10 and 10 model requests; 9, 13, 9 and 9 evidence records written to Zetaris and read back). Every Planner request resolved to `nvidia/nemotron-3.5-lightning-30b-a3b` and every Critic request to `nvidia/nemotron-3-ultra-550b-a55b`, with provider request IDs. Only the two Nemotron routes were executed; other-lab candidates were projected only. The Critic raised `token_gap` flags on Examples 1 and 2 and `unsupported_claim` flags on Example 3. The recall run left budget, price and paying fraction blank and recalled them from the `live-ex3-` run (`hmem_apply`), so its stage totals carry revenue, margin and budget fit. Requests, packs and traces are in `output_examples/live/` with a summary README; the only edit is the trace path inside each pack. `smoke_live.py` passed for Zetaris, discovery (111 routes) and the H-MEM self-test just before.
+
+Not shown: quality qualification (human review pending), measured candidates from other labs, a second machine or Windows.
 

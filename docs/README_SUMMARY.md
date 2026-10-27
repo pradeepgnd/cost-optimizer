@@ -32,6 +32,8 @@ Anything it couldn't measure is labelled "estimated", "projected only" or "unkno
 - **Meterless H-MEM** is the idea's memory.
 - **NVIDIA Nemotron** (Lightning and Ultra) runs the Planner and the Critic.
 
+**Proof of live runs.** [`output_examples/live/`](../output_examples/live/README.md) has four real runs through Nightshift and Zetaris, with every request, DecisionPack and trace.
+
 **Try it offline (sample mode, no accounts or network).**
 ```bash
 git clone https://github.com/pradeepgnd/cost-optimizer && cd cost-optimizer
