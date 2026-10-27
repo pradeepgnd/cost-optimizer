@@ -595,23 +595,7 @@ def num(value):
 
 
 def banner(pack: dict | None, sample: bool):
-    """The selected mode, in the same card. A stored pack does not relabel the mode the founder just picked."""
-    if sample:
-        kind, title, text = "ca-sample", "SAMPLE/OFFLINE", (
-            "No network calls, no model executed. Tokens are estimated and nothing here is measured."
-        )
-    else:
-        kind, title, text = "ca-live", "LIVE", (
-            "Nightshift runs the models and Zetaris supplies the prices. Spend stays inside the cap you approve, "
-            "and candidates without a verified rate are projected only."
-        )
-    st.markdown(f'<div class="{kind}" role="status"><b>{title}</b><span>{text}</span></div>', unsafe_allow_html=True)
-
-
-def controls() -> tuple[str, bool]:
-    """Yellow hero, then the mode and idea choice the founder makes before the brief."""
-    with st.container(key="hero"):
-        st.markdown('<div class="ca-brand-hero">Cost<span>.</span>Advisor</div>', unsafe_allow_html=True)
+    if (pack or {}).get("execution_mode") == "sample" or (pack is None and sample):
         st.markdown(
             '<div class="ca-sample" role="status">'
             '<div class="ca-sample-icon" aria-hidden="true">i</div>'

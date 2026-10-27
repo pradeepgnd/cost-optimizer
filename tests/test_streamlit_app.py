@@ -71,7 +71,6 @@ def test_live_shaped_pack_shows_market_costs_checks_and_critic_flags():
     (svc.UI_DIR / "ui-live-shape.result.json").write_text(json.dumps(pack))
     at = AppTest.from_file(str(ROOT / "streamlit_app.py"), default_timeout=120)
     at.session_state["run_id"] = "ui-live-shape"
-    at.session_state["mode"] = "Live (Nightshift + Zetaris)"
     at.run()
     assert not at.exception
     assert 'class="ca-sample"' not in _markdown_text(at)  # live packs may mention SAMPLE in limitations text
