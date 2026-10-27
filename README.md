@@ -64,9 +64,9 @@ python run.py --input input_examples/example_1.json --output result.json
 
 Source setup (scripts in `scripts/`, details in the [evidence ledger](docs/v4-release-checklist.md)): `collect_sources.py` collects and validates the OpenRouter catalog, `prepare_source_bundle.py` builds a pinned bundle (add `--include-discovered` to register every priced Nightshift route), `register_sources.py` previews or applies LocalStack/S3 registration, and `check_zetaris_sources.py` reads typed rows and checks the evidence write/readback. These need no H-MEM or model completions. The collector retains raw and normalized data, exact hashes and explicit quarantine records. Catalog prices are labeled market references; only the Planner and Critic routes carry verified Nightshift execution profiles, and other candidates are projected only. A simple operator manual will replace the earlier per-milestone guides.
 
-Use the generated schema 1.1 bindings file through `ZETARIS_BINDINGS_FILE`. Every source row is checked against its pinned envelope hash; the earlier unbound `LIMIT 50` query is no longer the application read path. Optional build-source failure leaves the operating comparison available. Result ingestion runs in a separate publisher process, and the application retains a durable evidence outbox when write/readback is unavailable. AWS/Windows validation and applicable provider tariffs/billing bounds remain separate acceptance work. Recorded component evidence is in the [evidence ledger](docs/v4-release-checklist.md).
+Use the generated schema 1.1 bindings file through `ZETARIS_BINDINGS_FILE`. Every source row is checked against its pinned envelope hash; the earlier unbound `LIMIT 50` query is no longer the application read path. Optional build-source failure leaves the operating comparison available. Result ingestion runs in a separate publisher process, and the application retains a durable evidence outbox when write/readback is unavailable. Registration on real AWS S3 and a live clean clone on Windows pass (ledger); applicable provider tariffs and billing bounds remain separate acceptance work. Recorded component evidence is in the [evidence ledger](docs/v4-release-checklist.md).
 
-Preflight for the Windows host: `scripts/preflight_windows.ps1` checks RAM, CPUs, disk, WSL2, Docker allocation and ports. With `-ZetarisUrl`/`-NightshiftUrl`, it validates the actual `SELECT 1` cell and model-discovery structure using the shared Python validators. Activate the project environment first, or pass `-PythonExecutable <path>`. Required SKIP/UNKNOWN or FAIL gives exit code 1. This is machine/connectivity evidence only; the revised PowerShell script still needs execution on Windows.
+Preflight for the Windows host: `scripts/preflight_windows.ps1` checks RAM, CPUs, disk, WSL2, Docker allocation and ports. With `-ZetarisUrl`/`-NightshiftUrl`, it validates the actual `SELECT 1` cell and model-discovery structure using the shared Python validators. Activate the project environment first, or pass `-PythonExecutable <path>`. Required SKIP/UNKNOWN or FAIL gives exit code 1. This is machine/connectivity evidence only; it passed on Windows 11 with live Zetaris and Nightshift on 26 October.
 
 Live smoke test (diagnostic only, reads `.env`): `python scripts/smoke_live.py` checks Zetaris, Nightshift discovery and the H-MEM bridge separately. Paid diagnostic completions default to **disabled**. An explicit `--max-spend-usd <amount>` between $0 and $1, plus verified route prices/token bounds, allows one tiny completion each for the Planner (`METERLESS_MODEL`) and Critic (`METERLESS_CRITIC_MODEL`) routes through the same durable dispatcher; `--diagnostic-only` sends the same two requests without billing authorization and records receipts with no cost claim. It saves a redacted Markdown table, typed JSON readiness/accounting and HTTP traces under `logs/`; `--output-dir <directory>` chooses report storage and `--no-dotenv` disables private dotenv loading. The operation ledger defaults to `<output-dir>/smoke-operations.db`; `--operations-db <path>` selects an existing ledger and `--run-id <id>` supplies a durable idempotency key. Reusing a key never replays paid work. Exit code 0 requires all six diagnostic checks to pass; a required skip or missing check is non-success. Role-route diagnostics require explicit discovery/response identity and a response request ID. Passing diagnostics do not establish working-feature or end-to-end sponsor proof; model alias/receipt verification remains open (see the ledger).
 
@@ -82,7 +82,7 @@ A full live test through the UI, from a fresh checkout. Steps 1–4 are one-time
 
 **3. `.env` (once).** `cp .env.example .env` and fill in the Zetaris and Nightshift URLs and tokens. Keep the role routes and thinking settings as in `.env.example` (see the Settings table above): Planner Lightning, Critic Ultra, `METERLESS_NO_THINKING_ROLES=Planner,Critic`, `METERLESS_NO_THINKING_MODELS` listing both Nemotron routes, `METERLESS_REQUEST_TIMEOUT_S=150`. Never put `SOURCE_INGEST_TOKEN` in `.env`.
 
-**4. Price data (once, or when the catalog or Nightshift routes change).** Run the source setup in **Level 2** below: collect the OpenRouter catalog, discover Nightshift routes, build the bundle with `--include-discovered`, and register it with `--bindings-output data/localstack/bindings.json`. Set `ZETARIS_BINDINGS_FILE` in `.env` to that file (or to another bindings file you already have).
+**4. Price data (once, or when the catalog or Nightshift routes change).** Run the source setup in **Level 2** below: collect the OpenRouter catalog, discover Nightshift routes, build the bundle with `--include-discovered`, and register it with `--bindings-output data/localstack/bindings.json`. Set `ZETARIS_BINDINGS_FILE` in `.env` to that file (or to another bindings file you already have); registration ignores that setting, so it can be set before the file exists. To register on a real AWS S3 bucket instead of LocalStack, use `--storage data/source_examples/aws.oah.json` with the read-only key described in [data/README.md](data/README.md).
 
 **5. Health check (each session; no model calls).**
 
@@ -141,7 +141,7 @@ python -m pytest -q -rs
 python scripts/check_sample_examples.py
 ```
 
-The `npm ci` step needs Node 20+ and is required for the real H-MEM test. Expected: 614 passed and 8 skipped (the shelved retrospective), then three PASS lines.
+The `npm ci` step needs Node 20+ and is required for the real H-MEM test. Expected: 626 passed and 8 skipped (the shelved retrospective), then three PASS lines.
 
 Per step (`-rs` shows skips; a skipped H-MEM test means Step 7 is **not** confirmed):
 
@@ -185,7 +185,7 @@ python scripts/smoke_live.py
 What to look for:
 
 - **Steps 5 and 6:** registration `status: pass` with `current_pointer_updated: false`; the Zetaris check passes `SELECT 1`, a typed model read and the evidence write and readback, with `model_completions: 0`.
-- **Steps 7 and 8:** the gate shows `ready_for_bounded_dispatch`, with the Planner and Critic routes at `billing_gate: pass` and most other routes `blocked`. Blocked is correct: those candidates are projected only. `smoke_live.py` reports H-MEM and discovery separately; a required SKIP is an incomplete result, not a pass.
+- **Steps 7 and 8:** the gate shows `ready_for_bounded_dispatch`, with the Planner and Critic routes at `billing_gate: pass` and most other routes `blocked`. Blocked is correct: those candidates are projected only. With the committed `routes.selected.json` (`mapping_status: planned`) the gate reports `incomplete` even when every route passes; a clean clone sees this until an observed route map is committed. `smoke_live.py` reports H-MEM and discovery separately; a required SKIP is an incomplete result, not a pass.
 - **Candidate selection:** open `preview-001/pack.json`. Each feature lists its own candidates, and an audio-out feature with no capable route shows a `candidates:<feature>` evidence gap.
 - **Your Nightshift must offer** `nvidia/nemotron-3-ultra-550b-a55b` and `nvidia/nemotron-3.5-lightning-30b-a3b`, or the bundle step stops with "mapped route was not offered". Edit `routes.selected.json` to the Planner and Critic routes you have.
 - **Warning:** the two curated profiles in `routes.selected.json` assume a free NVIDIA Developer Program key (verified $0 rate, prototyping only). If your Nightshift key is paid or different, write profiles from your own billing terms before any live run.
@@ -212,7 +212,7 @@ Expected in `pack.json`: `status: complete`, `dispatch_count` about 6 with `samp
 
 ### What these checks do not confirm
 
-Windows execution (the preflight script was never run), a second-machine clean clone, AWS/IAM access (only LocalStack was used), and end-to-end sponsor `readiness`, which stays `not_verified` (the smoke check passed at diagnostic scope on 26 October). Two samples per pair support no model-quality claim, and only Ultra and Lightning are measured; other candidates are projected only.
+End-to-end sponsor `readiness`, which stays `not_verified` (the smoke check passed at diagnostic scope on 26 October). Two samples per pair support no model-quality claim, and only Ultra and Lightning are measured; other candidates are projected only. Windows, a live second-machine clean clone and real AWS S3 registration were checked separately on 26 and 27 October ([ledger](docs/v4-release-checklist.md), [Windows record](docs/windows-clean-clone-rehearsal.json)).
 
 ## Interface
 
