@@ -18,14 +18,16 @@ CANDIDATES = [FR, MID, OS]
 class Data(SampleDataLayer):
     """Sample snapshot models, optionally with extra models or per-model field overrides."""
 
-    def __init__(self, extra=None, override=None):
+    def __init__(self, extra=None, override=None, unverified=()):
         super().__init__()
         self.written, self.extra, self.override = [], extra or [], override or {}
+        self.unverified = set(unverified)     # routes left without a verified rate source and dispatch policy
 
     def read_models(self):
         models = super().read_models() + list(self.extra)
         models.append(models[0].model_copy(update={"model_id": "other/critic-route", "tier": None, "required": False}))
-        return [verified_profile(m.model_copy(update=self.override.get(m.model_id, {}))) for m in models]
+        return [m.model_copy(update=self.override.get(m.model_id, {})) if m.model_id in self.unverified
+                else verified_profile(m.model_copy(update=self.override.get(m.model_id, {}))) for m in models]
 
     def write_evidence(self, record):
         self.written.append(record)
@@ -95,12 +97,12 @@ def _req(features=None, approved=True, run_id="live-1"):
 def run(tmp_path, monkeypatch):
     monkeypatch.setenv("LOG_DIR", str(tmp_path / "logs"))
 
-    def go(inf=None, critic_model="other/critic-route", req=None, data=None, open_model=""):
+    def go(inf=None, critic_model="other/critic-route", req=None, data=None, open_model="", planner_model=FR):
         inf = inf or FakeNightshift()
         req = req or _req()
         trace = Trace(req.run_id, "live", echo=False)
         ctl = Controller(data or Data(), inf, SampleMemory(), trace, "live", Checkpoints(str(tmp_path / "runs.db")),
-                         critic_model=critic_model, planner_model=FR, open_model=open_model)
+                         critic_model=critic_model, planner_model=planner_model, open_model=open_model)
         pack = ctl.run(req)
         events = [json.loads(l) for l in trace.path.read_text(encoding="utf-8").splitlines()]
         return pack, inf, events, ctl
@@ -186,11 +188,12 @@ def test_prefix_move_is_recorded_not_executed(run):
     assert any("cacheable prefix" in q for q in pack.questions)
 
 
-def test_critic_on_candidate_route_stops_before_any_paid_call_when_another_exists(run):
+def test_explicit_critic_on_candidate_route_discloses_shared_identity(run):
     pack, inf, events, _ = run(critic_model=FR)
-    assert pack.status == RunState.needs_input and inf.calls == []
-    assert "other/critic-route" in pack.questions[0]
-    assert not any(e["action"] == "critic_shares_candidate_route" for e in events)
+    assert pack.status == RunState.complete
+    assert [c["model"] for c in inf.calls if c["role"] == "Critic"] == [FR]
+    assert any(e["action"] == "critic_shares_candidate_route" for e in events)
+    assert any("not independent" in limitation for limitation in pack.limitations)
 
 
 def test_critic_shares_candidate_route_only_when_nothing_else_is_offered(run):
@@ -228,23 +231,30 @@ def _open2(score="99"):
 def _selected(pack):
     return {e.tier: e.model_id for e in pack.candidate_shortlist if e.selected}
 
-def test_higher_scored_open_model_does_not_displace_required_route(run):
+def test_higher_scored_open_model_outranks_the_curated_route_when_nothing_is_pinned(run):
     inf = FakeNightshift(routes=CANDIDATES + [OPEN2, "other/critic-route"])
     pack, _, _, _ = run(inf, data=Data(extra=[_open2()]))
-    assert _selected(pack)["open_source"] == OS
-    other = next(e for e in pack.candidate_shortlist if e.model_id == OPEN2)
-    assert not other.selected and other.nightshift_route and "fixed to the required route" in other.reason
-    assert {r.model_id for r in pack.feature_runs} == set(CANDIDATES)
+    assert _selected(pack)["open_source"] == OPEN2
+    sample = next(e for e in pack.candidate_shortlist if e.model_id == OS)
+    assert not sample.selected and "ranked below" in sample.reason
+    assert {r.model_id for r in pack.feature_runs} == {FR, MID, OPEN2}
 
-def test_pinned_open_model_setting_is_the_required_candidate(run):
+def test_pinned_open_model_setting_is_an_optional_override(run):
     inf = FakeNightshift(routes=CANDIDATES + [OPEN2, "other/critic-route"], answers={FR: "ok", MID: "ok", OPEN2: "ok"})
     pack, _, _, _ = run(inf, data=Data(extra=[_open2("1")]), open_model=OPEN2)
     assert _selected(pack)["open_source"] == OPEN2
+    assert "founder override" in next(e for e in pack.candidate_shortlist if e.model_id == OPEN2).reason
 
-def test_required_open_route_missing_from_nightshift_stops_before_any_paid_call(run):
-    pack, inf, _, _ = run(FakeNightshift(routes=[FR, MID, "other/critic-route"]))
+def test_override_route_missing_from_nightshift_stops_before_any_paid_call(run):
+    pack, inf, _, _ = run(FakeNightshift(routes=CANDIDATES + ["other/critic-route"]), data=Data(extra=[_open2()]), open_model=OPEN2)
     assert pack.status == RunState.needs_input and inf.calls == []
-    assert any("Required open-model route" in l and "not offered by Nightshift" in l for l in pack.limitations)
+    assert any("Override open-model route" in l and "not offered by Nightshift" in l for l in pack.limitations)
+
+def test_unpinned_open_route_missing_from_nightshift_is_simply_not_a_candidate(run):
+    pack, inf, _, _ = run(FakeNightshift(routes=[FR, MID, "other/critic-route"]))
+    assert pack.status != RunState.needs_input and "open_source" not in _selected(pack)
+    sample = next(e for e in pack.candidate_shortlist if e.model_id == OS)
+    assert not sample.selected and "not a Nightshift route" in sample.reason
 
 def test_a_model_that_is_not_a_nightshift_route_is_never_selected(run):
     top = {ALT: {"intelligence": SampleDataLayer().read_models()[1].intelligence.model_copy(update={"score": Decimal("99")})}}
@@ -270,7 +280,7 @@ def test_reference_data_never_changes_costs_quality_or_the_stack(run):
     wild = {mid: {"intelligence": m.intelligence.model_copy(update={"score": Decimal("1")}),
                   "market": m.market.model_copy(update={"list_price_input_usd_per_m": Decimal("999"),
                                                         "list_price_output_usd_per_m": Decimal("999"), "usage_rank": 500})}
-            for m in SampleDataLayer().read_models() for mid in [m.model_id] if mid != ALT}
+            for m in Data().read_models() for mid in [m.model_id] if mid != ALT}
     a, _, _, _ = run(req=_req(run_id="ref-a"))
     b, _, _, _ = run(req=_req(run_id="ref-b"), data=Data(override=wild))
     assert _selected(a) == _selected(b)
@@ -296,3 +306,68 @@ def test_generation_cap_is_30():
 def test_spend_reconciles_to_measured_cost(run):
     pack, _, _, _ = run()
     assert Decimal("0") < pack.spend_usd < Decimal("1")
+
+
+# ---------------------------------------------------------------- R4: execute only verified routes, project the rest
+
+def test_unproven_candidate_is_projected_never_dispatched_and_never_stops_the_run(run):
+    pack, inf, _, _ = run(data=Data(unverified={OS}))
+    assert pack.status == RunState.complete
+    assert OS not in {c["model"] for c in inf.calls}
+    assert {c["model"] for c in inf.calls if c["role"] in {"Analyst", "Revision"}} == {FR, MID}
+    runs = [r for r in pack.feature_runs if r.model_id == OS]
+    assert runs and all(not r.executed and r.samples == [] and r.measured_mean is None for r in runs)
+    assert all("projected only" in r.not_executed_reason and "quality unknown" in r.not_executed_reason for r in runs)
+    assert any(g.field == f"execution:{OS}" for g in pack.evidence_gaps)
+    assert any("projected only" in l and OS in l for l in pack.limitations)
+
+
+def test_projected_only_candidate_is_priced_but_never_recommended_and_not_labeled_measured(run):
+    pack, _, _, _ = run(data=Data(unverified={OS}))
+    rows = [r for t in pack.stage_tables for r in t.rows if r.model_id == OS]
+    assert rows and all(r.token_basis == "estimated" for r in rows)
+    assert OS not in {e.model_id for e in pack.model_stack} | {e.alternate_model_id for e in pack.model_stack}
+    assert {r.model_id for r in pack.feature_runs if r.executed} == {FR, MID}
+
+
+def test_samples_are_counted_over_executable_pairs_only(run):
+    pack, inf, _, _ = run(data=Data(unverified={OS}))
+    assert len([c for c in inf.calls if c["role"] == "Analyst"]) == 2 * 2 * 2     # features x proven candidates x samples
+
+
+def test_all_candidates_unproven_ends_partial_with_no_candidate_dispatch(run):
+    from app.contracts import MarketReference
+    role = {"other/critic-route": {"market": MarketReference(snapshot_date="2026-10-25")}}   # verified, but unpriced: never a candidate
+    pack, inf, _, _ = run(data=Data(unverified={FR, MID, OS}, override=role), planner_model="other/critic-route")
+    assert pack.status == RunState.partial
+    assert not [c for c in inf.calls if c["role"] in {"Analyst", "Revision"}]
+    assert any("every chosen candidate lacks a verified rate source" in l for l in pack.limitations)
+    assert all(not r.executed for r in pack.feature_runs) and pack.stage_tables
+
+
+def test_an_unproven_planner_or_critic_route_still_stops_before_any_call(run):
+    pack, inf, _, _ = run(data=Data(unverified={"other/critic-route"}))
+    assert pack.status != RunState.complete and inf.calls == []
+    pack, inf, _, _ = run(data=Data(unverified={FR}), req=_req(run_id="planner-unproven"))
+    assert pack.status != RunState.complete and not [c for c in inf.calls if c["role"] == "Planner"]
+
+
+def test_a_sample_cut_at_the_token_cap_is_measured_as_a_lower_bound_and_fails_its_checks(run):
+    class CutMid(FakeNightshift):
+        def complete(self, **kwargs):
+            result = super().complete(**kwargs)
+            if kwargs["role"] == "Analyst" and kwargs["model"] == MID:
+                result["finish_reason"] = "length"
+            return result
+    pack, inf, events, _ = run(inf=CutMid())
+    assert pack.status == RunState.complete and pack.unpublished_evidence_ids == []
+    cut = next(r for r in pack.feature_runs if r.model_id == MID and not r.is_repair)
+    assert all(s.truncated and s.finish_reason == "length" for s in cut.samples)
+    assert cut.measured_mean.truncated and cut.measured_mean.basis == "measured"
+    assert cut.rubric.machine and not any(cut.rubric.machine.values())
+    whole = next(r for r in pack.feature_runs if r.model_id == FR and not r.is_repair)
+    assert not whole.measured_mean.truncated and not any(s.truncated for s in whole.samples)
+    rows = [r for t in pack.stage_tables for r in t.rows if r.model_id == MID]
+    assert rows and all(r.lower_bound and any("token cap" in w for w in r.warnings) for r in rows)
+    assert any("cut at the" in l and MID in l for l in pack.limitations)
+    assert any("cut at the" in (e.get("output_summary") or "") for e in events if e.get("action") == "run_feature")

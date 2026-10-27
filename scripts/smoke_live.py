@@ -5,7 +5,7 @@
 Loads .env and checks each live piece separately, continuing past failures:
   Zetaris     SELECT 1, then read_models row count
   Nightshift  GET /v1/models; with a positive --max-spend-usd and verified billing/token bounds,
-              one tiny completion each for the frontier, mid-tier and required open-model routes
+              one tiny completion each for the Planner (METERLESS_MODEL) and Critic (METERLESS_CRITIC_MODEL) routes
   H-MEM       the bridge self-test (node bridge.mjs --selftest)
 
 Prints a PASS / FAIL / SKIP table with a reason per check and saves the same table to logs/smoke-<timestamp>.md.
@@ -17,12 +17,14 @@ Diagnostic readiness is separate from end-to-end sponsor readiness.
 from __future__ import annotations
 
 import argparse
+from contextlib import nullcontext
 import json
 import os
 import re
 import subprocess
 import sys
 import time
+import uuid
 from datetime import datetime, timezone
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
@@ -38,12 +40,14 @@ from app.contracts import ReadinessCheck, ReadinessResult  # noqa: E402
 from app.trace import Trace, _mask  # noqa: E402
 from app.dispatch import Budget, Checkpoints, Dispatcher, StopRun  # noqa: E402
 
-TIERS = (("frontier", "frontier"), ("mid_tier", "mid-tier"), ("open_source", "open-source"))
+# The hackathon NVIDIA requirement sits on the Planner and Critic roles (07 v4.3); candidates are per feature, so not smoke-tested.
+ROLES = (("planner", "Planner", "METERLESS_MODEL"), ("critic", "Critic", "METERLESS_CRITIC_MODEL"))
 _SECRET_NAME = re.compile(r"(KEY|TOKEN|SECRET|PASSWORD)", re.I)
 
 rows: list[tuple[str, str, str, str]] = []
+diagnostic_receipts: list[dict] = []
 REQUIRED = (("Zetaris", "SELECT 1"), ("Zetaris", "read_models"), ("Nightshift", "GET /v1/models"),
-            *(("Nightshift", f"completion: {label}") for _, label in TIERS), ("H-MEM", "bridge self-test"))
+            *(("Nightshift", f"completion: {label}") for _, label, _ in ROLES), ("H-MEM", "bridge self-test"))
 
 
 def _secrets() -> list[str]:
@@ -106,24 +110,26 @@ def check_zetaris(trace=None):
 
 # ------------------------------------------------------------------ Nightshift
 
-def _pick(models, tier: str, routes: set[str]):
-    """The route the controller would use for a tier, limited to routes Nightshift offers."""
-    from app.controller import Controller
-    in_tier = [(i, m) for i, m in enumerate(models) if m.tier == tier]
-    if tier == "open_source":
-        pinned = os.getenv("METERLESS_OPEN_MODEL", "")
-        if pinned and not pinned.startswith("your-"):
-            return pinned, "METERLESS_OPEN_MODEL"
-        req = next((m for _, m in in_tier if m.required), None)
-        if req is not None:
-            return req.model_id, "snapshot row marked required"
-    offered = [(i, m) for i, m in in_tier if m.model_id in routes]
-    if not offered:
-        return None, f"none of {len(in_tier)} {tier} snapshot rows is a Nightshift route"
-    return min(offered, key=lambda im: Controller._rank_key(im[1], im[0]))[1].model_id, "top-ranked snapshot route"
+def _role_route(env_name: str):
+    """The route configured for a role, or None when the setting is absent or still a placeholder."""
+    route = os.getenv(env_name, "").strip()
+    if not route or route.startswith("your-"):
+        return None, f"{env_name} is not set"
+    return route, env_name
 
 
-def check_nightshift(models, trace=None, *, allowance=Decimal("0"), checkpoints=None, run_id=None):
+def _receipt_evidence(tier, requested, result, elapsed_s):
+    """Return receipt/usage evidence without retaining generated text."""
+    usage = result.get("usage") if isinstance(result, dict) else {}
+    return {"tier": tier, "requested_model": requested, "resolved_model": result.get("resolved_model"),
+            "provider": result.get("provider"), "provider_kind": result.get("provider_kind"),
+            "request_id": result.get("route_id"), "receipt_id": result.get("receipt_id"),
+            "usage": usage if isinstance(usage, dict) else {}, "elapsed_s": elapsed_s,
+            "billing_verified": False, "economic_use": False}
+
+
+def check_nightshift(models, trace=None, *, allowance=Decimal("0"), checkpoints=None, run_id=None,
+                     diagnostic_only=False):
     allowance = Decimal(allowance)
     if not allowance.is_finite() or not 0 <= allowance <= 1:
         raise ValueError("diagnostic allowance must be between 0 and 1 USD")
@@ -132,7 +138,7 @@ def check_nightshift(models, trace=None, *, allowance=Decimal("0"), checkpoints=
         ns = NightshiftInference(trace=trace, disable_thinking=True)
     except SetupIncomplete as e:
         record("Nightshift", "GET /v1/models", "SKIP", str(e))
-        for _, label in TIERS:
+        for _, label, _ in ROLES:
             record("Nightshift", f"completion: {label}", "SKIP", "depends on Nightshift settings")
         return
     try:
@@ -140,15 +146,61 @@ def check_nightshift(models, trace=None, *, allowance=Decimal("0"), checkpoints=
         record("Nightshift", "GET /v1/models", "PASS", f"{len(routes)} routes offered")
     except Exception as e:
         record("Nightshift", "GET /v1/models", "FAIL", _err(e))
-        for _, label in TIERS:
+        for _, label, _ in ROLES:
             record("Nightshift", f"completion: {label}", "SKIP", "depends on GET /v1/models")
         return
     source = "Zetaris price snapshot"
     if models is None:
         from app.adapters.sample import SampleDataLayer
         models, source = SampleDataLayer().read_models(), "bundled sample price snapshot (Zetaris read unavailable)"
+    if diagnostic_only:
+        # This path deliberately bypasses billing reservation. It is limited
+        # to one tiny request per discovered tier and its receipts are never
+        # used for economics or sponsor readiness.
+        if checkpoints is None:
+            checkpoints = Checkpoints(":memory:")
+        run_id = run_id or f"diagnostic-only-{time.time_ns()}"
+        if not checkpoints.claim(run_id):
+            for _, label, _ in ROLES:
+                record("Nightshift", f"completion: {label}", "SKIP",
+                       "diagnostic-only run ID already exists; no request replayed")
+            return
+        for tier, label, env_name in ROLES:
+            route, why = _role_route(env_name)
+            name = f"completion: {label}"
+            if route is None:
+                record("Nightshift", name, "SKIP", f"{why} ({source})")
+                continue
+            if route not in routes:
+                record("Nightshift", name, "FAIL",
+                       f"route {route} ({why}) is not offered by Nightshift ({source})")
+                continue
+            started = time.time()
+            try:
+                operation_id = f"diagnostic-only/{uuid.uuid4()}"
+                with ns.dispatch_context(operation_id) if hasattr(ns, "dispatch_context") else nullcontext():
+                    res = ns.complete(role="Diagnostic", model=route,
+                                     system="Connectivity check. Reply with the single word OK.",
+                                     user="OK?", max_tokens=8)
+            except Exception as e:
+                record("Nightshift", name, "FAIL", f"{route}: {_err(e)}; no billing claim made")
+                continue
+            elapsed = round(time.time() - started, 2)
+            diagnostic_receipts.append(_receipt_evidence(tier, route, res, elapsed))
+            usage = res.get("usage") or {}
+            pt = usage.get("prompt_tokens") if isinstance(usage, dict) else None
+            ct = usage.get("completion_tokens") if isinstance(usage, dict) else None
+            resolved, request_id = res.get("resolved_model"), res.get("route_id")
+            if (type(pt) is not int or type(ct) is not int or pt < 0 or ct < 0 or
+                    not isinstance(resolved, str) or not resolved.strip() or
+                    not isinstance(request_id, str) or not request_id.strip()):
+                record("Nightshift", name, "FAIL", f"{route}: receipt/usage/identity incomplete; no billing claim made")
+            else:
+                record("Nightshift", name, "PASS",
+                       f"diagnostic-only; resolved {resolved}; request ID {request_id}; usage prompt={pt} completion={ct}; no billing claim")
+        return
     if allowance == 0:
-        for _, label in TIERS:
+        for _, label, _ in ROLES:
             record("Nightshift", f"completion: {label}", "SKIP", "paid diagnostic execution disabled; set a positive --max-spend-usd allowance with verified billing evidence")
         return
     if checkpoints is None:
@@ -156,19 +208,19 @@ def check_nightshift(models, trace=None, *, allowance=Decimal("0"), checkpoints=
         checkpoints = Checkpoints(str(ROOT / "logs" / "smoke-operations.db"))
     run_id = run_id or f"smoke-{time.time_ns()}"
     if not checkpoints.claim(run_id):
-        for _, label in TIERS:
+        for _, label, _ in ROLES:
             record("Nightshift", f"completion: {label}", "SKIP", "diagnostic run ID already exists; no paid requests replayed")
         return
     budget = Budget(allowance)
     dispatcher = Dispatcher(ns, checkpoints, run_id, budget, models, trace)
-    for tier, label in TIERS:
-        route, why = _pick(models, tier, routes)
+    for tier, label, env_name in ROLES:
+        route, why = _role_route(env_name)
         name = f"completion: {label}"
         if route is None:
             record("Nightshift", name, "SKIP", f"{why} ({source})")
             continue
         if route not in routes:
-            record("Nightshift", name, "FAIL" if tier == "open_source" else "SKIP",
+            record("Nightshift", name, "FAIL",
                    f"route {route} ({why}) is not offered by Nightshift ({source})")
             continue
         t0 = time.time()
@@ -182,6 +234,7 @@ def check_nightshift(models, trace=None, *, allowance=Decimal("0"), checkpoints=
         except Exception as e:
             record("Nightshift", name, "FAIL", f"{route}: {_err(e)}")
             continue
+        diagnostic_receipts.append(_receipt_evidence(tier, route, res, round(time.time() - t0, 2)))
         u = res.get("usage") or {}
         if not isinstance(u, dict) or not isinstance(u.get("completion_tokens_details") or {}, dict):
             record("Nightshift", name, "FAIL", f"{route}: malformed usage/details object")
@@ -198,8 +251,8 @@ def check_nightshift(models, trace=None, *, allowance=Decimal("0"), checkpoints=
             record("Nightshift", name, "FAIL", detail + "; invalid reasoning count or reasoning exceeds completion: confirm usage semantics")
         elif not isinstance(resolved, str) or not resolved.strip() or not isinstance(request_id, str) or not request_id.strip():
             record("Nightshift", name, "FAIL", detail + "; resolved identity and response request ID are required")
-        elif tier == "open_source" and (resolved != route or resolved not in routes):
-            record("Nightshift", name, "FAIL", detail + "; required open-model identity is not corroborated by explicit discovery and response; aliases need receipt verification")
+        elif resolved != route or resolved not in routes:
+            record("Nightshift", name, "FAIL", detail + "; role route identity is not corroborated by explicit discovery and response; aliases need receipt verification")
         else:
             record("Nightshift", name, "PASS", detail + f"; request ID {request_id}; diagnostic evidence only")
 
@@ -227,11 +280,26 @@ def table() -> str:
 def readiness_result() -> ReadinessResult:
     observed = {(component, check): (result.lower(), detail) for component, check, result, detail in rows}
     names = list(dict.fromkeys([*REQUIRED, *observed]))
+    def observed_check(component, check):
+        return observed.get((component, check), ("not_verified", "Check was not executed"))
+    discovered, discovered_detail = observed_check("Nightshift", "GET /v1/models")
+    registered, registered_detail = observed_check("Zetaris", "read_models")
+    dimensions = [
+        ReadinessCheck(name="route_discovered", status=discovered, required=False, detail=discovered_detail),
+        ReadinessCheck(name="route_registered", status=registered, required=False, detail=registered_detail),
+        ReadinessCheck(name="execution_available", status="pass" if diagnostic_receipts else "not_verified",
+                       required=False, detail="At least one attributable diagnostic receipt captured." if diagnostic_receipts
+                       else "No attributable diagnostic receipt captured."),
+        ReadinessCheck(name="billing_verified", status="not_verified", required=False,
+                       detail="Diagnostic receipts do not establish Nightshift execution billing."),
+        ReadinessCheck(name="evidence_readback", status="not_verified", required=False,
+                       detail="Measured model evidence has not been written and read back through Zetaris."),
+    ]
     return ReadinessResult(scope="live_diagnostic", checks=[
         ReadinessCheck(name=f"{component}/{check}", status=observed.get((component, check), ("not_verified", ""))[0],
                        detail=observed.get((component, check), ("", "Required check was not executed"))[1])
         for component, check in names
-    ])
+    ], dimensions=dimensions)
 
 
 def main(argv=None) -> int:
@@ -239,6 +307,8 @@ def main(argv=None) -> int:
     parser.add_argument("--no-dotenv", action="store_true", help="Ignore private dotenv settings.")
     parser.add_argument("--output-dir", type=Path, default=ROOT / "logs", help="Directory for diagnostic artifacts.")
     parser.add_argument("--max-spend-usd", default="0", help="Separate diagnostic allowance, 0–1 USD; defaults to no paid calls.")
+    parser.add_argument("--diagnostic-only", action="store_true",
+                        help="Send at most one tiny request per discovered tier without billing authorization; no cost claim is made.")
     parser.add_argument("--operations-db", type=Path, help="Durable diagnostic operation ledger; defaults to output-dir/smoke-operations.db.")
     parser.add_argument("--run-id", help="Diagnostic idempotency key; an existing key is refused for paid work.")
     args = parser.parse_args(argv)
@@ -253,6 +323,7 @@ def main(argv=None) -> int:
     if not args.no_dotenv:
         load_dotenv(ROOT / ".env")
     rows.clear()
+    diagnostic_receipts.clear()
     started = datetime.now(timezone.utc)
     stamp = started.strftime('%Y%m%dT%H%M%S%fZ')
     args.output_dir.mkdir(parents=True, exist_ok=True)
@@ -260,7 +331,8 @@ def main(argv=None) -> int:
     checkpoints = Checkpoints(str(args.operations_db or args.output_dir / "smoke-operations.db"))
     diagnostic_id = args.run_id or f"smoke-{stamp}"
     for step in (lambda: check_nightshift(check_zetaris(trace), trace, allowance=allowance,
-                                        checkpoints=checkpoints, run_id=diagnostic_id), check_hmem):
+                                        checkpoints=checkpoints, run_id=diagnostic_id,
+                                        diagnostic_only=args.diagnostic_only), check_hmem):
         try:
             step()
         except Exception as e:  # a bug in one check must not hide the others
@@ -279,6 +351,7 @@ def main(argv=None) -> int:
         "readiness": readiness.model_dump(mode="json"), "trace": str(trace.path), "counts": counts,
         "run_id": diagnostic_id, "max_spend_usd": str(allowance), "spend_usd": str(diagnostic_budget.spent),
         "reserved_spend_usd": str(diagnostic_budget.held), "dispatch_count": diagnostic_budget.dispatch_count,
+        "diagnostic_only": args.diagnostic_only, "diagnostic_receipts": diagnostic_receipts,
         "operations": [operation.model_dump(mode="json") for operation in operations]}, indent=2) + "\n", encoding="utf-8")
     print(f"Saved {out}")
     return 0 if readiness.status == "ready" else 1

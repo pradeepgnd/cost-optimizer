@@ -22,6 +22,10 @@ class CatalogModel(PublicInput):
     pricing: dict = Field(default_factory=dict)
     # All conditional/auxiliary terms are retained, without claiming support in the cost engine.
     pricing_overrides: list[dict] = Field(default_factory=list)
+    # Catalog reference only. None == the snapshot did not carry the field (unknown, not "text only").
+    input_modalities: list[str] | None = None
+    output_modalities: list[str] | None = None
+    hugging_face_id: str | None = None
 
 
 class SourceManifest(PublicInput):
@@ -76,19 +80,14 @@ class RouteMapping(PublicInput):
 
 
 class RouteMap(PublicInput):
-    routes: list[RouteMapping] = Field(min_length=3, max_length=20)
+    routes: list[RouteMapping] = Field(min_length=2, max_length=200)
     mapping_status: Literal["planned", "discovery_observed"] = "planned"
     discovery_source: SourceRef | None = None
 
     @model_validator(mode="after")
     def _unique(self):
         require_unique([route.route_id for route in self.routes], "route IDs")
-        tiers = [route.tier for route in self.routes if route.tier]
-        require_unique(tiers, "candidate tiers")
-        if set(tiers) != {"frontier", "mid_tier", "open_source"}:
-            raise ValueError("provide exactly one candidate for each tier")
-        if not any(route.required for route in self.routes):
-            raise ValueError("pin the required open_source route explicitly")
+        # A tier is an optional curated hint; the controller derives the rest. No route is pinned or required.
         if self.mapping_status == "discovery_observed" and not self.discovery_source:
             raise ValueError("observed mapping requires a retained discovery source")
         return self

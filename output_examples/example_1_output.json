@@ -32,6 +32,7 @@
         "detail": "Requires a working feature with corroborated Nemotron identity (M08)."
       }
     ],
+    "dimensions": [],
     "status": "not_verified"
   },
   "monthly_ai_budget_usd": null,
@@ -58,9 +59,15 @@
         "label": "market reference (OpenRouter, 2026-10-25)"
       },
       "price_per_intelligence_point_usd": "0.142857",
-      "price_per_intelligence_point_label": "USD per 1M tokens per intelligence point: market reference (OpenRouter, 2026-10-25) list price blended 3:1 input:output \u00f7 PLACEHOLDER intelligence index score (2026-10-25); reference only, not used in costs",
+      "price_per_intelligence_point_label": "USD per 1M tokens per intelligence point: market reference (OpenRouter, 2026-10-25) list price blended 3:1 input:output ÷ PLACEHOLDER intelligence index score (2026-10-25); reference only, not used in costs",
       "selected": true,
-      "reason": "top-ranked eligible route in its tier (intelligence score, then market usage rank, then snapshot order)"
+      "selected_for": [
+        "A1_transcribe_attempt",
+        "A2_next_target_and_feedback",
+        "A3_speak_target",
+        "A4_weekly_progress_summary"
+      ],
+      "reason": "top-ranked frontier route (tier curated in the route map); no verified dispatch policy, so projected only; modality coverage for audio_in, text is unknown in the catalog reference (also chosen for 3 more feature(s))"
     },
     {
       "model_id": "sample/frontier-alt-placeholder",
@@ -82,9 +89,9 @@
         "label": "market reference (OpenRouter, 2026-10-25)"
       },
       "price_per_intelligence_point_usd": "0.096774",
-      "price_per_intelligence_point_label": "USD per 1M tokens per intelligence point: market reference (OpenRouter, 2026-10-25) list price blended 3:1 input:output \u00f7 PLACEHOLDER intelligence index score (2026-10-25); reference only, not used in costs",
+      "price_per_intelligence_point_label": "USD per 1M tokens per intelligence point: market reference (OpenRouter, 2026-10-25) list price blended 3:1 input:output ÷ PLACEHOLDER intelligence index score (2026-10-25); reference only, not used in costs",
       "selected": false,
-      "reason": "ranked below sample/frontier-placeholder"
+      "reason": "eligible but ranked below the chosen route in its tier"
     },
     {
       "model_id": "sample/mid-tier-placeholder",
@@ -106,9 +113,15 @@
         "label": "market reference (OpenRouter, 2026-10-25)"
       },
       "price_per_intelligence_point_usd": "0.036364",
-      "price_per_intelligence_point_label": "USD per 1M tokens per intelligence point: market reference (OpenRouter, 2026-10-25) list price blended 3:1 input:output \u00f7 PLACEHOLDER intelligence index score (2026-10-25); reference only, not used in costs",
+      "price_per_intelligence_point_label": "USD per 1M tokens per intelligence point: market reference (OpenRouter, 2026-10-25) list price blended 3:1 input:output ÷ PLACEHOLDER intelligence index score (2026-10-25); reference only, not used in costs",
       "selected": true,
-      "reason": "top-ranked eligible route in its tier (intelligence score, then market usage rank, then snapshot order)"
+      "selected_for": [
+        "A1_transcribe_attempt",
+        "A2_next_target_and_feedback",
+        "A3_speak_target",
+        "A4_weekly_progress_summary"
+      ],
+      "reason": "top-ranked mid_tier route (tier curated in the route map); no verified dispatch policy, so projected only; modality coverage for audio_in, text is unknown in the catalog reference (also chosen for 3 more feature(s))"
     },
     {
       "model_id": "sample/open-source-placeholder",
@@ -130,9 +143,15 @@
         "label": "market reference (OpenRouter, 2026-10-25)"
       },
       "price_per_intelligence_point_usd": "0.006250",
-      "price_per_intelligence_point_label": "USD per 1M tokens per intelligence point: market reference (OpenRouter, 2026-10-25) list price blended 3:1 input:output \u00f7 PLACEHOLDER intelligence index score (2026-10-25); reference only, not used in costs",
+      "price_per_intelligence_point_label": "USD per 1M tokens per intelligence point: market reference (OpenRouter, 2026-10-25) list price blended 3:1 input:output ÷ PLACEHOLDER intelligence index score (2026-10-25); reference only, not used in costs",
       "selected": true,
-      "reason": "the required open-source (Nemotron) route; always a candidate, regardless of score"
+      "selected_for": [
+        "A1_transcribe_attempt",
+        "A2_next_target_and_feedback",
+        "A3_speak_target",
+        "A4_weekly_progress_summary"
+      ],
+      "reason": "top-ranked open_source route (tier curated in the route map); no verified dispatch policy, so projected only; modality coverage for audio_in, text is unknown in the catalog reference (also chosen for 3 more feature(s))"
     }
   ],
   "model_stack": [
@@ -314,12 +333,12 @@
           "model_id": "sample/frontier-placeholder",
           "tier": "frontier",
           "calls_per_month": "48000",
-          "cost_per_call_usd": "0.002195",
+          "cost_per_call_usd": "0.002410",
           "token_basis": "estimated",
           "lines": [
             {
               "name": "input",
-              "monthly_usd": "0.96",
+              "monthly_usd": "11.28",
               "billed": true,
               "note": ""
             },
@@ -343,12 +362,12 @@
             },
             {
               "name": "retries",
-              "monthly_usd": "10.54",
+              "monthly_usd": "11.57",
               "billed": true,
               "note": "retry_rate 0.1 (assumed)"
             }
           ],
-          "gross_monthly_usd": "115.90",
+          "gross_monthly_usd": "127.25",
           "levers": [
             {
               "lever": "output_cap",
@@ -361,7 +380,7 @@
             {
               "lever": "long_context_cliff",
               "applies": false,
-              "reason": "input 4 <= threshold 200000",
+              "reason": "input 47 <= threshold 200000",
               "monthly_delta_usd": null,
               "one_time_usd": null,
               "label": null
@@ -391,8 +410,8 @@
               "label": "projected (production setup)"
             }
           ],
-          "monthly_with_levers_usd": "115.90",
-          "cost_per_use_usd": "0.0024145",
+          "monthly_with_levers_usd": "127.25",
+          "cost_per_use_usd": "0.002651",
           "revenue_per_use_usd": null,
           "revenue_share": null,
           "lower_bound": true,
@@ -408,7 +427,7 @@
           ],
           "warnings": [
             "Rates are not verified.",
-            "Tokens estimated (4/3 words rule), not measured.",
+            "Tokens estimated (4/3 words rule (instructions + example)), not measured.",
             "audio_in tokens estimated from per-second conversion (unverified), not measured.",
             "Estimated output tokens exclude any hidden reasoning tokens; cost is a lower bound."
           ]
@@ -420,12 +439,12 @@
           "model_id": "sample/frontier-placeholder",
           "tier": "frontier",
           "calls_per_month": "480000",
-          "cost_per_call_usd": "0.002195",
+          "cost_per_call_usd": "0.002410",
           "token_basis": "estimated",
           "lines": [
             {
               "name": "input",
-              "monthly_usd": "9.60",
+              "monthly_usd": "112.80",
               "billed": true,
               "note": ""
             },
@@ -449,12 +468,12 @@
             },
             {
               "name": "retries",
-              "monthly_usd": "105.36",
+              "monthly_usd": "115.68",
               "billed": true,
               "note": "retry_rate 0.1 (assumed)"
             }
           ],
-          "gross_monthly_usd": "1158.96",
+          "gross_monthly_usd": "1272.48",
           "levers": [
             {
               "lever": "output_cap",
@@ -467,7 +486,7 @@
             {
               "lever": "long_context_cliff",
               "applies": false,
-              "reason": "input 4 <= threshold 200000",
+              "reason": "input 47 <= threshold 200000",
               "monthly_delta_usd": null,
               "one_time_usd": null,
               "label": null
@@ -497,8 +516,8 @@
               "label": "projected (production setup)"
             }
           ],
-          "monthly_with_levers_usd": "1158.96",
-          "cost_per_use_usd": "0.0024145",
+          "monthly_with_levers_usd": "1272.48",
+          "cost_per_use_usd": "0.002651",
           "revenue_per_use_usd": null,
           "revenue_share": null,
           "lower_bound": true,
@@ -514,7 +533,7 @@
           ],
           "warnings": [
             "Rates are not verified.",
-            "Tokens estimated (4/3 words rule), not measured.",
+            "Tokens estimated (4/3 words rule (instructions + example)), not measured.",
             "audio_in tokens estimated from per-second conversion (unverified), not measured.",
             "Estimated output tokens exclude any hidden reasoning tokens; cost is a lower bound."
           ]
@@ -526,12 +545,12 @@
           "model_id": "sample/frontier-placeholder",
           "tier": "frontier",
           "calls_per_month": "4800000",
-          "cost_per_call_usd": "0.002195",
+          "cost_per_call_usd": "0.002410",
           "token_basis": "estimated",
           "lines": [
             {
               "name": "input",
-              "monthly_usd": "96.00",
+              "monthly_usd": "1128.00",
               "billed": true,
               "note": ""
             },
@@ -555,12 +574,12 @@
             },
             {
               "name": "retries",
-              "monthly_usd": "1053.60",
+              "monthly_usd": "1156.80",
               "billed": true,
               "note": "retry_rate 0.1 (assumed)"
             }
           ],
-          "gross_monthly_usd": "11589.60",
+          "gross_monthly_usd": "12724.80",
           "levers": [
             {
               "lever": "output_cap",
@@ -573,7 +592,7 @@
             {
               "lever": "long_context_cliff",
               "applies": false,
-              "reason": "input 4 <= threshold 200000",
+              "reason": "input 47 <= threshold 200000",
               "monthly_delta_usd": null,
               "one_time_usd": null,
               "label": null
@@ -603,8 +622,8 @@
               "label": "projected (production setup)"
             }
           ],
-          "monthly_with_levers_usd": "11589.60",
-          "cost_per_use_usd": "0.0024145",
+          "monthly_with_levers_usd": "12724.80",
+          "cost_per_use_usd": "0.002651",
           "revenue_per_use_usd": null,
           "revenue_share": null,
           "lower_bound": true,
@@ -620,7 +639,7 @@
           ],
           "warnings": [
             "Rates are not verified.",
-            "Tokens estimated (4/3 words rule), not measured.",
+            "Tokens estimated (4/3 words rule (instructions + example)), not measured.",
             "audio_in tokens estimated from per-second conversion (unverified), not measured.",
             "Estimated output tokens exclude any hidden reasoning tokens; cost is a lower bound."
           ]
@@ -632,12 +651,12 @@
           "model_id": "sample/frontier-placeholder",
           "tier": "frontier",
           "calls_per_month": "48000000",
-          "cost_per_call_usd": "0.002195",
+          "cost_per_call_usd": "0.002410",
           "token_basis": "estimated",
           "lines": [
             {
               "name": "input",
-              "monthly_usd": "960.00",
+              "monthly_usd": "11280.00",
               "billed": true,
               "note": ""
             },
@@ -661,12 +680,12 @@
             },
             {
               "name": "retries",
-              "monthly_usd": "10536.00",
+              "monthly_usd": "11568.00",
               "billed": true,
               "note": "retry_rate 0.1 (assumed)"
             }
           ],
-          "gross_monthly_usd": "115896.00",
+          "gross_monthly_usd": "127248.00",
           "levers": [
             {
               "lever": "output_cap",
@@ -679,7 +698,7 @@
             {
               "lever": "long_context_cliff",
               "applies": false,
-              "reason": "input 4 <= threshold 200000",
+              "reason": "input 47 <= threshold 200000",
               "monthly_delta_usd": null,
               "one_time_usd": null,
               "label": null
@@ -709,8 +728,8 @@
               "label": "projected (production setup)"
             }
           ],
-          "monthly_with_levers_usd": "115896.00",
-          "cost_per_use_usd": "0.0024145",
+          "monthly_with_levers_usd": "127248.00",
+          "cost_per_use_usd": "0.002651",
           "revenue_per_use_usd": null,
           "revenue_share": null,
           "lower_bound": true,
@@ -726,7 +745,7 @@
           ],
           "warnings": [
             "Rates are not verified.",
-            "Tokens estimated (4/3 words rule), not measured.",
+            "Tokens estimated (4/3 words rule (instructions + example)), not measured.",
             "audio_in tokens estimated from per-second conversion (unverified), not measured.",
             "Estimated output tokens exclude any hidden reasoning tokens; cost is a lower bound."
           ]
@@ -738,12 +757,12 @@
           "model_id": "sample/mid-tier-placeholder",
           "tier": "mid_tier",
           "calls_per_month": "48000",
-          "cost_per_call_usd": "0.000539",
+          "cost_per_call_usd": "0.000582",
           "token_basis": "estimated",
           "lines": [
             {
               "name": "input",
-              "monthly_usd": "0.19",
+              "monthly_usd": "2.26",
               "billed": true,
               "note": ""
             },
@@ -767,12 +786,12 @@
             },
             {
               "name": "retries",
-              "monthly_usd": "2.59",
+              "monthly_usd": "2.79",
               "billed": true,
               "note": "retry_rate 0.1 (assumed)"
             }
           ],
-          "gross_monthly_usd": "28.46",
+          "gross_monthly_usd": "30.73",
           "levers": [
             {
               "lever": "output_cap",
@@ -815,8 +834,8 @@
               "label": "projected (production setup)"
             }
           ],
-          "monthly_with_levers_usd": "28.46",
-          "cost_per_use_usd": "0.0005929",
+          "monthly_with_levers_usd": "30.73",
+          "cost_per_use_usd": "0.0006402",
           "revenue_per_use_usd": null,
           "revenue_share": null,
           "lower_bound": true,
@@ -830,7 +849,7 @@
           ],
           "warnings": [
             "Rates are not verified.",
-            "Tokens estimated (4/3 words rule), not measured.",
+            "Tokens estimated (4/3 words rule (instructions + example)), not measured.",
             "audio_in tokens estimated from per-second conversion (unverified), not measured.",
             "Estimated output tokens exclude any hidden reasoning tokens; cost is a lower bound."
           ]
@@ -842,12 +861,12 @@
           "model_id": "sample/mid-tier-placeholder",
           "tier": "mid_tier",
           "calls_per_month": "480000",
-          "cost_per_call_usd": "0.000539",
+          "cost_per_call_usd": "0.000582",
           "token_basis": "estimated",
           "lines": [
             {
               "name": "input",
-              "monthly_usd": "1.92",
+              "monthly_usd": "22.56",
               "billed": true,
               "note": ""
             },
@@ -871,12 +890,12 @@
             },
             {
               "name": "retries",
-              "monthly_usd": "25.87",
+              "monthly_usd": "27.94",
               "billed": true,
               "note": "retry_rate 0.1 (assumed)"
             }
           ],
-          "gross_monthly_usd": "284.59",
+          "gross_monthly_usd": "307.30",
           "levers": [
             {
               "lever": "output_cap",
@@ -919,8 +938,8 @@
               "label": "projected (production setup)"
             }
           ],
-          "monthly_with_levers_usd": "284.59",
-          "cost_per_use_usd": "0.0005929",
+          "monthly_with_levers_usd": "307.30",
+          "cost_per_use_usd": "0.0006402",
           "revenue_per_use_usd": null,
           "revenue_share": null,
           "lower_bound": true,
@@ -934,7 +953,7 @@
           ],
           "warnings": [
             "Rates are not verified.",
-            "Tokens estimated (4/3 words rule), not measured.",
+            "Tokens estimated (4/3 words rule (instructions + example)), not measured.",
             "audio_in tokens estimated from per-second conversion (unverified), not measured.",
             "Estimated output tokens exclude any hidden reasoning tokens; cost is a lower bound."
           ]
@@ -946,12 +965,12 @@
           "model_id": "sample/mid-tier-placeholder",
           "tier": "mid_tier",
           "calls_per_month": "4800000",
-          "cost_per_call_usd": "0.000539",
+          "cost_per_call_usd": "0.000582",
           "token_basis": "estimated",
           "lines": [
             {
               "name": "input",
-              "monthly_usd": "19.20",
+              "monthly_usd": "225.60",
               "billed": true,
               "note": ""
             },
@@ -975,12 +994,12 @@
             },
             {
               "name": "retries",
-              "monthly_usd": "258.72",
+              "monthly_usd": "279.36",
               "billed": true,
               "note": "retry_rate 0.1 (assumed)"
             }
           ],
-          "gross_monthly_usd": "2845.92",
+          "gross_monthly_usd": "3072.96",
           "levers": [
             {
               "lever": "output_cap",
@@ -1023,8 +1042,8 @@
               "label": "projected (production setup)"
             }
           ],
-          "monthly_with_levers_usd": "2845.92",
-          "cost_per_use_usd": "0.0005929",
+          "monthly_with_levers_usd": "3072.96",
+          "cost_per_use_usd": "0.0006402",
           "revenue_per_use_usd": null,
           "revenue_share": null,
           "lower_bound": true,
@@ -1038,7 +1057,7 @@
           ],
           "warnings": [
             "Rates are not verified.",
-            "Tokens estimated (4/3 words rule), not measured.",
+            "Tokens estimated (4/3 words rule (instructions + example)), not measured.",
             "audio_in tokens estimated from per-second conversion (unverified), not measured.",
             "Estimated output tokens exclude any hidden reasoning tokens; cost is a lower bound."
           ]
@@ -1050,12 +1069,12 @@
           "model_id": "sample/mid-tier-placeholder",
           "tier": "mid_tier",
           "calls_per_month": "48000000",
-          "cost_per_call_usd": "0.000539",
+          "cost_per_call_usd": "0.000582",
           "token_basis": "estimated",
           "lines": [
             {
               "name": "input",
-              "monthly_usd": "192.00",
+              "monthly_usd": "2256.00",
               "billed": true,
               "note": ""
             },
@@ -1079,12 +1098,12 @@
             },
             {
               "name": "retries",
-              "monthly_usd": "2587.20",
+              "monthly_usd": "2793.60",
               "billed": true,
               "note": "retry_rate 0.1 (assumed)"
             }
           ],
-          "gross_monthly_usd": "28459.20",
+          "gross_monthly_usd": "30729.60",
           "levers": [
             {
               "lever": "output_cap",
@@ -1127,8 +1146,8 @@
               "label": "projected (production setup)"
             }
           ],
-          "monthly_with_levers_usd": "28459.20",
-          "cost_per_use_usd": "0.0005929",
+          "monthly_with_levers_usd": "30729.60",
+          "cost_per_use_usd": "0.0006402",
           "revenue_per_use_usd": null,
           "revenue_share": null,
           "lower_bound": true,
@@ -1142,7 +1161,7 @@
           ],
           "warnings": [
             "Rates are not verified.",
-            "Tokens estimated (4/3 words rule), not measured.",
+            "Tokens estimated (4/3 words rule (instructions + example)), not measured.",
             "audio_in tokens estimated from per-second conversion (unverified), not measured.",
             "Estimated output tokens exclude any hidden reasoning tokens; cost is a lower bound."
           ]
@@ -1170,7 +1189,7 @@
           ],
           "warnings": [
             "Rates are not verified.",
-            "Tokens estimated (4/3 words rule), not measured.",
+            "Tokens estimated (4/3 words rule (instructions + example)), not measured.",
             "Cost unknown, not zero: audio_in per-second conversion unknown."
           ]
         },
@@ -1197,7 +1216,7 @@
           ],
           "warnings": [
             "Rates are not verified.",
-            "Tokens estimated (4/3 words rule), not measured.",
+            "Tokens estimated (4/3 words rule (instructions + example)), not measured.",
             "Cost unknown, not zero: audio_in per-second conversion unknown."
           ]
         },
@@ -1224,7 +1243,7 @@
           ],
           "warnings": [
             "Rates are not verified.",
-            "Tokens estimated (4/3 words rule), not measured.",
+            "Tokens estimated (4/3 words rule (instructions + example)), not measured.",
             "Cost unknown, not zero: audio_in per-second conversion unknown."
           ]
         },
@@ -1251,7 +1270,7 @@
           ],
           "warnings": [
             "Rates are not verified.",
-            "Tokens estimated (4/3 words rule), not measured.",
+            "Tokens estimated (4/3 words rule (instructions + example)), not measured.",
             "Cost unknown, not zero: audio_in per-second conversion unknown."
           ]
         }
@@ -1266,11 +1285,11 @@
           "from_model": "sample/frontier-placeholder",
           "to_model": "sample/mid-tier-placeholder",
           "to_tier": "mid_tier",
-          "monthly_difference_usd": "874.37",
+          "monthly_difference_usd": "965.18",
           "quality_to": null,
           "quality_from": null,
           "quality_qualified": false,
-          "statement": "From Launch (500 users), A1_transcribe_attempt on sample/mid-tier-placeholder is projected to cost ~$874.37/month less (estimated tokens), but this is not a switch point: quality not measured. Both costs are lower bounds."
+          "statement": "From Launch (500 users), A1_transcribe_attempt on sample/mid-tier-placeholder is projected to cost ~$965.18/month less (estimated tokens), but this is not a switch point: quality not measured. Both costs are lower bounds."
         }
       ],
       "risks": [],
@@ -1310,12 +1329,12 @@
           "model_id": "sample/frontier-placeholder",
           "tier": "frontier",
           "calls_per_month": "48000",
-          "cost_per_call_usd": "0.001425",
+          "cost_per_call_usd": "0.001955",
           "token_basis": "estimated",
           "lines": [
             {
               "name": "input",
-              "monthly_usd": "3.60",
+              "monthly_usd": "29.04",
               "billed": true,
               "note": ""
             },
@@ -1333,12 +1352,12 @@
             },
             {
               "name": "retries",
-              "monthly_usd": "6.84",
+              "monthly_usd": "9.38",
               "billed": true,
               "note": "retry_rate 0.1 (assumed)"
             }
           ],
-          "gross_monthly_usd": "75.24",
+          "gross_monthly_usd": "103.22",
           "levers": [
             {
               "lever": "output_cap",
@@ -1351,7 +1370,7 @@
             {
               "lever": "long_context_cliff",
               "applies": false,
-              "reason": "input 15 <= threshold 200000",
+              "reason": "input 121 <= threshold 200000",
               "monthly_delta_usd": null,
               "one_time_usd": null,
               "label": null
@@ -1381,8 +1400,8 @@
               "label": "projected (production setup)"
             }
           ],
-          "monthly_with_levers_usd": "75.24",
-          "cost_per_use_usd": "0.0015675",
+          "monthly_with_levers_usd": "103.22",
+          "cost_per_use_usd": "0.0021505",
           "revenue_per_use_usd": null,
           "revenue_share": null,
           "lower_bound": true,
@@ -1396,7 +1415,7 @@
           ],
           "warnings": [
             "Rates are not verified.",
-            "Tokens estimated (4/3 words rule), not measured.",
+            "Tokens estimated (4/3 words rule (instructions + example)), not measured.",
             "Estimated output tokens exclude any hidden reasoning tokens; cost is a lower bound."
           ]
         },
@@ -1407,12 +1426,12 @@
           "model_id": "sample/frontier-placeholder",
           "tier": "frontier",
           "calls_per_month": "480000",
-          "cost_per_call_usd": "0.001425",
+          "cost_per_call_usd": "0.001955",
           "token_basis": "estimated",
           "lines": [
             {
               "name": "input",
-              "monthly_usd": "36.00",
+              "monthly_usd": "290.40",
               "billed": true,
               "note": ""
             },
@@ -1430,12 +1449,12 @@
             },
             {
               "name": "retries",
-              "monthly_usd": "68.40",
+              "monthly_usd": "93.84",
               "billed": true,
               "note": "retry_rate 0.1 (assumed)"
             }
           ],
-          "gross_monthly_usd": "752.40",
+          "gross_monthly_usd": "1032.24",
           "levers": [
             {
               "lever": "output_cap",
@@ -1448,7 +1467,7 @@
             {
               "lever": "long_context_cliff",
               "applies": false,
-              "reason": "input 15 <= threshold 200000",
+              "reason": "input 121 <= threshold 200000",
               "monthly_delta_usd": null,
               "one_time_usd": null,
               "label": null
@@ -1478,8 +1497,8 @@
               "label": "projected (production setup)"
             }
           ],
-          "monthly_with_levers_usd": "752.40",
-          "cost_per_use_usd": "0.0015675",
+          "monthly_with_levers_usd": "1032.24",
+          "cost_per_use_usd": "0.0021505",
           "revenue_per_use_usd": null,
           "revenue_share": null,
           "lower_bound": true,
@@ -1493,7 +1512,7 @@
           ],
           "warnings": [
             "Rates are not verified.",
-            "Tokens estimated (4/3 words rule), not measured.",
+            "Tokens estimated (4/3 words rule (instructions + example)), not measured.",
             "Estimated output tokens exclude any hidden reasoning tokens; cost is a lower bound."
           ]
         },
@@ -1504,12 +1523,12 @@
           "model_id": "sample/frontier-placeholder",
           "tier": "frontier",
           "calls_per_month": "4800000",
-          "cost_per_call_usd": "0.001425",
+          "cost_per_call_usd": "0.001955",
           "token_basis": "estimated",
           "lines": [
             {
               "name": "input",
-              "monthly_usd": "360.00",
+              "monthly_usd": "2904.00",
               "billed": true,
               "note": ""
             },
@@ -1527,12 +1546,12 @@
             },
             {
               "name": "retries",
-              "monthly_usd": "684.00",
+              "monthly_usd": "938.40",
               "billed": true,
               "note": "retry_rate 0.1 (assumed)"
             }
           ],
-          "gross_monthly_usd": "7524.00",
+          "gross_monthly_usd": "10322.40",
           "levers": [
             {
               "lever": "output_cap",
@@ -1545,7 +1564,7 @@
             {
               "lever": "long_context_cliff",
               "applies": false,
-              "reason": "input 15 <= threshold 200000",
+              "reason": "input 121 <= threshold 200000",
               "monthly_delta_usd": null,
               "one_time_usd": null,
               "label": null
@@ -1575,8 +1594,8 @@
               "label": "projected (production setup)"
             }
           ],
-          "monthly_with_levers_usd": "7524.00",
-          "cost_per_use_usd": "0.0015675",
+          "monthly_with_levers_usd": "10322.40",
+          "cost_per_use_usd": "0.0021505",
           "revenue_per_use_usd": null,
           "revenue_share": null,
           "lower_bound": true,
@@ -1590,7 +1609,7 @@
           ],
           "warnings": [
             "Rates are not verified.",
-            "Tokens estimated (4/3 words rule), not measured.",
+            "Tokens estimated (4/3 words rule (instructions + example)), not measured.",
             "Estimated output tokens exclude any hidden reasoning tokens; cost is a lower bound."
           ]
         },
@@ -1601,12 +1620,12 @@
           "model_id": "sample/frontier-placeholder",
           "tier": "frontier",
           "calls_per_month": "48000000",
-          "cost_per_call_usd": "0.001425",
+          "cost_per_call_usd": "0.001955",
           "token_basis": "estimated",
           "lines": [
             {
               "name": "input",
-              "monthly_usd": "3600.00",
+              "monthly_usd": "29040.00",
               "billed": true,
               "note": ""
             },
@@ -1624,12 +1643,12 @@
             },
             {
               "name": "retries",
-              "monthly_usd": "6840.00",
+              "monthly_usd": "9384.00",
               "billed": true,
               "note": "retry_rate 0.1 (assumed)"
             }
           ],
-          "gross_monthly_usd": "75240.00",
+          "gross_monthly_usd": "103224.00",
           "levers": [
             {
               "lever": "output_cap",
@@ -1642,7 +1661,7 @@
             {
               "lever": "long_context_cliff",
               "applies": false,
-              "reason": "input 15 <= threshold 200000",
+              "reason": "input 121 <= threshold 200000",
               "monthly_delta_usd": null,
               "one_time_usd": null,
               "label": null
@@ -1672,8 +1691,8 @@
               "label": "projected (production setup)"
             }
           ],
-          "monthly_with_levers_usd": "75240.00",
-          "cost_per_use_usd": "0.0015675",
+          "monthly_with_levers_usd": "103224.00",
+          "cost_per_use_usd": "0.0021505",
           "revenue_per_use_usd": null,
           "revenue_share": null,
           "lower_bound": true,
@@ -1687,7 +1706,7 @@
           ],
           "warnings": [
             "Rates are not verified.",
-            "Tokens estimated (4/3 words rule), not measured.",
+            "Tokens estimated (4/3 words rule (instructions + example)), not measured.",
             "Estimated output tokens exclude any hidden reasoning tokens; cost is a lower bound."
           ]
         },
@@ -1698,12 +1717,12 @@
           "model_id": "sample/mid-tier-placeholder",
           "tier": "mid_tier",
           "calls_per_month": "48000",
-          "cost_per_call_usd": "0.000285",
+          "cost_per_call_usd": "0.000391",
           "token_basis": "estimated",
           "lines": [
             {
               "name": "input",
-              "monthly_usd": "0.72",
+              "monthly_usd": "5.81",
               "billed": true,
               "note": ""
             },
@@ -1721,12 +1740,12 @@
             },
             {
               "name": "retries",
-              "monthly_usd": "1.37",
+              "monthly_usd": "1.88",
               "billed": true,
               "note": "retry_rate 0.1 (assumed)"
             }
           ],
-          "gross_monthly_usd": "15.05",
+          "gross_monthly_usd": "20.64",
           "levers": [
             {
               "lever": "output_cap",
@@ -1769,8 +1788,8 @@
               "label": "projected (production setup)"
             }
           ],
-          "monthly_with_levers_usd": "15.05",
-          "cost_per_use_usd": "0.0003135",
+          "monthly_with_levers_usd": "20.64",
+          "cost_per_use_usd": "0.0004301",
           "revenue_per_use_usd": null,
           "revenue_share": null,
           "lower_bound": true,
@@ -1782,7 +1801,7 @@
           ],
           "warnings": [
             "Rates are not verified.",
-            "Tokens estimated (4/3 words rule), not measured.",
+            "Tokens estimated (4/3 words rule (instructions + example)), not measured.",
             "Estimated output tokens exclude any hidden reasoning tokens; cost is a lower bound."
           ]
         },
@@ -1793,12 +1812,12 @@
           "model_id": "sample/mid-tier-placeholder",
           "tier": "mid_tier",
           "calls_per_month": "480000",
-          "cost_per_call_usd": "0.000285",
+          "cost_per_call_usd": "0.000391",
           "token_basis": "estimated",
           "lines": [
             {
               "name": "input",
-              "monthly_usd": "7.20",
+              "monthly_usd": "58.08",
               "billed": true,
               "note": ""
             },
@@ -1816,12 +1835,12 @@
             },
             {
               "name": "retries",
-              "monthly_usd": "13.68",
+              "monthly_usd": "18.77",
               "billed": true,
               "note": "retry_rate 0.1 (assumed)"
             }
           ],
-          "gross_monthly_usd": "150.48",
+          "gross_monthly_usd": "206.45",
           "levers": [
             {
               "lever": "output_cap",
@@ -1864,8 +1883,8 @@
               "label": "projected (production setup)"
             }
           ],
-          "monthly_with_levers_usd": "150.48",
-          "cost_per_use_usd": "0.0003135",
+          "monthly_with_levers_usd": "206.45",
+          "cost_per_use_usd": "0.0004301",
           "revenue_per_use_usd": null,
           "revenue_share": null,
           "lower_bound": true,
@@ -1877,7 +1896,7 @@
           ],
           "warnings": [
             "Rates are not verified.",
-            "Tokens estimated (4/3 words rule), not measured.",
+            "Tokens estimated (4/3 words rule (instructions + example)), not measured.",
             "Estimated output tokens exclude any hidden reasoning tokens; cost is a lower bound."
           ]
         },
@@ -1888,12 +1907,12 @@
           "model_id": "sample/mid-tier-placeholder",
           "tier": "mid_tier",
           "calls_per_month": "4800000",
-          "cost_per_call_usd": "0.000285",
+          "cost_per_call_usd": "0.000391",
           "token_basis": "estimated",
           "lines": [
             {
               "name": "input",
-              "monthly_usd": "72.00",
+              "monthly_usd": "580.80",
               "billed": true,
               "note": ""
             },
@@ -1911,12 +1930,12 @@
             },
             {
               "name": "retries",
-              "monthly_usd": "136.80",
+              "monthly_usd": "187.68",
               "billed": true,
               "note": "retry_rate 0.1 (assumed)"
             }
           ],
-          "gross_monthly_usd": "1504.80",
+          "gross_monthly_usd": "2064.48",
           "levers": [
             {
               "lever": "output_cap",
@@ -1959,8 +1978,8 @@
               "label": "projected (production setup)"
             }
           ],
-          "monthly_with_levers_usd": "1504.80",
-          "cost_per_use_usd": "0.0003135",
+          "monthly_with_levers_usd": "2064.48",
+          "cost_per_use_usd": "0.0004301",
           "revenue_per_use_usd": null,
           "revenue_share": null,
           "lower_bound": true,
@@ -1972,7 +1991,7 @@
           ],
           "warnings": [
             "Rates are not verified.",
-            "Tokens estimated (4/3 words rule), not measured.",
+            "Tokens estimated (4/3 words rule (instructions + example)), not measured.",
             "Estimated output tokens exclude any hidden reasoning tokens; cost is a lower bound."
           ]
         },
@@ -1983,12 +2002,12 @@
           "model_id": "sample/mid-tier-placeholder",
           "tier": "mid_tier",
           "calls_per_month": "48000000",
-          "cost_per_call_usd": "0.000285",
+          "cost_per_call_usd": "0.000391",
           "token_basis": "estimated",
           "lines": [
             {
               "name": "input",
-              "monthly_usd": "720.00",
+              "monthly_usd": "5808.00",
               "billed": true,
               "note": ""
             },
@@ -2006,12 +2025,12 @@
             },
             {
               "name": "retries",
-              "monthly_usd": "1368.00",
+              "monthly_usd": "1876.80",
               "billed": true,
               "note": "retry_rate 0.1 (assumed)"
             }
           ],
-          "gross_monthly_usd": "15048.00",
+          "gross_monthly_usd": "20644.80",
           "levers": [
             {
               "lever": "output_cap",
@@ -2054,8 +2073,8 @@
               "label": "projected (production setup)"
             }
           ],
-          "monthly_with_levers_usd": "15048.00",
-          "cost_per_use_usd": "0.0003135",
+          "monthly_with_levers_usd": "20644.80",
+          "cost_per_use_usd": "0.0004301",
           "revenue_per_use_usd": null,
           "revenue_share": null,
           "lower_bound": true,
@@ -2067,7 +2086,7 @@
           ],
           "warnings": [
             "Rates are not verified.",
-            "Tokens estimated (4/3 words rule), not measured.",
+            "Tokens estimated (4/3 words rule (instructions + example)), not measured.",
             "Estimated output tokens exclude any hidden reasoning tokens; cost is a lower bound."
           ]
         },
@@ -2078,12 +2097,12 @@
           "model_id": "sample/open-source-placeholder",
           "tier": "open_source",
           "calls_per_month": "48000",
-          "cost_per_call_usd": "0.0000354",
+          "cost_per_call_usd": "0.0000566",
           "token_basis": "estimated",
           "lines": [
             {
               "name": "input",
-              "monthly_usd": "0.14",
+              "monthly_usd": "1.16",
               "billed": true,
               "note": ""
             },
@@ -2101,12 +2120,12 @@
             },
             {
               "name": "retries",
-              "monthly_usd": "0.17",
+              "monthly_usd": "0.27",
               "billed": true,
               "note": "retry_rate 0.1 (assumed)"
             }
           ],
-          "gross_monthly_usd": "1.87",
+          "gross_monthly_usd": "2.99",
           "levers": [
             {
               "lever": "output_cap",
@@ -2149,8 +2168,8 @@
               "label": "projected (production setup)"
             }
           ],
-          "monthly_with_levers_usd": "1.87",
-          "cost_per_use_usd": "0.00003894",
+          "monthly_with_levers_usd": "2.99",
+          "cost_per_use_usd": "0.00006226",
           "revenue_per_use_usd": null,
           "revenue_share": null,
           "lower_bound": true,
@@ -2160,7 +2179,7 @@
           ],
           "warnings": [
             "Rates are not verified.",
-            "Tokens estimated (4/3 words rule), not measured.",
+            "Tokens estimated (4/3 words rule (instructions + example)), not measured.",
             "Estimated output tokens exclude any hidden reasoning tokens; cost is a lower bound."
           ]
         },
@@ -2171,12 +2190,12 @@
           "model_id": "sample/open-source-placeholder",
           "tier": "open_source",
           "calls_per_month": "480000",
-          "cost_per_call_usd": "0.0000354",
+          "cost_per_call_usd": "0.0000566",
           "token_basis": "estimated",
           "lines": [
             {
               "name": "input",
-              "monthly_usd": "1.44",
+              "monthly_usd": "11.62",
               "billed": true,
               "note": ""
             },
@@ -2194,12 +2213,12 @@
             },
             {
               "name": "retries",
-              "monthly_usd": "1.70",
+              "monthly_usd": "2.72",
               "billed": true,
               "note": "retry_rate 0.1 (assumed)"
             }
           ],
-          "gross_monthly_usd": "18.69",
+          "gross_monthly_usd": "29.88",
           "levers": [
             {
               "lever": "output_cap",
@@ -2242,8 +2261,8 @@
               "label": "projected (production setup)"
             }
           ],
-          "monthly_with_levers_usd": "18.69",
-          "cost_per_use_usd": "0.00003894",
+          "monthly_with_levers_usd": "29.88",
+          "cost_per_use_usd": "0.00006226",
           "revenue_per_use_usd": null,
           "revenue_share": null,
           "lower_bound": true,
@@ -2253,7 +2272,7 @@
           ],
           "warnings": [
             "Rates are not verified.",
-            "Tokens estimated (4/3 words rule), not measured.",
+            "Tokens estimated (4/3 words rule (instructions + example)), not measured.",
             "Estimated output tokens exclude any hidden reasoning tokens; cost is a lower bound."
           ]
         },
@@ -2264,12 +2283,12 @@
           "model_id": "sample/open-source-placeholder",
           "tier": "open_source",
           "calls_per_month": "4800000",
-          "cost_per_call_usd": "0.0000354",
+          "cost_per_call_usd": "0.0000566",
           "token_basis": "estimated",
           "lines": [
             {
               "name": "input",
-              "monthly_usd": "14.40",
+              "monthly_usd": "116.16",
               "billed": true,
               "note": ""
             },
@@ -2287,12 +2306,12 @@
             },
             {
               "name": "retries",
-              "monthly_usd": "16.99",
+              "monthly_usd": "27.17",
               "billed": true,
               "note": "retry_rate 0.1 (assumed)"
             }
           ],
-          "gross_monthly_usd": "186.91",
+          "gross_monthly_usd": "298.85",
           "levers": [
             {
               "lever": "output_cap",
@@ -2335,8 +2354,8 @@
               "label": "projected (production setup)"
             }
           ],
-          "monthly_with_levers_usd": "186.91",
-          "cost_per_use_usd": "0.00003894",
+          "monthly_with_levers_usd": "298.85",
+          "cost_per_use_usd": "0.00006226",
           "revenue_per_use_usd": null,
           "revenue_share": null,
           "lower_bound": true,
@@ -2346,7 +2365,7 @@
           ],
           "warnings": [
             "Rates are not verified.",
-            "Tokens estimated (4/3 words rule), not measured.",
+            "Tokens estimated (4/3 words rule (instructions + example)), not measured.",
             "Estimated output tokens exclude any hidden reasoning tokens; cost is a lower bound."
           ]
         },
@@ -2357,12 +2376,12 @@
           "model_id": "sample/open-source-placeholder",
           "tier": "open_source",
           "calls_per_month": "48000000",
-          "cost_per_call_usd": "0.0000354",
+          "cost_per_call_usd": "0.0000566",
           "token_basis": "estimated",
           "lines": [
             {
               "name": "input",
-              "monthly_usd": "144.00",
+              "monthly_usd": "1161.60",
               "billed": true,
               "note": ""
             },
@@ -2380,12 +2399,12 @@
             },
             {
               "name": "retries",
-              "monthly_usd": "169.92",
+              "monthly_usd": "271.68",
               "billed": true,
               "note": "retry_rate 0.1 (assumed)"
             }
           ],
-          "gross_monthly_usd": "1869.12",
+          "gross_monthly_usd": "2988.48",
           "levers": [
             {
               "lever": "output_cap",
@@ -2428,8 +2447,8 @@
               "label": "projected (production setup)"
             }
           ],
-          "monthly_with_levers_usd": "1869.12",
-          "cost_per_use_usd": "0.00003894",
+          "monthly_with_levers_usd": "2988.48",
+          "cost_per_use_usd": "0.00006226",
           "revenue_per_use_usd": null,
           "revenue_share": null,
           "lower_bound": true,
@@ -2439,7 +2458,7 @@
           ],
           "warnings": [
             "Rates are not verified.",
-            "Tokens estimated (4/3 words rule), not measured.",
+            "Tokens estimated (4/3 words rule (instructions + example)), not measured.",
             "Estimated output tokens exclude any hidden reasoning tokens; cost is a lower bound."
           ]
         }
@@ -2454,24 +2473,24 @@
           "from_model": "sample/frontier-placeholder",
           "to_model": "sample/mid-tier-placeholder",
           "to_tier": "mid_tier",
-          "monthly_difference_usd": "601.92",
+          "monthly_difference_usd": "825.79",
           "quality_to": null,
           "quality_from": null,
           "quality_qualified": false,
-          "statement": "From Launch (500 users), A2_next_target_and_feedback on sample/mid-tier-placeholder is projected to cost ~$601.92/month less (estimated tokens), but this is not a switch point: quality not measured. Both costs are lower bounds."
+          "statement": "From Launch (500 users), A2_next_target_and_feedback on sample/mid-tier-placeholder is projected to cost ~$825.79/month less (estimated tokens), but this is not a switch point: quality not measured. Both costs are lower bounds."
         },
         {
           "feature_id": "A2_next_target_and_feedback",
-          "stage": "Launch",
-          "active_users": 500,
+          "stage": "Prototype",
+          "active_users": 50,
           "from_model": "sample/frontier-placeholder",
           "to_model": "sample/open-source-placeholder",
           "to_tier": "open_source",
-          "monthly_difference_usd": "733.71",
+          "monthly_difference_usd": "100.24",
           "quality_to": null,
           "quality_from": null,
           "quality_qualified": false,
-          "statement": "From Launch (500 users), A2_next_target_and_feedback on sample/open-source-placeholder is projected to cost ~$733.71/month less (estimated tokens), but this is not a switch point: quality not measured. Both costs are lower bounds."
+          "statement": "From Prototype (50 users), A2_next_target_and_feedback on sample/open-source-placeholder is projected to cost ~$100.24/month less (estimated tokens), but this is not a switch point: quality not measured. Both costs are lower bounds."
         }
       ],
       "risks": [],
@@ -2511,12 +2530,12 @@
           "model_id": "sample/frontier-placeholder",
           "tier": "frontier",
           "calls_per_month": "48000",
-          "cost_per_call_usd": "0.004830",
+          "cost_per_call_usd": "0.005005",
           "token_basis": "estimated",
           "lines": [
             {
               "name": "input",
-              "monthly_usd": "1.44",
+              "monthly_usd": "9.84",
               "billed": true,
               "note": ""
             },
@@ -2540,12 +2559,12 @@
             },
             {
               "name": "retries",
-              "monthly_usd": "23.18",
+              "monthly_usd": "24.02",
               "billed": true,
               "note": "retry_rate 0.1 (assumed)"
             }
           ],
-          "gross_monthly_usd": "255.02",
+          "gross_monthly_usd": "264.26",
           "levers": [
             {
               "lever": "output_cap",
@@ -2558,7 +2577,7 @@
             {
               "lever": "long_context_cliff",
               "applies": false,
-              "reason": "input 6 <= threshold 200000",
+              "reason": "input 41 <= threshold 200000",
               "monthly_delta_usd": null,
               "one_time_usd": null,
               "label": null
@@ -2583,13 +2602,13 @@
               "lever": "output_reuse",
               "applies": true,
               "reason": "90% of uses served from cached outputs; 5280.00 paid calls/month including retries; cache TTL and discount eligibility recomputed; one-time generation of 2,000 distinct outputs",
-              "monthly_delta_usd": "-229.52",
-              "one_time_usd": "10.63",
+              "monthly_delta_usd": "-237.84",
+              "one_time_usd": "11.01",
               "label": "projected (production setup)"
             }
           ],
-          "monthly_with_levers_usd": "25.50",
-          "cost_per_use_usd": "0.0005313",
+          "monthly_with_levers_usd": "26.43",
+          "cost_per_use_usd": "0.00055055",
           "revenue_per_use_usd": null,
           "revenue_share": null,
           "lower_bound": true,
@@ -2605,9 +2624,10 @@
           ],
           "warnings": [
             "Rates are not verified.",
-            "Tokens estimated (4/3 words rule), not measured.",
+            "Tokens estimated (4/3 words rule (instructions + example)), not measured.",
             "audio_out tokens estimated from per-second conversion (unverified), not measured.",
-            "Estimated output tokens exclude any hidden reasoning tokens; cost is a lower bound."
+            "Estimated output tokens exclude any hidden reasoning tokens; cost is a lower bound.",
+            "Rounded line amounts may differ from the rounded total; totals use unrounded Decimal values."
           ]
         },
         {
@@ -2617,12 +2637,12 @@
           "model_id": "sample/frontier-placeholder",
           "tier": "frontier",
           "calls_per_month": "480000",
-          "cost_per_call_usd": "0.004830",
+          "cost_per_call_usd": "0.005005",
           "token_basis": "estimated",
           "lines": [
             {
               "name": "input",
-              "monthly_usd": "14.40",
+              "monthly_usd": "98.40",
               "billed": true,
               "note": ""
             },
@@ -2646,12 +2666,12 @@
             },
             {
               "name": "retries",
-              "monthly_usd": "231.84",
+              "monthly_usd": "240.24",
               "billed": true,
               "note": "retry_rate 0.1 (assumed)"
             }
           ],
-          "gross_monthly_usd": "2550.24",
+          "gross_monthly_usd": "2642.64",
           "levers": [
             {
               "lever": "output_cap",
@@ -2664,7 +2684,7 @@
             {
               "lever": "long_context_cliff",
               "applies": false,
-              "reason": "input 6 <= threshold 200000",
+              "reason": "input 41 <= threshold 200000",
               "monthly_delta_usd": null,
               "one_time_usd": null,
               "label": null
@@ -2689,13 +2709,13 @@
               "lever": "output_reuse",
               "applies": true,
               "reason": "90% of uses served from cached outputs; 52800.00 paid calls/month including retries; cache TTL and discount eligibility recomputed; one-time generation of 2,000 distinct outputs",
-              "monthly_delta_usd": "-2295.22",
-              "one_time_usd": "10.63",
+              "monthly_delta_usd": "-2378.38",
+              "one_time_usd": "11.01",
               "label": "projected (production setup)"
             }
           ],
-          "monthly_with_levers_usd": "255.02",
-          "cost_per_use_usd": "0.0005313",
+          "monthly_with_levers_usd": "264.26",
+          "cost_per_use_usd": "0.00055055",
           "revenue_per_use_usd": null,
           "revenue_share": null,
           "lower_bound": true,
@@ -2711,7 +2731,7 @@
           ],
           "warnings": [
             "Rates are not verified.",
-            "Tokens estimated (4/3 words rule), not measured.",
+            "Tokens estimated (4/3 words rule (instructions + example)), not measured.",
             "audio_out tokens estimated from per-second conversion (unverified), not measured.",
             "Estimated output tokens exclude any hidden reasoning tokens; cost is a lower bound."
           ]
@@ -2723,12 +2743,12 @@
           "model_id": "sample/frontier-placeholder",
           "tier": "frontier",
           "calls_per_month": "4800000",
-          "cost_per_call_usd": "0.004830",
+          "cost_per_call_usd": "0.005005",
           "token_basis": "estimated",
           "lines": [
             {
               "name": "input",
-              "monthly_usd": "144.00",
+              "monthly_usd": "984.00",
               "billed": true,
               "note": ""
             },
@@ -2752,12 +2772,12 @@
             },
             {
               "name": "retries",
-              "monthly_usd": "2318.40",
+              "monthly_usd": "2402.40",
               "billed": true,
               "note": "retry_rate 0.1 (assumed)"
             }
           ],
-          "gross_monthly_usd": "25502.40",
+          "gross_monthly_usd": "26426.40",
           "levers": [
             {
               "lever": "output_cap",
@@ -2770,7 +2790,7 @@
             {
               "lever": "long_context_cliff",
               "applies": false,
-              "reason": "input 6 <= threshold 200000",
+              "reason": "input 41 <= threshold 200000",
               "monthly_delta_usd": null,
               "one_time_usd": null,
               "label": null
@@ -2795,13 +2815,13 @@
               "lever": "output_reuse",
               "applies": true,
               "reason": "90% of uses served from cached outputs; 528000.00 paid calls/month including retries; cache TTL and discount eligibility recomputed; one-time generation of 2,000 distinct outputs",
-              "monthly_delta_usd": "-22952.16",
-              "one_time_usd": "10.63",
+              "monthly_delta_usd": "-23783.76",
+              "one_time_usd": "11.01",
               "label": "projected (production setup)"
             }
           ],
-          "monthly_with_levers_usd": "2550.24",
-          "cost_per_use_usd": "0.0005313",
+          "monthly_with_levers_usd": "2642.64",
+          "cost_per_use_usd": "0.00055055",
           "revenue_per_use_usd": null,
           "revenue_share": null,
           "lower_bound": true,
@@ -2817,7 +2837,7 @@
           ],
           "warnings": [
             "Rates are not verified.",
-            "Tokens estimated (4/3 words rule), not measured.",
+            "Tokens estimated (4/3 words rule (instructions + example)), not measured.",
             "audio_out tokens estimated from per-second conversion (unverified), not measured.",
             "Estimated output tokens exclude any hidden reasoning tokens; cost is a lower bound."
           ]
@@ -2829,12 +2849,12 @@
           "model_id": "sample/frontier-placeholder",
           "tier": "frontier",
           "calls_per_month": "48000000",
-          "cost_per_call_usd": "0.004830",
+          "cost_per_call_usd": "0.005005",
           "token_basis": "estimated",
           "lines": [
             {
               "name": "input",
-              "monthly_usd": "1440.00",
+              "monthly_usd": "9840.00",
               "billed": true,
               "note": ""
             },
@@ -2858,12 +2878,12 @@
             },
             {
               "name": "retries",
-              "monthly_usd": "23184.00",
+              "monthly_usd": "24024.00",
               "billed": true,
               "note": "retry_rate 0.1 (assumed)"
             }
           ],
-          "gross_monthly_usd": "255024.00",
+          "gross_monthly_usd": "264264.00",
           "levers": [
             {
               "lever": "output_cap",
@@ -2876,7 +2896,7 @@
             {
               "lever": "long_context_cliff",
               "applies": false,
-              "reason": "input 6 <= threshold 200000",
+              "reason": "input 41 <= threshold 200000",
               "monthly_delta_usd": null,
               "one_time_usd": null,
               "label": null
@@ -2901,13 +2921,13 @@
               "lever": "output_reuse",
               "applies": true,
               "reason": "90% of uses served from cached outputs; 5280000.00 paid calls/month including retries; cache TTL and discount eligibility recomputed; one-time generation of 2,000 distinct outputs",
-              "monthly_delta_usd": "-229521.60",
-              "one_time_usd": "10.63",
+              "monthly_delta_usd": "-237837.60",
+              "one_time_usd": "11.01",
               "label": "projected (production setup)"
             }
           ],
-          "monthly_with_levers_usd": "25502.40",
-          "cost_per_use_usd": "0.0005313",
+          "monthly_with_levers_usd": "26426.40",
+          "cost_per_use_usd": "0.00055055",
           "revenue_per_use_usd": null,
           "revenue_share": null,
           "lower_bound": true,
@@ -2923,7 +2943,7 @@
           ],
           "warnings": [
             "Rates are not verified.",
-            "Tokens estimated (4/3 words rule), not measured.",
+            "Tokens estimated (4/3 words rule (instructions + example)), not measured.",
             "audio_out tokens estimated from per-second conversion (unverified), not measured.",
             "Estimated output tokens exclude any hidden reasoning tokens; cost is a lower bound."
           ]
@@ -2935,12 +2955,12 @@
           "model_id": "sample/mid-tier-placeholder",
           "tier": "mid_tier",
           "calls_per_month": "48000",
-          "cost_per_call_usd": "0.001206",
+          "cost_per_call_usd": "0.001241",
           "token_basis": "estimated",
           "lines": [
             {
               "name": "input",
-              "monthly_usd": "0.29",
+              "monthly_usd": "1.97",
               "billed": true,
               "note": ""
             },
@@ -2964,12 +2984,12 @@
             },
             {
               "name": "retries",
-              "monthly_usd": "5.79",
+              "monthly_usd": "5.96",
               "billed": true,
               "note": "retry_rate 0.1 (assumed)"
             }
           ],
-          "gross_monthly_usd": "63.68",
+          "gross_monthly_usd": "65.52",
           "levers": [
             {
               "lever": "output_cap",
@@ -3007,13 +3027,13 @@
               "lever": "output_reuse",
               "applies": true,
               "reason": "90% of uses served from cached outputs; 5280.00 paid calls/month including retries; cache TTL and discount eligibility recomputed; one-time generation of 2,000 distinct outputs",
-              "monthly_delta_usd": "-57.31",
-              "one_time_usd": "2.65",
+              "monthly_delta_usd": "-58.97",
+              "one_time_usd": "2.73",
               "label": "projected (production setup)"
             }
           ],
-          "monthly_with_levers_usd": "6.37",
-          "cost_per_use_usd": "0.00013266",
+          "monthly_with_levers_usd": "6.55",
+          "cost_per_use_usd": "0.00013651",
           "revenue_per_use_usd": null,
           "revenue_share": null,
           "lower_bound": true,
@@ -3027,7 +3047,7 @@
           ],
           "warnings": [
             "Rates are not verified.",
-            "Tokens estimated (4/3 words rule), not measured.",
+            "Tokens estimated (4/3 words rule (instructions + example)), not measured.",
             "audio_out tokens estimated from per-second conversion (unverified), not measured.",
             "Estimated output tokens exclude any hidden reasoning tokens; cost is a lower bound."
           ]
@@ -3039,12 +3059,12 @@
           "model_id": "sample/mid-tier-placeholder",
           "tier": "mid_tier",
           "calls_per_month": "480000",
-          "cost_per_call_usd": "0.001206",
+          "cost_per_call_usd": "0.001241",
           "token_basis": "estimated",
           "lines": [
             {
               "name": "input",
-              "monthly_usd": "2.88",
+              "monthly_usd": "19.68",
               "billed": true,
               "note": ""
             },
@@ -3068,12 +3088,12 @@
             },
             {
               "name": "retries",
-              "monthly_usd": "57.89",
+              "monthly_usd": "59.57",
               "billed": true,
               "note": "retry_rate 0.1 (assumed)"
             }
           ],
-          "gross_monthly_usd": "636.77",
+          "gross_monthly_usd": "655.25",
           "levers": [
             {
               "lever": "output_cap",
@@ -3111,13 +3131,13 @@
               "lever": "output_reuse",
               "applies": true,
               "reason": "90% of uses served from cached outputs; 52800.00 paid calls/month including retries; cache TTL and discount eligibility recomputed; one-time generation of 2,000 distinct outputs",
-              "monthly_delta_usd": "-573.09",
-              "one_time_usd": "2.65",
+              "monthly_delta_usd": "-589.72",
+              "one_time_usd": "2.73",
               "label": "projected (production setup)"
             }
           ],
-          "monthly_with_levers_usd": "63.68",
-          "cost_per_use_usd": "0.00013266",
+          "monthly_with_levers_usd": "65.52",
+          "cost_per_use_usd": "0.00013651",
           "revenue_per_use_usd": null,
           "revenue_share": null,
           "lower_bound": true,
@@ -3131,9 +3151,10 @@
           ],
           "warnings": [
             "Rates are not verified.",
-            "Tokens estimated (4/3 words rule), not measured.",
+            "Tokens estimated (4/3 words rule (instructions + example)), not measured.",
             "audio_out tokens estimated from per-second conversion (unverified), not measured.",
-            "Estimated output tokens exclude any hidden reasoning tokens; cost is a lower bound."
+            "Estimated output tokens exclude any hidden reasoning tokens; cost is a lower bound.",
+            "Rounded line amounts may differ from the rounded total; totals use unrounded Decimal values."
           ]
         },
         {
@@ -3143,12 +3164,12 @@
           "model_id": "sample/mid-tier-placeholder",
           "tier": "mid_tier",
           "calls_per_month": "4800000",
-          "cost_per_call_usd": "0.001206",
+          "cost_per_call_usd": "0.001241",
           "token_basis": "estimated",
           "lines": [
             {
               "name": "input",
-              "monthly_usd": "28.80",
+              "monthly_usd": "196.80",
               "billed": true,
               "note": ""
             },
@@ -3172,12 +3193,12 @@
             },
             {
               "name": "retries",
-              "monthly_usd": "578.88",
+              "monthly_usd": "595.68",
               "billed": true,
               "note": "retry_rate 0.1 (assumed)"
             }
           ],
-          "gross_monthly_usd": "6367.68",
+          "gross_monthly_usd": "6552.48",
           "levers": [
             {
               "lever": "output_cap",
@@ -3215,13 +3236,13 @@
               "lever": "output_reuse",
               "applies": true,
               "reason": "90% of uses served from cached outputs; 528000.00 paid calls/month including retries; cache TTL and discount eligibility recomputed; one-time generation of 2,000 distinct outputs",
-              "monthly_delta_usd": "-5730.91",
-              "one_time_usd": "2.65",
+              "monthly_delta_usd": "-5897.23",
+              "one_time_usd": "2.73",
               "label": "projected (production setup)"
             }
           ],
-          "monthly_with_levers_usd": "636.77",
-          "cost_per_use_usd": "0.00013266",
+          "monthly_with_levers_usd": "655.25",
+          "cost_per_use_usd": "0.00013651",
           "revenue_per_use_usd": null,
           "revenue_share": null,
           "lower_bound": true,
@@ -3235,7 +3256,7 @@
           ],
           "warnings": [
             "Rates are not verified.",
-            "Tokens estimated (4/3 words rule), not measured.",
+            "Tokens estimated (4/3 words rule (instructions + example)), not measured.",
             "audio_out tokens estimated from per-second conversion (unverified), not measured.",
             "Estimated output tokens exclude any hidden reasoning tokens; cost is a lower bound."
           ]
@@ -3247,12 +3268,12 @@
           "model_id": "sample/mid-tier-placeholder",
           "tier": "mid_tier",
           "calls_per_month": "48000000",
-          "cost_per_call_usd": "0.001206",
+          "cost_per_call_usd": "0.001241",
           "token_basis": "estimated",
           "lines": [
             {
               "name": "input",
-              "monthly_usd": "288.00",
+              "monthly_usd": "1968.00",
               "billed": true,
               "note": ""
             },
@@ -3276,12 +3297,12 @@
             },
             {
               "name": "retries",
-              "monthly_usd": "5788.80",
+              "monthly_usd": "5956.80",
               "billed": true,
               "note": "retry_rate 0.1 (assumed)"
             }
           ],
-          "gross_monthly_usd": "63676.80",
+          "gross_monthly_usd": "65524.80",
           "levers": [
             {
               "lever": "output_cap",
@@ -3319,13 +3340,13 @@
               "lever": "output_reuse",
               "applies": true,
               "reason": "90% of uses served from cached outputs; 5280000.00 paid calls/month including retries; cache TTL and discount eligibility recomputed; one-time generation of 2,000 distinct outputs",
-              "monthly_delta_usd": "-57309.12",
-              "one_time_usd": "2.65",
+              "monthly_delta_usd": "-58972.32",
+              "one_time_usd": "2.73",
               "label": "projected (production setup)"
             }
           ],
-          "monthly_with_levers_usd": "6367.68",
-          "cost_per_use_usd": "0.00013266",
+          "monthly_with_levers_usd": "6552.48",
+          "cost_per_use_usd": "0.00013651",
           "revenue_per_use_usd": null,
           "revenue_share": null,
           "lower_bound": true,
@@ -3339,7 +3360,7 @@
           ],
           "warnings": [
             "Rates are not verified.",
-            "Tokens estimated (4/3 words rule), not measured.",
+            "Tokens estimated (4/3 words rule (instructions + example)), not measured.",
             "audio_out tokens estimated from per-second conversion (unverified), not measured.",
             "Estimated output tokens exclude any hidden reasoning tokens; cost is a lower bound."
           ]
@@ -3367,7 +3388,7 @@
           ],
           "warnings": [
             "Rates are not verified.",
-            "Tokens estimated (4/3 words rule), not measured.",
+            "Tokens estimated (4/3 words rule (instructions + example)), not measured.",
             "Cost unknown, not zero: audio_out per-second conversion unknown."
           ]
         },
@@ -3394,7 +3415,7 @@
           ],
           "warnings": [
             "Rates are not verified.",
-            "Tokens estimated (4/3 words rule), not measured.",
+            "Tokens estimated (4/3 words rule (instructions + example)), not measured.",
             "Cost unknown, not zero: audio_out per-second conversion unknown."
           ]
         },
@@ -3421,7 +3442,7 @@
           ],
           "warnings": [
             "Rates are not verified.",
-            "Tokens estimated (4/3 words rule), not measured.",
+            "Tokens estimated (4/3 words rule (instructions + example)), not measured.",
             "Cost unknown, not zero: audio_out per-second conversion unknown."
           ]
         },
@@ -3448,7 +3469,7 @@
           ],
           "warnings": [
             "Rates are not verified.",
-            "Tokens estimated (4/3 words rule), not measured.",
+            "Tokens estimated (4/3 words rule (instructions + example)), not measured.",
             "Cost unknown, not zero: audio_out per-second conversion unknown."
           ]
         }
@@ -3463,11 +3484,11 @@
           "from_model": "sample/frontier-placeholder",
           "to_model": "sample/mid-tier-placeholder",
           "to_tier": "mid_tier",
-          "monthly_difference_usd": "191.35",
+          "monthly_difference_usd": "198.74",
           "quality_to": null,
           "quality_from": null,
           "quality_qualified": false,
-          "statement": "From Launch (500 users), A3_speak_target on sample/mid-tier-placeholder is projected to cost ~$191.35/month less (estimated tokens), but this is not a switch point: quality not measured. Both costs are lower bounds."
+          "statement": "From Launch (500 users), A3_speak_target on sample/mid-tier-placeholder is projected to cost ~$198.74/month less (estimated tokens), but this is not a switch point: quality not measured. Both costs are lower bounds."
         }
       ],
       "risks": [],
@@ -3507,12 +3528,12 @@
           "model_id": "sample/frontier-placeholder",
           "tier": "frontier",
           "calls_per_month": "200",
-          "cost_per_call_usd": "0.012650",
+          "cost_per_call_usd": "0.012890",
           "token_basis": "estimated",
           "lines": [
             {
               "name": "input",
-              "monthly_usd": "0.53",
+              "monthly_usd": "0.58",
               "billed": true,
               "note": ""
             },
@@ -3530,12 +3551,12 @@
             },
             {
               "name": "retries",
-              "monthly_usd": "0.25",
+              "monthly_usd": "0.26",
               "billed": true,
               "note": "retry_rate 0.1 (assumed)"
             }
           ],
-          "gross_monthly_usd": "2.78",
+          "gross_monthly_usd": "2.84",
           "levers": [
             {
               "lever": "output_cap",
@@ -3548,7 +3569,7 @@
             {
               "lever": "long_context_cliff",
               "applies": false,
-              "reason": "input 530 <= threshold 200000",
+              "reason": "input 578 <= threshold 200000",
               "monthly_delta_usd": null,
               "one_time_usd": null,
               "label": null
@@ -3565,7 +3586,7 @@
               "lever": "batch_api",
               "applies": true,
               "reason": "background feature; 50.0% off text input and output after any eligible caching; audio unchanged",
-              "monthly_delta_usd": "-1.39",
+              "monthly_delta_usd": "-1.42",
               "one_time_usd": null,
               "label": "projected (production setup)"
             },
@@ -3578,8 +3599,8 @@
               "label": "projected (production setup)"
             }
           ],
-          "monthly_with_levers_usd": "1.39",
-          "cost_per_use_usd": "0.0069575",
+          "monthly_with_levers_usd": "1.42",
+          "cost_per_use_usd": "0.0070895",
           "revenue_per_use_usd": null,
           "revenue_share": null,
           "lower_bound": true,
@@ -3593,7 +3614,7 @@
           ],
           "warnings": [
             "Rates are not verified.",
-            "Tokens estimated (4/3 words rule), not measured.",
+            "Tokens estimated (4/3 words rule (instructions + example)), not measured.",
             "Estimated output tokens exclude any hidden reasoning tokens; cost is a lower bound."
           ]
         },
@@ -3604,12 +3625,12 @@
           "model_id": "sample/frontier-placeholder",
           "tier": "frontier",
           "calls_per_month": "2000",
-          "cost_per_call_usd": "0.012650",
+          "cost_per_call_usd": "0.012890",
           "token_basis": "estimated",
           "lines": [
             {
               "name": "input",
-              "monthly_usd": "5.30",
+              "monthly_usd": "5.78",
               "billed": true,
               "note": ""
             },
@@ -3627,12 +3648,12 @@
             },
             {
               "name": "retries",
-              "monthly_usd": "2.53",
+              "monthly_usd": "2.58",
               "billed": true,
               "note": "retry_rate 0.1 (assumed)"
             }
           ],
-          "gross_monthly_usd": "27.83",
+          "gross_monthly_usd": "28.36",
           "levers": [
             {
               "lever": "output_cap",
@@ -3645,7 +3666,7 @@
             {
               "lever": "long_context_cliff",
               "applies": false,
-              "reason": "input 530 <= threshold 200000",
+              "reason": "input 578 <= threshold 200000",
               "monthly_delta_usd": null,
               "one_time_usd": null,
               "label": null
@@ -3662,7 +3683,7 @@
               "lever": "batch_api",
               "applies": true,
               "reason": "background feature; 50.0% off text input and output after any eligible caching; audio unchanged",
-              "monthly_delta_usd": "-13.92",
+              "monthly_delta_usd": "-14.18",
               "one_time_usd": null,
               "label": "projected (production setup)"
             },
@@ -3675,8 +3696,8 @@
               "label": "projected (production setup)"
             }
           ],
-          "monthly_with_levers_usd": "13.92",
-          "cost_per_use_usd": "0.0069575",
+          "monthly_with_levers_usd": "14.18",
+          "cost_per_use_usd": "0.0070895",
           "revenue_per_use_usd": null,
           "revenue_share": null,
           "lower_bound": true,
@@ -3690,9 +3711,8 @@
           ],
           "warnings": [
             "Rates are not verified.",
-            "Tokens estimated (4/3 words rule), not measured.",
-            "Estimated output tokens exclude any hidden reasoning tokens; cost is a lower bound.",
-            "Rounded line amounts may differ from the rounded total; totals use unrounded Decimal values."
+            "Tokens estimated (4/3 words rule (instructions + example)), not measured.",
+            "Estimated output tokens exclude any hidden reasoning tokens; cost is a lower bound."
           ]
         },
         {
@@ -3702,12 +3722,12 @@
           "model_id": "sample/frontier-placeholder",
           "tier": "frontier",
           "calls_per_month": "20000",
-          "cost_per_call_usd": "0.012650",
+          "cost_per_call_usd": "0.012890",
           "token_basis": "estimated",
           "lines": [
             {
               "name": "input",
-              "monthly_usd": "53.00",
+              "monthly_usd": "57.80",
               "billed": true,
               "note": ""
             },
@@ -3725,12 +3745,12 @@
             },
             {
               "name": "retries",
-              "monthly_usd": "25.30",
+              "monthly_usd": "25.78",
               "billed": true,
               "note": "retry_rate 0.1 (assumed)"
             }
           ],
-          "gross_monthly_usd": "278.30",
+          "gross_monthly_usd": "283.58",
           "levers": [
             {
               "lever": "output_cap",
@@ -3743,7 +3763,7 @@
             {
               "lever": "long_context_cliff",
               "applies": false,
-              "reason": "input 530 <= threshold 200000",
+              "reason": "input 578 <= threshold 200000",
               "monthly_delta_usd": null,
               "one_time_usd": null,
               "label": null
@@ -3760,7 +3780,7 @@
               "lever": "batch_api",
               "applies": true,
               "reason": "background feature; 50.0% off text input and output after any eligible caching; audio unchanged",
-              "monthly_delta_usd": "-139.15",
+              "monthly_delta_usd": "-141.79",
               "one_time_usd": null,
               "label": "projected (production setup)"
             },
@@ -3773,8 +3793,8 @@
               "label": "projected (production setup)"
             }
           ],
-          "monthly_with_levers_usd": "139.15",
-          "cost_per_use_usd": "0.0069575",
+          "monthly_with_levers_usd": "141.79",
+          "cost_per_use_usd": "0.0070895",
           "revenue_per_use_usd": null,
           "revenue_share": null,
           "lower_bound": true,
@@ -3788,7 +3808,7 @@
           ],
           "warnings": [
             "Rates are not verified.",
-            "Tokens estimated (4/3 words rule), not measured.",
+            "Tokens estimated (4/3 words rule (instructions + example)), not measured.",
             "Estimated output tokens exclude any hidden reasoning tokens; cost is a lower bound."
           ]
         },
@@ -3799,12 +3819,12 @@
           "model_id": "sample/frontier-placeholder",
           "tier": "frontier",
           "calls_per_month": "200000",
-          "cost_per_call_usd": "0.012650",
+          "cost_per_call_usd": "0.012890",
           "token_basis": "estimated",
           "lines": [
             {
               "name": "input",
-              "monthly_usd": "530.00",
+              "monthly_usd": "578.00",
               "billed": true,
               "note": ""
             },
@@ -3822,12 +3842,12 @@
             },
             {
               "name": "retries",
-              "monthly_usd": "253.00",
+              "monthly_usd": "257.80",
               "billed": true,
               "note": "retry_rate 0.1 (assumed)"
             }
           ],
-          "gross_monthly_usd": "2783.00",
+          "gross_monthly_usd": "2835.80",
           "levers": [
             {
               "lever": "output_cap",
@@ -3840,7 +3860,7 @@
             {
               "lever": "long_context_cliff",
               "applies": false,
-              "reason": "input 530 <= threshold 200000",
+              "reason": "input 578 <= threshold 200000",
               "monthly_delta_usd": null,
               "one_time_usd": null,
               "label": null
@@ -3857,7 +3877,7 @@
               "lever": "batch_api",
               "applies": true,
               "reason": "background feature; 50.0% off text input and output after any eligible caching; audio unchanged",
-              "monthly_delta_usd": "-1391.50",
+              "monthly_delta_usd": "-1417.90",
               "one_time_usd": null,
               "label": "projected (production setup)"
             },
@@ -3870,8 +3890,8 @@
               "label": "projected (production setup)"
             }
           ],
-          "monthly_with_levers_usd": "1391.50",
-          "cost_per_use_usd": "0.0069575",
+          "monthly_with_levers_usd": "1417.90",
+          "cost_per_use_usd": "0.0070895",
           "revenue_per_use_usd": null,
           "revenue_share": null,
           "lower_bound": true,
@@ -3885,7 +3905,7 @@
           ],
           "warnings": [
             "Rates are not verified.",
-            "Tokens estimated (4/3 words rule), not measured.",
+            "Tokens estimated (4/3 words rule (instructions + example)), not measured.",
             "Estimated output tokens exclude any hidden reasoning tokens; cost is a lower bound."
           ]
         },
@@ -3896,12 +3916,12 @@
           "model_id": "sample/mid-tier-placeholder",
           "tier": "mid_tier",
           "calls_per_month": "200",
-          "cost_per_call_usd": "0.002530",
+          "cost_per_call_usd": "0.002578",
           "token_basis": "estimated",
           "lines": [
             {
               "name": "input",
-              "monthly_usd": "0.11",
+              "monthly_usd": "0.12",
               "billed": true,
               "note": ""
             },
@@ -3924,7 +3944,7 @@
               "note": "retry_rate 0.1 (assumed)"
             }
           ],
-          "gross_monthly_usd": "0.56",
+          "gross_monthly_usd": "0.57",
           "levers": [
             {
               "lever": "output_cap",
@@ -3968,7 +3988,7 @@
             }
           ],
           "monthly_with_levers_usd": "0.28",
-          "cost_per_use_usd": "0.0013915",
+          "cost_per_use_usd": "0.0014179",
           "revenue_per_use_usd": null,
           "revenue_share": null,
           "lower_bound": true,
@@ -3980,8 +4000,9 @@
           ],
           "warnings": [
             "Rates are not verified.",
-            "Tokens estimated (4/3 words rule), not measured.",
-            "Estimated output tokens exclude any hidden reasoning tokens; cost is a lower bound."
+            "Tokens estimated (4/3 words rule (instructions + example)), not measured.",
+            "Estimated output tokens exclude any hidden reasoning tokens; cost is a lower bound.",
+            "Rounded line amounts may differ from the rounded total; totals use unrounded Decimal values."
           ]
         },
         {
@@ -3991,12 +4012,12 @@
           "model_id": "sample/mid-tier-placeholder",
           "tier": "mid_tier",
           "calls_per_month": "2000",
-          "cost_per_call_usd": "0.002530",
+          "cost_per_call_usd": "0.002578",
           "token_basis": "estimated",
           "lines": [
             {
               "name": "input",
-              "monthly_usd": "1.06",
+              "monthly_usd": "1.16",
               "billed": true,
               "note": ""
             },
@@ -4014,12 +4035,12 @@
             },
             {
               "name": "retries",
-              "monthly_usd": "0.51",
+              "monthly_usd": "0.52",
               "billed": true,
               "note": "retry_rate 0.1 (assumed)"
             }
           ],
-          "gross_monthly_usd": "5.57",
+          "gross_monthly_usd": "5.67",
           "levers": [
             {
               "lever": "output_cap",
@@ -4049,7 +4070,7 @@
               "lever": "batch_api",
               "applies": true,
               "reason": "background feature; 50.0% off text input and output after any eligible caching; audio unchanged",
-              "monthly_delta_usd": "-2.78",
+              "monthly_delta_usd": "-2.84",
               "one_time_usd": null,
               "label": "projected (production setup)"
             },
@@ -4062,8 +4083,8 @@
               "label": "projected (production setup)"
             }
           ],
-          "monthly_with_levers_usd": "2.78",
-          "cost_per_use_usd": "0.0013915",
+          "monthly_with_levers_usd": "2.84",
+          "cost_per_use_usd": "0.0014179",
           "revenue_per_use_usd": null,
           "revenue_share": null,
           "lower_bound": true,
@@ -4075,7 +4096,7 @@
           ],
           "warnings": [
             "Rates are not verified.",
-            "Tokens estimated (4/3 words rule), not measured.",
+            "Tokens estimated (4/3 words rule (instructions + example)), not measured.",
             "Estimated output tokens exclude any hidden reasoning tokens; cost is a lower bound.",
             "Rounded line amounts may differ from the rounded total; totals use unrounded Decimal values."
           ]
@@ -4087,12 +4108,12 @@
           "model_id": "sample/mid-tier-placeholder",
           "tier": "mid_tier",
           "calls_per_month": "20000",
-          "cost_per_call_usd": "0.002530",
+          "cost_per_call_usd": "0.002578",
           "token_basis": "estimated",
           "lines": [
             {
               "name": "input",
-              "monthly_usd": "10.60",
+              "monthly_usd": "11.56",
               "billed": true,
               "note": ""
             },
@@ -4110,12 +4131,12 @@
             },
             {
               "name": "retries",
-              "monthly_usd": "5.06",
+              "monthly_usd": "5.16",
               "billed": true,
               "note": "retry_rate 0.1 (assumed)"
             }
           ],
-          "gross_monthly_usd": "55.66",
+          "gross_monthly_usd": "56.72",
           "levers": [
             {
               "lever": "output_cap",
@@ -4145,7 +4166,7 @@
               "lever": "batch_api",
               "applies": true,
               "reason": "background feature; 50.0% off text input and output after any eligible caching; audio unchanged",
-              "monthly_delta_usd": "-27.83",
+              "monthly_delta_usd": "-28.36",
               "one_time_usd": null,
               "label": "projected (production setup)"
             },
@@ -4158,8 +4179,8 @@
               "label": "projected (production setup)"
             }
           ],
-          "monthly_with_levers_usd": "27.83",
-          "cost_per_use_usd": "0.0013915",
+          "monthly_with_levers_usd": "28.36",
+          "cost_per_use_usd": "0.0014179",
           "revenue_per_use_usd": null,
           "revenue_share": null,
           "lower_bound": true,
@@ -4171,7 +4192,7 @@
           ],
           "warnings": [
             "Rates are not verified.",
-            "Tokens estimated (4/3 words rule), not measured.",
+            "Tokens estimated (4/3 words rule (instructions + example)), not measured.",
             "Estimated output tokens exclude any hidden reasoning tokens; cost is a lower bound."
           ]
         },
@@ -4182,12 +4203,12 @@
           "model_id": "sample/mid-tier-placeholder",
           "tier": "mid_tier",
           "calls_per_month": "200000",
-          "cost_per_call_usd": "0.002530",
+          "cost_per_call_usd": "0.002578",
           "token_basis": "estimated",
           "lines": [
             {
               "name": "input",
-              "monthly_usd": "106.00",
+              "monthly_usd": "115.60",
               "billed": true,
               "note": ""
             },
@@ -4205,12 +4226,12 @@
             },
             {
               "name": "retries",
-              "monthly_usd": "50.60",
+              "monthly_usd": "51.56",
               "billed": true,
               "note": "retry_rate 0.1 (assumed)"
             }
           ],
-          "gross_monthly_usd": "556.60",
+          "gross_monthly_usd": "567.16",
           "levers": [
             {
               "lever": "output_cap",
@@ -4240,7 +4261,7 @@
               "lever": "batch_api",
               "applies": true,
               "reason": "background feature; 50.0% off text input and output after any eligible caching; audio unchanged",
-              "monthly_delta_usd": "-278.30",
+              "monthly_delta_usd": "-283.58",
               "one_time_usd": null,
               "label": "projected (production setup)"
             },
@@ -4253,8 +4274,8 @@
               "label": "projected (production setup)"
             }
           ],
-          "monthly_with_levers_usd": "278.30",
-          "cost_per_use_usd": "0.0013915",
+          "monthly_with_levers_usd": "283.58",
+          "cost_per_use_usd": "0.0014179",
           "revenue_per_use_usd": null,
           "revenue_share": null,
           "lower_bound": true,
@@ -4266,7 +4287,7 @@
           ],
           "warnings": [
             "Rates are not verified.",
-            "Tokens estimated (4/3 words rule), not measured.",
+            "Tokens estimated (4/3 words rule (instructions + example)), not measured.",
             "Estimated output tokens exclude any hidden reasoning tokens; cost is a lower bound."
           ]
         },
@@ -4277,7 +4298,7 @@
           "model_id": "sample/open-source-placeholder",
           "tier": "open_source",
           "calls_per_month": "200",
-          "cost_per_call_usd": "0.000346",
+          "cost_per_call_usd": "0.0003556",
           "token_basis": "estimated",
           "lines": [
             {
@@ -4349,7 +4370,7 @@
             }
           ],
           "monthly_with_levers_usd": "0.08",
-          "cost_per_use_usd": "0.0003806",
+          "cost_per_use_usd": "0.00039116",
           "revenue_per_use_usd": null,
           "revenue_share": null,
           "lower_bound": true,
@@ -4359,7 +4380,7 @@
           ],
           "warnings": [
             "Rates are not verified.",
-            "Tokens estimated (4/3 words rule), not measured.",
+            "Tokens estimated (4/3 words rule (instructions + example)), not measured.",
             "Estimated output tokens exclude any hidden reasoning tokens; cost is a lower bound."
           ]
         },
@@ -4370,12 +4391,12 @@
           "model_id": "sample/open-source-placeholder",
           "tier": "open_source",
           "calls_per_month": "2000",
-          "cost_per_call_usd": "0.000346",
+          "cost_per_call_usd": "0.0003556",
           "token_basis": "estimated",
           "lines": [
             {
               "name": "input",
-              "monthly_usd": "0.21",
+              "monthly_usd": "0.23",
               "billed": true,
               "note": ""
             },
@@ -4398,7 +4419,7 @@
               "note": "retry_rate 0.1 (assumed)"
             }
           ],
-          "gross_monthly_usd": "0.76",
+          "gross_monthly_usd": "0.78",
           "levers": [
             {
               "lever": "output_cap",
@@ -4441,8 +4462,8 @@
               "label": "projected (production setup)"
             }
           ],
-          "monthly_with_levers_usd": "0.76",
-          "cost_per_use_usd": "0.0003806",
+          "monthly_with_levers_usd": "0.78",
+          "cost_per_use_usd": "0.00039116",
           "revenue_per_use_usd": null,
           "revenue_share": null,
           "lower_bound": true,
@@ -4452,7 +4473,7 @@
           ],
           "warnings": [
             "Rates are not verified.",
-            "Tokens estimated (4/3 words rule), not measured.",
+            "Tokens estimated (4/3 words rule (instructions + example)), not measured.",
             "Estimated output tokens exclude any hidden reasoning tokens; cost is a lower bound."
           ]
         },
@@ -4463,12 +4484,12 @@
           "model_id": "sample/open-source-placeholder",
           "tier": "open_source",
           "calls_per_month": "20000",
-          "cost_per_call_usd": "0.000346",
+          "cost_per_call_usd": "0.0003556",
           "token_basis": "estimated",
           "lines": [
             {
               "name": "input",
-              "monthly_usd": "2.12",
+              "monthly_usd": "2.31",
               "billed": true,
               "note": ""
             },
@@ -4486,12 +4507,12 @@
             },
             {
               "name": "retries",
-              "monthly_usd": "0.69",
+              "monthly_usd": "0.71",
               "billed": true,
               "note": "retry_rate 0.1 (assumed)"
             }
           ],
-          "gross_monthly_usd": "7.61",
+          "gross_monthly_usd": "7.82",
           "levers": [
             {
               "lever": "output_cap",
@@ -4534,8 +4555,8 @@
               "label": "projected (production setup)"
             }
           ],
-          "monthly_with_levers_usd": "7.61",
-          "cost_per_use_usd": "0.0003806",
+          "monthly_with_levers_usd": "7.82",
+          "cost_per_use_usd": "0.00039116",
           "revenue_per_use_usd": null,
           "revenue_share": null,
           "lower_bound": true,
@@ -4545,7 +4566,7 @@
           ],
           "warnings": [
             "Rates are not verified.",
-            "Tokens estimated (4/3 words rule), not measured.",
+            "Tokens estimated (4/3 words rule (instructions + example)), not measured.",
             "Estimated output tokens exclude any hidden reasoning tokens; cost is a lower bound."
           ]
         },
@@ -4556,12 +4577,12 @@
           "model_id": "sample/open-source-placeholder",
           "tier": "open_source",
           "calls_per_month": "200000",
-          "cost_per_call_usd": "0.000346",
+          "cost_per_call_usd": "0.0003556",
           "token_basis": "estimated",
           "lines": [
             {
               "name": "input",
-              "monthly_usd": "21.20",
+              "monthly_usd": "23.12",
               "billed": true,
               "note": ""
             },
@@ -4579,12 +4600,12 @@
             },
             {
               "name": "retries",
-              "monthly_usd": "6.92",
+              "monthly_usd": "7.11",
               "billed": true,
               "note": "retry_rate 0.1 (assumed)"
             }
           ],
-          "gross_monthly_usd": "76.12",
+          "gross_monthly_usd": "78.23",
           "levers": [
             {
               "lever": "output_cap",
@@ -4627,8 +4648,8 @@
               "label": "projected (production setup)"
             }
           ],
-          "monthly_with_levers_usd": "76.12",
-          "cost_per_use_usd": "0.0003806",
+          "monthly_with_levers_usd": "78.23",
+          "cost_per_use_usd": "0.00039116",
           "revenue_per_use_usd": null,
           "revenue_share": null,
           "lower_bound": true,
@@ -4638,7 +4659,7 @@
           ],
           "warnings": [
             "Rates are not verified.",
-            "Tokens estimated (4/3 words rule), not measured.",
+            "Tokens estimated (4/3 words rule (instructions + example)), not measured.",
             "Estimated output tokens exclude any hidden reasoning tokens; cost is a lower bound."
           ]
         }
@@ -4653,11 +4674,11 @@
           "from_model": "sample/frontier-placeholder",
           "to_model": "sample/mid-tier-placeholder",
           "to_tier": "mid_tier",
-          "monthly_difference_usd": "111.32",
+          "monthly_difference_usd": "113.43",
           "quality_to": null,
           "quality_from": null,
           "quality_qualified": false,
-          "statement": "From Traction (5,000 users), A4_weekly_progress_summary on sample/mid-tier-placeholder is projected to cost ~$111.32/month less (estimated tokens), but this is not a switch point: quality not measured. Both costs are lower bounds."
+          "statement": "From Traction (5,000 users), A4_weekly_progress_summary on sample/mid-tier-placeholder is projected to cost ~$113.43/month less (estimated tokens), but this is not a switch point: quality not measured. Both costs are lower bounds."
         },
         {
           "feature_id": "A4_weekly_progress_summary",
@@ -4666,17 +4687,560 @@
           "from_model": "sample/frontier-placeholder",
           "to_model": "sample/open-source-placeholder",
           "to_tier": "open_source",
-          "monthly_difference_usd": "131.54",
+          "monthly_difference_usd": "133.97",
           "quality_to": null,
           "quality_from": null,
           "quality_qualified": false,
-          "statement": "From Traction (5,000 users), A4_weekly_progress_summary on sample/open-source-placeholder is projected to cost ~$131.54/month less (estimated tokens), but this is not a switch point: quality not measured. Both costs are lower bounds."
+          "statement": "From Traction (5,000 users), A4_weekly_progress_summary on sample/open-source-placeholder is projected to cost ~$133.97/month less (estimated tokens), but this is not a switch point: quality not measured. Both costs are lower bounds."
         }
       ],
       "risks": [],
       "warnings": [
         "Active users per stage are assumed and editable."
       ]
+    }
+  ],
+  "openrouter_projection_tables": [],
+  "stage_totals": [
+    {
+      "scenario": "recommended",
+      "pricing_scope": "actual_route",
+      "model_id": null,
+      "stage": "Prototype",
+      "active_users": 50,
+      "feature_models": {
+        "A1_transcribe_attempt": null,
+        "A2_next_target_and_feedback": null,
+        "A3_speak_target": null,
+        "A4_weekly_progress_summary": null
+      },
+      "feature_costs": {
+        "A1_transcribe_attempt": null,
+        "A2_next_target_and_feedback": null,
+        "A3_speak_target": null,
+        "A4_weekly_progress_summary": null
+      },
+      "monthly_usd": null,
+      "complete": false,
+      "lower_bound": true,
+      "revenue_usd": null,
+      "ai_contribution_usd": null,
+      "ai_contribution_margin": null,
+      "budget_fit": "no_budget",
+      "note": "no model is qualified yet (critical checks, including human review, must pass); cost unknown for A1_transcribe_attempt, A2_next_target_and_feedback, A3_speak_target, A4_weekly_progress_summary, so the total covers known features only"
+    },
+    {
+      "scenario": "cheapest_per_feature",
+      "pricing_scope": "actual_route",
+      "model_id": null,
+      "stage": "Prototype",
+      "active_users": 50,
+      "feature_models": {
+        "A1_transcribe_attempt": "sample/mid-tier-placeholder",
+        "A2_next_target_and_feedback": "sample/open-source-placeholder",
+        "A3_speak_target": "sample/mid-tier-placeholder",
+        "A4_weekly_progress_summary": "sample/open-source-placeholder"
+      },
+      "feature_costs": {
+        "A1_transcribe_attempt": "30.73",
+        "A2_next_target_and_feedback": "2.99",
+        "A3_speak_target": "6.55",
+        "A4_weekly_progress_summary": "0.08"
+      },
+      "monthly_usd": "40.35",
+      "complete": true,
+      "lower_bound": true,
+      "revenue_usd": null,
+      "ai_contribution_usd": null,
+      "ai_contribution_margin": null,
+      "budget_fit": "no_budget",
+      "note": "cost only; quality not checked"
+    },
+    {
+      "scenario": "single_model",
+      "pricing_scope": "actual_route",
+      "model_id": "sample/frontier-placeholder",
+      "stage": "Prototype",
+      "active_users": 50,
+      "feature_models": {
+        "A1_transcribe_attempt": "sample/frontier-placeholder",
+        "A2_next_target_and_feedback": "sample/frontier-placeholder",
+        "A3_speak_target": "sample/frontier-placeholder",
+        "A4_weekly_progress_summary": "sample/frontier-placeholder"
+      },
+      "feature_costs": {
+        "A1_transcribe_attempt": "127.25",
+        "A2_next_target_and_feedback": "103.22",
+        "A3_speak_target": "26.43",
+        "A4_weekly_progress_summary": "1.42"
+      },
+      "monthly_usd": "258.32",
+      "complete": true,
+      "lower_bound": true,
+      "revenue_usd": null,
+      "ai_contribution_usd": null,
+      "ai_contribution_margin": null,
+      "budget_fit": "no_budget",
+      "note": ""
+    },
+    {
+      "scenario": "single_model",
+      "pricing_scope": "actual_route",
+      "model_id": "sample/mid-tier-placeholder",
+      "stage": "Prototype",
+      "active_users": 50,
+      "feature_models": {
+        "A1_transcribe_attempt": "sample/mid-tier-placeholder",
+        "A2_next_target_and_feedback": "sample/mid-tier-placeholder",
+        "A3_speak_target": "sample/mid-tier-placeholder",
+        "A4_weekly_progress_summary": "sample/mid-tier-placeholder"
+      },
+      "feature_costs": {
+        "A1_transcribe_attempt": "30.73",
+        "A2_next_target_and_feedback": "20.64",
+        "A3_speak_target": "6.55",
+        "A4_weekly_progress_summary": "0.28"
+      },
+      "monthly_usd": "58.21",
+      "complete": true,
+      "lower_bound": true,
+      "revenue_usd": null,
+      "ai_contribution_usd": null,
+      "ai_contribution_margin": null,
+      "budget_fit": "no_budget",
+      "note": ""
+    },
+    {
+      "scenario": "single_model",
+      "pricing_scope": "actual_route",
+      "model_id": "sample/open-source-placeholder",
+      "stage": "Prototype",
+      "active_users": 50,
+      "feature_models": {
+        "A1_transcribe_attempt": "sample/open-source-placeholder",
+        "A2_next_target_and_feedback": "sample/open-source-placeholder",
+        "A3_speak_target": "sample/open-source-placeholder",
+        "A4_weekly_progress_summary": "sample/open-source-placeholder"
+      },
+      "feature_costs": {
+        "A1_transcribe_attempt": null,
+        "A2_next_target_and_feedback": "2.99",
+        "A3_speak_target": null,
+        "A4_weekly_progress_summary": "0.08"
+      },
+      "monthly_usd": "3.07",
+      "complete": false,
+      "lower_bound": true,
+      "revenue_usd": null,
+      "ai_contribution_usd": null,
+      "ai_contribution_margin": null,
+      "budget_fit": "no_budget",
+      "note": "cost unknown for A1_transcribe_attempt, A3_speak_target, so the total covers known features only"
+    },
+    {
+      "scenario": "recommended",
+      "pricing_scope": "actual_route",
+      "model_id": null,
+      "stage": "Launch",
+      "active_users": 500,
+      "feature_models": {
+        "A1_transcribe_attempt": null,
+        "A2_next_target_and_feedback": null,
+        "A3_speak_target": null,
+        "A4_weekly_progress_summary": null
+      },
+      "feature_costs": {
+        "A1_transcribe_attempt": null,
+        "A2_next_target_and_feedback": null,
+        "A3_speak_target": null,
+        "A4_weekly_progress_summary": null
+      },
+      "monthly_usd": null,
+      "complete": false,
+      "lower_bound": true,
+      "revenue_usd": null,
+      "ai_contribution_usd": null,
+      "ai_contribution_margin": null,
+      "budget_fit": "no_budget",
+      "note": "no model is qualified yet (critical checks, including human review, must pass); cost unknown for A1_transcribe_attempt, A2_next_target_and_feedback, A3_speak_target, A4_weekly_progress_summary, so the total covers known features only"
+    },
+    {
+      "scenario": "cheapest_per_feature",
+      "pricing_scope": "actual_route",
+      "model_id": null,
+      "stage": "Launch",
+      "active_users": 500,
+      "feature_models": {
+        "A1_transcribe_attempt": "sample/mid-tier-placeholder",
+        "A2_next_target_and_feedback": "sample/open-source-placeholder",
+        "A3_speak_target": "sample/mid-tier-placeholder",
+        "A4_weekly_progress_summary": "sample/open-source-placeholder"
+      },
+      "feature_costs": {
+        "A1_transcribe_attempt": "307.30",
+        "A2_next_target_and_feedback": "29.88",
+        "A3_speak_target": "65.52",
+        "A4_weekly_progress_summary": "0.78"
+      },
+      "monthly_usd": "403.49",
+      "complete": true,
+      "lower_bound": true,
+      "revenue_usd": null,
+      "ai_contribution_usd": null,
+      "ai_contribution_margin": null,
+      "budget_fit": "no_budget",
+      "note": "cost only; quality not checked"
+    },
+    {
+      "scenario": "single_model",
+      "pricing_scope": "actual_route",
+      "model_id": "sample/frontier-placeholder",
+      "stage": "Launch",
+      "active_users": 500,
+      "feature_models": {
+        "A1_transcribe_attempt": "sample/frontier-placeholder",
+        "A2_next_target_and_feedback": "sample/frontier-placeholder",
+        "A3_speak_target": "sample/frontier-placeholder",
+        "A4_weekly_progress_summary": "sample/frontier-placeholder"
+      },
+      "feature_costs": {
+        "A1_transcribe_attempt": "1272.48",
+        "A2_next_target_and_feedback": "1032.24",
+        "A3_speak_target": "264.26",
+        "A4_weekly_progress_summary": "14.18"
+      },
+      "monthly_usd": "2583.16",
+      "complete": true,
+      "lower_bound": true,
+      "revenue_usd": null,
+      "ai_contribution_usd": null,
+      "ai_contribution_margin": null,
+      "budget_fit": "no_budget",
+      "note": ""
+    },
+    {
+      "scenario": "single_model",
+      "pricing_scope": "actual_route",
+      "model_id": "sample/mid-tier-placeholder",
+      "stage": "Launch",
+      "active_users": 500,
+      "feature_models": {
+        "A1_transcribe_attempt": "sample/mid-tier-placeholder",
+        "A2_next_target_and_feedback": "sample/mid-tier-placeholder",
+        "A3_speak_target": "sample/mid-tier-placeholder",
+        "A4_weekly_progress_summary": "sample/mid-tier-placeholder"
+      },
+      "feature_costs": {
+        "A1_transcribe_attempt": "307.30",
+        "A2_next_target_and_feedback": "206.45",
+        "A3_speak_target": "65.52",
+        "A4_weekly_progress_summary": "2.84"
+      },
+      "monthly_usd": "582.10",
+      "complete": true,
+      "lower_bound": true,
+      "revenue_usd": null,
+      "ai_contribution_usd": null,
+      "ai_contribution_margin": null,
+      "budget_fit": "no_budget",
+      "note": ""
+    },
+    {
+      "scenario": "single_model",
+      "pricing_scope": "actual_route",
+      "model_id": "sample/open-source-placeholder",
+      "stage": "Launch",
+      "active_users": 500,
+      "feature_models": {
+        "A1_transcribe_attempt": "sample/open-source-placeholder",
+        "A2_next_target_and_feedback": "sample/open-source-placeholder",
+        "A3_speak_target": "sample/open-source-placeholder",
+        "A4_weekly_progress_summary": "sample/open-source-placeholder"
+      },
+      "feature_costs": {
+        "A1_transcribe_attempt": null,
+        "A2_next_target_and_feedback": "29.88",
+        "A3_speak_target": null,
+        "A4_weekly_progress_summary": "0.78"
+      },
+      "monthly_usd": "30.67",
+      "complete": false,
+      "lower_bound": true,
+      "revenue_usd": null,
+      "ai_contribution_usd": null,
+      "ai_contribution_margin": null,
+      "budget_fit": "no_budget",
+      "note": "cost unknown for A1_transcribe_attempt, A3_speak_target, so the total covers known features only"
+    },
+    {
+      "scenario": "recommended",
+      "pricing_scope": "actual_route",
+      "model_id": null,
+      "stage": "Traction",
+      "active_users": 5000,
+      "feature_models": {
+        "A1_transcribe_attempt": null,
+        "A2_next_target_and_feedback": null,
+        "A3_speak_target": null,
+        "A4_weekly_progress_summary": null
+      },
+      "feature_costs": {
+        "A1_transcribe_attempt": null,
+        "A2_next_target_and_feedback": null,
+        "A3_speak_target": null,
+        "A4_weekly_progress_summary": null
+      },
+      "monthly_usd": null,
+      "complete": false,
+      "lower_bound": true,
+      "revenue_usd": null,
+      "ai_contribution_usd": null,
+      "ai_contribution_margin": null,
+      "budget_fit": "no_budget",
+      "note": "no model is qualified yet (critical checks, including human review, must pass); cost unknown for A1_transcribe_attempt, A2_next_target_and_feedback, A3_speak_target, A4_weekly_progress_summary, so the total covers known features only"
+    },
+    {
+      "scenario": "cheapest_per_feature",
+      "pricing_scope": "actual_route",
+      "model_id": null,
+      "stage": "Traction",
+      "active_users": 5000,
+      "feature_models": {
+        "A1_transcribe_attempt": "sample/mid-tier-placeholder",
+        "A2_next_target_and_feedback": "sample/open-source-placeholder",
+        "A3_speak_target": "sample/mid-tier-placeholder",
+        "A4_weekly_progress_summary": "sample/open-source-placeholder"
+      },
+      "feature_costs": {
+        "A1_transcribe_attempt": "3072.96",
+        "A2_next_target_and_feedback": "298.85",
+        "A3_speak_target": "655.25",
+        "A4_weekly_progress_summary": "7.82"
+      },
+      "monthly_usd": "4034.88",
+      "complete": true,
+      "lower_bound": true,
+      "revenue_usd": null,
+      "ai_contribution_usd": null,
+      "ai_contribution_margin": null,
+      "budget_fit": "no_budget",
+      "note": "cost only; quality not checked"
+    },
+    {
+      "scenario": "single_model",
+      "pricing_scope": "actual_route",
+      "model_id": "sample/frontier-placeholder",
+      "stage": "Traction",
+      "active_users": 5000,
+      "feature_models": {
+        "A1_transcribe_attempt": "sample/frontier-placeholder",
+        "A2_next_target_and_feedback": "sample/frontier-placeholder",
+        "A3_speak_target": "sample/frontier-placeholder",
+        "A4_weekly_progress_summary": "sample/frontier-placeholder"
+      },
+      "feature_costs": {
+        "A1_transcribe_attempt": "12724.80",
+        "A2_next_target_and_feedback": "10322.40",
+        "A3_speak_target": "2642.64",
+        "A4_weekly_progress_summary": "141.79"
+      },
+      "monthly_usd": "25831.63",
+      "complete": true,
+      "lower_bound": true,
+      "revenue_usd": null,
+      "ai_contribution_usd": null,
+      "ai_contribution_margin": null,
+      "budget_fit": "no_budget",
+      "note": ""
+    },
+    {
+      "scenario": "single_model",
+      "pricing_scope": "actual_route",
+      "model_id": "sample/mid-tier-placeholder",
+      "stage": "Traction",
+      "active_users": 5000,
+      "feature_models": {
+        "A1_transcribe_attempt": "sample/mid-tier-placeholder",
+        "A2_next_target_and_feedback": "sample/mid-tier-placeholder",
+        "A3_speak_target": "sample/mid-tier-placeholder",
+        "A4_weekly_progress_summary": "sample/mid-tier-placeholder"
+      },
+      "feature_costs": {
+        "A1_transcribe_attempt": "3072.96",
+        "A2_next_target_and_feedback": "2064.48",
+        "A3_speak_target": "655.25",
+        "A4_weekly_progress_summary": "28.36"
+      },
+      "monthly_usd": "5821.05",
+      "complete": true,
+      "lower_bound": true,
+      "revenue_usd": null,
+      "ai_contribution_usd": null,
+      "ai_contribution_margin": null,
+      "budget_fit": "no_budget",
+      "note": ""
+    },
+    {
+      "scenario": "single_model",
+      "pricing_scope": "actual_route",
+      "model_id": "sample/open-source-placeholder",
+      "stage": "Traction",
+      "active_users": 5000,
+      "feature_models": {
+        "A1_transcribe_attempt": "sample/open-source-placeholder",
+        "A2_next_target_and_feedback": "sample/open-source-placeholder",
+        "A3_speak_target": "sample/open-source-placeholder",
+        "A4_weekly_progress_summary": "sample/open-source-placeholder"
+      },
+      "feature_costs": {
+        "A1_transcribe_attempt": null,
+        "A2_next_target_and_feedback": "298.85",
+        "A3_speak_target": null,
+        "A4_weekly_progress_summary": "7.82"
+      },
+      "monthly_usd": "306.67",
+      "complete": false,
+      "lower_bound": true,
+      "revenue_usd": null,
+      "ai_contribution_usd": null,
+      "ai_contribution_margin": null,
+      "budget_fit": "no_budget",
+      "note": "cost unknown for A1_transcribe_attempt, A3_speak_target, so the total covers known features only"
+    },
+    {
+      "scenario": "recommended",
+      "pricing_scope": "actual_route",
+      "model_id": null,
+      "stage": "Scale",
+      "active_users": 50000,
+      "feature_models": {
+        "A1_transcribe_attempt": null,
+        "A2_next_target_and_feedback": null,
+        "A3_speak_target": null,
+        "A4_weekly_progress_summary": null
+      },
+      "feature_costs": {
+        "A1_transcribe_attempt": null,
+        "A2_next_target_and_feedback": null,
+        "A3_speak_target": null,
+        "A4_weekly_progress_summary": null
+      },
+      "monthly_usd": null,
+      "complete": false,
+      "lower_bound": true,
+      "revenue_usd": null,
+      "ai_contribution_usd": null,
+      "ai_contribution_margin": null,
+      "budget_fit": "no_budget",
+      "note": "no model is qualified yet (critical checks, including human review, must pass); cost unknown for A1_transcribe_attempt, A2_next_target_and_feedback, A3_speak_target, A4_weekly_progress_summary, so the total covers known features only"
+    },
+    {
+      "scenario": "cheapest_per_feature",
+      "pricing_scope": "actual_route",
+      "model_id": null,
+      "stage": "Scale",
+      "active_users": 50000,
+      "feature_models": {
+        "A1_transcribe_attempt": "sample/mid-tier-placeholder",
+        "A2_next_target_and_feedback": "sample/open-source-placeholder",
+        "A3_speak_target": "sample/mid-tier-placeholder",
+        "A4_weekly_progress_summary": "sample/open-source-placeholder"
+      },
+      "feature_costs": {
+        "A1_transcribe_attempt": "30729.60",
+        "A2_next_target_and_feedback": "2988.48",
+        "A3_speak_target": "6552.48",
+        "A4_weekly_progress_summary": "78.23"
+      },
+      "monthly_usd": "40348.79",
+      "complete": true,
+      "lower_bound": true,
+      "revenue_usd": null,
+      "ai_contribution_usd": null,
+      "ai_contribution_margin": null,
+      "budget_fit": "no_budget",
+      "note": "cost only; quality not checked"
+    },
+    {
+      "scenario": "single_model",
+      "pricing_scope": "actual_route",
+      "model_id": "sample/frontier-placeholder",
+      "stage": "Scale",
+      "active_users": 50000,
+      "feature_models": {
+        "A1_transcribe_attempt": "sample/frontier-placeholder",
+        "A2_next_target_and_feedback": "sample/frontier-placeholder",
+        "A3_speak_target": "sample/frontier-placeholder",
+        "A4_weekly_progress_summary": "sample/frontier-placeholder"
+      },
+      "feature_costs": {
+        "A1_transcribe_attempt": "127248.00",
+        "A2_next_target_and_feedback": "103224.00",
+        "A3_speak_target": "26426.40",
+        "A4_weekly_progress_summary": "1417.90"
+      },
+      "monthly_usd": "258316.30",
+      "complete": true,
+      "lower_bound": true,
+      "revenue_usd": null,
+      "ai_contribution_usd": null,
+      "ai_contribution_margin": null,
+      "budget_fit": "no_budget",
+      "note": ""
+    },
+    {
+      "scenario": "single_model",
+      "pricing_scope": "actual_route",
+      "model_id": "sample/mid-tier-placeholder",
+      "stage": "Scale",
+      "active_users": 50000,
+      "feature_models": {
+        "A1_transcribe_attempt": "sample/mid-tier-placeholder",
+        "A2_next_target_and_feedback": "sample/mid-tier-placeholder",
+        "A3_speak_target": "sample/mid-tier-placeholder",
+        "A4_weekly_progress_summary": "sample/mid-tier-placeholder"
+      },
+      "feature_costs": {
+        "A1_transcribe_attempt": "30729.60",
+        "A2_next_target_and_feedback": "20644.80",
+        "A3_speak_target": "6552.48",
+        "A4_weekly_progress_summary": "283.58"
+      },
+      "monthly_usd": "58210.46",
+      "complete": true,
+      "lower_bound": true,
+      "revenue_usd": null,
+      "ai_contribution_usd": null,
+      "ai_contribution_margin": null,
+      "budget_fit": "no_budget",
+      "note": ""
+    },
+    {
+      "scenario": "single_model",
+      "pricing_scope": "actual_route",
+      "model_id": "sample/open-source-placeholder",
+      "stage": "Scale",
+      "active_users": 50000,
+      "feature_models": {
+        "A1_transcribe_attempt": "sample/open-source-placeholder",
+        "A2_next_target_and_feedback": "sample/open-source-placeholder",
+        "A3_speak_target": "sample/open-source-placeholder",
+        "A4_weekly_progress_summary": "sample/open-source-placeholder"
+      },
+      "feature_costs": {
+        "A1_transcribe_attempt": null,
+        "A2_next_target_and_feedback": "2988.48",
+        "A3_speak_target": null,
+        "A4_weekly_progress_summary": "78.23"
+      },
+      "monthly_usd": "3066.71",
+      "complete": false,
+      "lower_bound": true,
+      "revenue_usd": null,
+      "ai_contribution_usd": null,
+      "ai_contribution_margin": null,
+      "budget_fit": "no_budget",
+      "note": "cost unknown for A1_transcribe_attempt, A3_speak_target, so the total covers known features only"
     }
   ],
   "feature_runs": [
@@ -4687,13 +5251,14 @@
       "executed": false,
       "not_executed_reason": "audio modality: not executable through chat completions; audio is priced from the per-second conversion (estimated) and no audio is sent",
       "estimated": {
-        "input_tokens": "4",
+        "input_tokens": "47",
         "output_tokens": "7",
         "reasoning_tokens": null,
         "audio_input_tokens": null,
         "audio_output_tokens": null,
         "basis": "estimated",
-        "method": "4/3 words rule"
+        "method": "4/3 words rule (instructions + example)",
+        "truncated": false
       },
       "samples": [],
       "measured_mean": null,
@@ -4708,13 +5273,14 @@
       "executed": false,
       "not_executed_reason": "audio modality: not executable through chat completions; audio is priced from the per-second conversion (estimated) and no audio is sent",
       "estimated": {
-        "input_tokens": "4",
+        "input_tokens": "47",
         "output_tokens": "7",
         "reasoning_tokens": null,
         "audio_input_tokens": null,
         "audio_output_tokens": null,
         "basis": "estimated",
-        "method": "4/3 words rule"
+        "method": "4/3 words rule (instructions + example)",
+        "truncated": false
       },
       "samples": [],
       "measured_mean": null,
@@ -4729,13 +5295,14 @@
       "executed": false,
       "not_executed_reason": "audio modality: not executable through chat completions; audio is priced from the per-second conversion (estimated) and no audio is sent",
       "estimated": {
-        "input_tokens": "4",
+        "input_tokens": "47",
         "output_tokens": "7",
         "reasoning_tokens": null,
         "audio_input_tokens": null,
         "audio_output_tokens": null,
         "basis": "estimated",
-        "method": "4/3 words rule"
+        "method": "4/3 words rule (instructions + example)",
+        "truncated": false
       },
       "samples": [],
       "measured_mean": null,
@@ -4750,13 +5317,14 @@
       "executed": false,
       "not_executed_reason": "sample mode: not executed; tokens estimated with the 4/3 rule",
       "estimated": {
-        "input_tokens": "15",
+        "input_tokens": "121",
         "output_tokens": "54",
         "reasoning_tokens": null,
         "audio_input_tokens": null,
         "audio_output_tokens": null,
         "basis": "estimated",
-        "method": "4/3 words rule"
+        "method": "4/3 words rule (instructions + example)",
+        "truncated": false
       },
       "samples": [],
       "measured_mean": null,
@@ -4771,13 +5339,14 @@
       "executed": false,
       "not_executed_reason": "sample mode: not executed; tokens estimated with the 4/3 rule",
       "estimated": {
-        "input_tokens": "15",
+        "input_tokens": "121",
         "output_tokens": "54",
         "reasoning_tokens": null,
         "audio_input_tokens": null,
         "audio_output_tokens": null,
         "basis": "estimated",
-        "method": "4/3 words rule"
+        "method": "4/3 words rule (instructions + example)",
+        "truncated": false
       },
       "samples": [],
       "measured_mean": null,
@@ -4792,13 +5361,14 @@
       "executed": false,
       "not_executed_reason": "sample mode: not executed; tokens estimated with the 4/3 rule",
       "estimated": {
-        "input_tokens": "15",
+        "input_tokens": "121",
         "output_tokens": "54",
         "reasoning_tokens": null,
         "audio_input_tokens": null,
         "audio_output_tokens": null,
         "basis": "estimated",
-        "method": "4/3 words rule"
+        "method": "4/3 words rule (instructions + example)",
+        "truncated": false
       },
       "samples": [],
       "measured_mean": null,
@@ -4813,13 +5383,14 @@
       "executed": false,
       "not_executed_reason": "audio modality: not executable through chat completions; audio is priced from the per-second conversion (estimated) and no audio is sent",
       "estimated": {
-        "input_tokens": "6",
+        "input_tokens": "41",
         "output_tokens": "0",
         "reasoning_tokens": null,
         "audio_input_tokens": null,
         "audio_output_tokens": null,
         "basis": "estimated",
-        "method": "4/3 words rule"
+        "method": "4/3 words rule (instructions + example)",
+        "truncated": false
       },
       "samples": [],
       "measured_mean": null,
@@ -4834,13 +5405,14 @@
       "executed": false,
       "not_executed_reason": "audio modality: not executable through chat completions; audio is priced from the per-second conversion (estimated) and no audio is sent",
       "estimated": {
-        "input_tokens": "6",
+        "input_tokens": "41",
         "output_tokens": "0",
         "reasoning_tokens": null,
         "audio_input_tokens": null,
         "audio_output_tokens": null,
         "basis": "estimated",
-        "method": "4/3 words rule"
+        "method": "4/3 words rule (instructions + example)",
+        "truncated": false
       },
       "samples": [],
       "measured_mean": null,
@@ -4855,13 +5427,14 @@
       "executed": false,
       "not_executed_reason": "audio modality: not executable through chat completions; audio is priced from the per-second conversion (estimated) and no audio is sent",
       "estimated": {
-        "input_tokens": "6",
+        "input_tokens": "41",
         "output_tokens": "0",
         "reasoning_tokens": null,
         "audio_input_tokens": null,
         "audio_output_tokens": null,
         "basis": "estimated",
-        "method": "4/3 words rule"
+        "method": "4/3 words rule (instructions + example)",
+        "truncated": false
       },
       "samples": [],
       "measured_mean": null,
@@ -4876,13 +5449,14 @@
       "executed": false,
       "not_executed_reason": "sample mode: not executed; tokens estimated with the 4/3 rule",
       "estimated": {
-        "input_tokens": "530",
+        "input_tokens": "578",
         "output_tokens": "400",
         "reasoning_tokens": null,
         "audio_input_tokens": null,
         "audio_output_tokens": null,
         "basis": "estimated",
-        "method": "4/3 words rule"
+        "method": "4/3 words rule (instructions + example)",
+        "truncated": false
       },
       "samples": [],
       "measured_mean": null,
@@ -4897,13 +5471,14 @@
       "executed": false,
       "not_executed_reason": "sample mode: not executed; tokens estimated with the 4/3 rule",
       "estimated": {
-        "input_tokens": "530",
+        "input_tokens": "578",
         "output_tokens": "400",
         "reasoning_tokens": null,
         "audio_input_tokens": null,
         "audio_output_tokens": null,
         "basis": "estimated",
-        "method": "4/3 words rule"
+        "method": "4/3 words rule (instructions + example)",
+        "truncated": false
       },
       "samples": [],
       "measured_mean": null,
@@ -4918,13 +5493,14 @@
       "executed": false,
       "not_executed_reason": "sample mode: not executed; tokens estimated with the 4/3 rule",
       "estimated": {
-        "input_tokens": "530",
+        "input_tokens": "578",
         "output_tokens": "400",
         "reasoning_tokens": null,
         "audio_input_tokens": null,
         "audio_output_tokens": null,
         "basis": "estimated",
-        "method": "4/3 words rule"
+        "method": "4/3 words rule (instructions + example)",
+        "truncated": false
       },
       "samples": [],
       "measured_mean": null,
@@ -5244,7 +5820,9 @@
       "snapshot_id": null
     }
   ],
-  "memory_ids": [],
+  "memory_ids": [
+    "1e958c312c98fbffdc01316bada4761acb0468183b4151dd49d0b7456be2f1ea:mem-230"
+  ],
   "evidence_gaps": [
     {
       "field": "product_concept",
@@ -5598,7 +6176,7 @@
       "origin": "rule"
     },
     {
-      "description": "Rework multiplier 1.3\u20132.5x is assumed, not measured; expected build cost moves with it.",
+      "description": "Rework multiplier 1.3–2.5x is assumed, not measured; expected build cost moves with it.",
       "cause_class": "rework",
       "severity": "medium",
       "triggered_by": [
@@ -5654,7 +6232,6 @@
   ],
   "limitations": [
     "SAMPLE/OFFLINE: no live inference; tokens estimated with the 4/3 rule; rubric checks not run; switch points pending; no sponsor proof.",
-    "H-MEM unavailable: H-MEM bridge not pinned/verified for offline use; sample readiness fails rather than substituting a dictionary. See app/engines/hmem/README.md.",
     "Candidate routes are checked against Nightshift only in live mode.",
     "Domain risk review requires live mode.",
     "Build panel: approaches compared on cited rates; no build executed on any platform."
@@ -5669,6 +6246,11 @@
   "transport_retries": 0,
   "selected_samples_per_pair": 0,
   "sampling_profile": "production",
+  "candidate_tiers": [
+    "frontier",
+    "mid_tier",
+    "open_source"
+  ],
   "operations": [],
   "unpublished_evidence_ids": [],
   "trace_path": "logs/trace-example-1.jsonl",

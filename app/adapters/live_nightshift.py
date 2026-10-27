@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 from contextlib import contextmanager
 from contextvars import ContextVar
 from pathlib import Path
@@ -17,6 +18,14 @@ from app.adapters.base import Inference, InferenceResult, SetupIncomplete, requi
 from app.adapters.validation import parse_model_discovery
 
 ADAPTER_REVISION = hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
+
+
+def strip_inline_reasoning(text: str) -> str:
+    """Some routes return their reasoning inside the content, closed by </think> (the opening tag may be missing,
+    as Ultra did on 2026-10-26). The answer is what follows the last closing tag. Billing is unaffected: reasoning is
+    already counted inside completion tokens."""
+    _, closed, answer = text.rpartition("</think>")
+    return answer.lstrip() if closed else text
 
 
 def parse_completion_response(data, headers) -> dict:
@@ -81,7 +90,7 @@ def parse_completion_response(data, headers) -> dict:
     finish_reason = choices[0].get("finish_reason")
     if finish_reason is not None and not isinstance(finish_reason, str):
         raise ValueError("Completion finish reason is invalid")
-    return {"text": message["content"], "resolved_model": resolved,
+    return {"text": strip_inline_reasoning(message["content"]), "resolved_model": resolved,
             "response_model": data.get("model"), "receipt_id": receipt_id,
             "provider": provider, "provider_kind": provider_kind,
             "requires_review": requires_review, "finish_reason": finish_reason,
@@ -91,7 +100,7 @@ def parse_completion_response(data, headers) -> dict:
 class NightshiftInference(Inference):
     """OpenAI-compatible HTTP to Nightshift. Logs requested and resolved model for every call."""
 
-    def __init__(self, trace=None, *, disable_thinking: bool = False):
+    def __init__(self, trace=None, *, disable_thinking: bool = False, no_thinking_roles=("Planner",)):
         base = _env("METERLESS_BASE_URL").rstrip("/")
         while base.endswith("/v1/v1"):
             base = base[:-3]
@@ -99,9 +108,20 @@ class NightshiftInference(Inference):
         self.token = _env("METERLESS_RUNTIME_TOKEN")
         self.trace = trace
         self.disable_thinking = disable_thinking
+        # Roles whose route returned empty responses with thinking on (Lightning, 2026-10-26); they run with thinking off.
+        env_roles = os.getenv("METERLESS_NO_THINKING_ROLES")
+        self.no_thinking_roles = frozenset(item.strip() for item in env_roles.split(",") if item.strip()) \
+            if env_roles is not None else frozenset(no_thinking_roles)
+        # Routes that also need thinking off, from the environment (comma-separated route IDs); empty by default.
+        self.request_timeout_s = float(os.getenv("METERLESS_REQUEST_TIMEOUT_S") or 60)
+        self.no_thinking_models = frozenset(item.strip() for item in os.getenv("METERLESS_NO_THINKING_MODELS", "").split(",")
+                                            if item.strip())
         self._dispatch_operation = ContextVar("nightshift_dispatch_operation", default=None)
+        # No fixed meterless-scope: with "user", Nightshift's built-in memory injected an earlier answer into similar
+        # prompts and both models copied it back (2026-10-26). Each request gets its own scope in _request, so nothing
+        # is shared between evaluation calls. The app's own memory is the separate H-MEM engine.
         self.headers = {"Authorization": f"Bearer {self.token}", "meterless-app": "llm-cost-intelligence",
-                        "meterless-scope": "user", "Content-Type": "application/json"}
+                        "Content-Type": "application/json"}
 
     def _request(self, *, role, action, method, path, timeout, body=None):
         operation_id = self._dispatch_operation.get() or str(uuid.uuid4())
@@ -120,7 +140,7 @@ class NightshiftInference(Inference):
         started = time.monotonic()
         response, data = None, None
         try:
-            headers = {**self.headers, "X-Request-ID": operation_id}
+            headers = {**self.headers, "X-Request-ID": operation_id, "meterless-scope": f"eval-{uuid.uuid4().hex}"}
             if method == "GET":
                 response = httpx.get(f"{self.base}{path}", headers=headers, timeout=timeout)
             else:
@@ -183,18 +203,18 @@ class NightshiftInference(Inference):
         finally:
             self._dispatch_operation.reset(context)
 
-    def complete(self, *, role, model, system, user, json_schema=None, timeout_s=60, max_tokens=None) -> InferenceResult:
+    def complete(self, *, role, model, system, user, json_schema=None, timeout_s=None, max_tokens=None) -> InferenceResult:
         if not self._dispatch_operation.get():
             raise SetupIncomplete("Paid Nightshift requests require the durable Dispatcher reservation context")
         if type(max_tokens) is not int or max_tokens <= 0:
             raise ValueError("Every paid request requires a positive output-token limit")
         body = {"model": model, "messages": [{"role": "system", "content": system}, {"role": "user", "content": user}],
                 "temperature": 0.2}
-        if self.disable_thinking:
+        if self.disable_thinking or role in self.no_thinking_roles or model in self.no_thinking_models:
             body["chat_template_kwargs"] = {"enable_thinking": False}
         if max_tokens is not None:
             body["max_tokens"] = max_tokens
         if json_schema:
             body["response_format"] = {"type": "json_schema", "json_schema": json_schema}
         return self._request(role=role, action="nightshift_request", method="POST", path="/chat/completions",
-                             timeout=timeout_s, body=body)
+                             timeout=timeout_s or self.request_timeout_s, body=body)

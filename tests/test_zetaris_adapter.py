@@ -206,3 +206,29 @@ def test_sealed_reads_are_still_denied_before_freeze(tmp_path, monkeypatch):
     for key in ("retrospective_actuals","dev_task_cases:holdout"):
         observation, value = ctl._read(key, lambda: pytest.fail("sealed read was executed"))
         assert observation.status == "denied_sealed" and value is None
+
+
+def test_a_run_stopped_partial_still_publishes_and_reads_back_its_decision_evidence(tmp_path, monkeypatch):
+    class UnknownRevision(FakeNightshift):
+        def complete(self, **kwargs):
+            result = super().complete(**kwargs)
+            if kwargs["role"] == "Revision":
+                result["usage"] = {}   # no usage: the operation is unknown and the run stops partial
+            return result
+    monkeypatch.setenv("LOG_DIR",str(tmp_path / "logs"))
+    request, data = _req(), Data()
+    ctl = Controller(data,UnknownRevision(),SampleMemory(),Trace(request.run_id,"live",echo=False),"live",
+                     Checkpoints(str(tmp_path / "runs.db")),planner_model=FR,critic_model="other/critic-route")
+    pack = ctl.run(request)
+    assert pack.status == RunState.partial and any("further spending stopped" in l for l in pack.limitations)
+    assert pack.unpublished_evidence_ids == []
+    assert f"{request.run_id}/decision-evidence" in {ref.record_id for ref in pack.evidence_refs}
+
+
+def test_sealed_reads_stay_denied_in_stopped_states(tmp_path, monkeypatch):
+    ctl, _, _ = controller(tmp_path,monkeypatch,Data())
+    for state in (RunState.partial,RunState.needs_input,RunState.failed):
+        ctl.state = state
+        for key in ("retrospective_actuals","dev_task_cases:holdout"):
+            observation, value = ctl._read(key, lambda: pytest.fail("sealed read was executed"))
+            assert observation.status == "denied_sealed" and value is None

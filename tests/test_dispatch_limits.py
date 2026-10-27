@@ -76,16 +76,18 @@ def test_reservation_is_committed_before_adapter_and_all_fields_are_reconciled(d
     assert dispatcher.budget.dispatch_count == 1
 
 
-@pytest.mark.parametrize("extra,error_type", [({"requires_review": True}, "RuntimeReviewRequired"),
-                                               ({"finish_reason": "length"}, "NonStopFinish")])
-def test_runtime_review_or_truncation_stops_further_spend_with_receipt(dispatch, extra, error_type):
+@pytest.mark.parametrize("extra,error_type,role", [({"requires_review": True}, "RuntimeReviewRequired", "Analyst"),
+                                                    ({"finish_reason": "length"}, "NonStopFinish", "Critic"),
+                                                    ({"finish_reason": "length"}, "NonStopFinish", "Planner"),
+                                                    ({"finish_reason": "content_filter"}, "NonStopFinish", "Analyst")])
+def test_runtime_review_or_truncation_stops_further_spend_with_receipt(dispatch, extra, error_type, role):
     model = verified_profile(SampleDataLayer().read_models()[0])
     result = {"text": "partial", "resolved_model": model.model_id, "route_id": "request-fixture",
               "receipt_id": "receipt-fixture", "provider": "nvidia", "provider_kind": "cloud",
               "usage": {"prompt_tokens": 10, "completion_tokens": 4}, **extra}
     dispatcher, _, ckpt, _ = dispatch(model=model, outcomes=[result])
     with pytest.raises(StopRun):
-        call(dispatcher, model)
+        call(dispatcher, model, role=role)
     record = ckpt.operations(dispatcher.run_id)[0]
     assert record.state == "unknown" and record.error_type == error_type
     assert record.provider_receipt_id == "receipt-fixture" and record.actual_usd is not None
@@ -126,12 +128,34 @@ def test_unknown_bounds_or_billing_rates_never_dispatch(dispatch, mutation):
     assert inf.calls == [] and ckpt.operations(dispatcher.run_id) == []
 
 
-@pytest.mark.parametrize("limit", [None, 0, -1, True, 1025])
+@pytest.mark.parametrize("limit", [0, -1, True, 1025, 2.5])
 def test_invalid_output_limits_never_dispatch(dispatch, limit):
     dispatcher, inf, _, model = dispatch()
     with pytest.raises(StopRun):
         call(dispatcher, model, max_tokens=limit)
     assert not inf.calls
+
+
+@pytest.mark.parametrize("role", ["Analyst", "Revision"])
+def test_a_feature_sample_cut_at_the_cap_completes_with_its_charge_and_spending_continues(dispatch, role):
+    model = verified_profile(SampleDataLayer().read_models()[0])
+    cut = {"text": "a long answer cut off mid", "resolved_model": model.model_id, "route_id": "request-fixture",
+           "receipt_id": "receipt-fixture", "usage": {"prompt_tokens": 10, "completion_tokens": 64}, "finish_reason": "length"}
+    dispatcher, inf, ckpt, _ = dispatch(model=model, outcomes=[cut])
+    assert call(dispatcher, model, role=role)["finish_reason"] == "length"
+    record = ckpt.operations(dispatcher.run_id)[0]
+    assert record.state == "completed" and record.error_type is None and record.actual_usd is not None
+    call(dispatcher, model, logical_id="later-sample")
+    assert len(inf.calls) == 2
+
+
+def test_default_output_limit_is_the_lower_of_the_app_ceiling_and_the_route_policy(dispatch):
+    from app.dispatch import MAX_OUTPUT_TOKENS
+    dispatcher, inf, _, model = dispatch()
+    route_cap = dispatcher.models[model.model_id].dispatch_policy.max_output_tokens
+    assert dispatcher.output_cap(model.model_id) == min(route_cap, MAX_OUTPUT_TOKENS)
+    call(dispatcher, model, max_tokens=None)
+    assert inf.calls[0]["max_tokens"] == min(route_cap, MAX_OUTPUT_TOKENS)
 
 
 def test_unpriced_router_alias_never_dispatches(dispatch):

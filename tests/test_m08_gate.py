@@ -15,7 +15,15 @@ SPEC.loader.exec_module(gate)
 
 
 def test_two_model_gate_excludes_open_route_from_dispatch_readiness(tmp_path, monkeypatch):
+    # The gate loads the developer's .env and sets ZETARIS_BINDINGS_FILE; keep both out of the shared test process.
+    monkeypatch.setattr(gate, "load_dotenv", lambda *args, **kwargs: None)
+    monkeypatch.setenv("ZETARIS_BINDINGS_FILE", "")
     selected = json.loads((ROOT / "data/source_examples/routes.selected.json").read_text())
+    # The shipped map no longer pins an open route; this scenario needs one, so add it to a private copy.
+    selected["routes"].append({"catalog_id": "fixture/open:free", "route_id": "openrouter/fixture/open:free", "tier": "open_source"})
+    current = tmp_path / "routes.selected.json"
+    current.write_text(json.dumps(selected))
+    monkeypatch.setattr(gate, "SELECTED", current)
     routes = {entry["tier"]: entry["route_id"] for entry in selected["routes"]}
     snapshot_id = "a" * 24
     bindings = tmp_path / "bindings.json"

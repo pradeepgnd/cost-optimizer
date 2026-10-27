@@ -36,13 +36,13 @@ def test_unconfigured_run_skips_everything_without_network_and_saves_report(tmp_
     p = subprocess.run([sys.executable, str(SCRIPT), "--no-dotenv", "--output-dir", str(tmp_path)],
                        capture_output=True, text=True, env=env, cwd=ROOT, timeout=60)
     live = [l for l in p.stdout.splitlines() if l.startswith(("| Zetaris |", "| Nightshift |"))]
-    assert len(live) == 6 and all("| SKIP |" in l for l in live)          # H-MEM depends on the machine
+    assert len(live) == 5 and all("| SKIP |" in l for l in live)          # H-MEM depends on the machine
     assert p.returncode == 1 and "incomplete" in p.stdout
     saved = Path(p.stdout.strip().splitlines()[-1].removeprefix("Saved ").strip())
     assert saved.parent == tmp_path and "| Component | Check | Result | Detail |" in saved.read_text(encoding="utf-8")
     evidence = json.loads(saved.with_suffix(".json").read_text())
     assert evidence["readiness"]["scope"] == "live_diagnostic" and evidence["readiness"]["status"] == "incomplete"
-    assert evidence["counts"]["SKIP"] >= 6
+    assert evidence["counts"]["SKIP"] >= 5
 
 class _FakeNightshift:
     """Stands in for NightshiftInference: offers the sample frontier and open-model routes, not the mid-tier one."""
@@ -58,18 +58,48 @@ class _FakeNightshift:
         return {"text": "OK", "requested_model": model, "resolved_model": model, "usage": usage,
                 "route_id": "fixture-request"}
 
-def test_nightshift_checks_report_usage_route_gaps_and_missing_usage(monkeypatch):
+def test_nightshift_checks_target_planner_and_critic_routes(monkeypatch):
     import app.adapters.live_nightshift as ns
     monkeypatch.setattr(ns, "NightshiftInference", _FakeNightshift)
-    monkeypatch.delenv("METERLESS_OPEN_MODEL", raising=False)
+    monkeypatch.setenv("METERLESS_MODEL", "sample/frontier-placeholder")
+    monkeypatch.setenv("METERLESS_CRITIC_MODEL", "sample/open-source-placeholder")
     smoke.rows.clear()
     diagnose()  # explicitly funded, synthetic verified billing profiles
     by = {r[1]: r for r in smoke.rows}
     assert by["GET /v1/models"][2] == "PASS" and "3 routes" in by["GET /v1/models"][3]
-    fr = by["completion: frontier"]
-    assert fr[2] == "PASS" and "resolved sample/frontier-placeholder" in fr[3] and "prompt=12 completion=2" in fr[3]
-    assert "Zetaris price snapshot" in by["completion: mid-tier"][3] and by["completion: mid-tier"][2] == "SKIP"
-    assert by["completion: open-source"][2] == "FAIL" and "unknown" in by["completion: open-source"][3]
+    planner = by["completion: Planner"]
+    assert planner[2] == "PASS" and "resolved sample/frontier-placeholder" in planner[3] and "prompt=12 completion=2" in planner[3]
+    assert by["completion: Critic"][2] == "FAIL" and "unknown" in by["completion: Critic"][3]
+    assert not any("frontier" in name or "mid-tier" in name or "open-source" in name for name in by)
+
+
+def test_role_routes_unset_skip_and_unoffered_fail(monkeypatch):
+    import app.adapters.live_nightshift as ns
+    monkeypatch.setattr(ns, "NightshiftInference", _FakeNightshift)
+    monkeypatch.delenv("METERLESS_MODEL", raising=False)
+    monkeypatch.setenv("METERLESS_CRITIC_MODEL", "sample/mid-tier-placeholder")   # not offered by the fake
+    smoke.rows.clear()
+    diagnose()
+    by = {r[1]: r for r in smoke.rows}
+    assert by["completion: Planner"][2] == "SKIP" and "METERLESS_MODEL is not set" in by["completion: Planner"][3]
+    assert by["completion: Critic"][2] == "FAIL" and "not offered" in by["completion: Critic"][3]
+
+
+def test_diagnostic_only_captures_receipts_without_billing_claim(monkeypatch):
+    import app.adapters.live_nightshift as ns
+    monkeypatch.setattr(ns, "NightshiftInference", _FakeNightshift)
+    monkeypatch.setenv("METERLESS_MODEL", "sample/frontier-placeholder")
+    monkeypatch.setenv("METERLESS_CRITIC_MODEL", "sample/frontier-placeholder")
+    smoke.rows.clear()
+    smoke.diagnostic_receipts.clear()
+    diagnose(diagnostic_only=True)
+    assert smoke.diagnostic_receipts
+    assert all(item["billing_verified"] is False and item["economic_use"] is False
+               for item in smoke.diagnostic_receipts)
+    dimensions = {item.name: item for item in smoke.readiness_result().dimensions}
+    assert dimensions["execution_available"].status == "pass"
+    assert dimensions["billing_verified"].status == "not_verified"
+    assert dimensions["evidence_readback"].status == "not_verified"
 
 
 @pytest.mark.parametrize("body", [ [[1]], {"rows": [[1]]}, {"data": [{"one": 1}]},
@@ -119,7 +149,7 @@ def test_smoke_validates_select_one_even_with_an_alternate_adapter(monkeypatch, 
     ("nvidia/nemotron-fixture", "request-1", False, "FAIL"),
     ("provider/notnemotron", "request-1", True, "FAIL"),
 ])
-def test_open_model_diagnostic_needs_explicit_corroborated_identity(monkeypatch, resolved, request_id, discovered, expected):
+def test_role_route_diagnostic_needs_explicit_corroborated_identity(monkeypatch, resolved, request_id, discovered, expected):
     import app.adapters.live_nightshift as module
 
     class FakeNightshift(_FakeNightshift):
@@ -133,13 +163,13 @@ def test_open_model_diagnostic_needs_explicit_corroborated_identity(monkeypatch,
                     "route_id": request_id, "usage": {"prompt_tokens": 1, "completion_tokens": 1}}
 
     monkeypatch.setattr(module, "NightshiftInference", FakeNightshift)
-    monkeypatch.delenv("METERLESS_OPEN_MODEL", raising=False)
+    monkeypatch.setenv("METERLESS_MODEL", "sample/frontier-placeholder")
+    monkeypatch.setenv("METERLESS_CRITIC_MODEL", "nvidia/nemotron-fixture")
     smoke.rows.clear()
     models = [verified_profile(model) for model in SampleDataLayer().read_models()]
-    models = [model.model_copy(update={"required": False}) if model.tier == "open_source" else model for model in models]
-    models.append(models[-1].model_copy(update={"model_id": "nvidia/nemotron-fixture", "required": True}))
+    models.append(models[-1].model_copy(update={"model_id": "nvidia/nemotron-fixture"}))
     diagnose(models)
-    assert next(row for row in smoke.rows if row[1] == "completion: open-source")[2] == expected
+    assert next(row for row in smoke.rows if row[1] == "completion: Critic")[2] == expected
 
 
 @pytest.mark.parametrize("routes", [[], "a", [""], [None], ["a", "a"]])
@@ -175,10 +205,11 @@ def test_bad_usage_fails_each_completion_without_hiding_later_checks(monkeypatch
                     "route_id": "request-1", "usage": usage}
 
     monkeypatch.setattr(module, "NightshiftInference", FakeNightshift)
-    monkeypatch.delenv("METERLESS_OPEN_MODEL", raising=False)
+    monkeypatch.setenv("METERLESS_MODEL", "sample/frontier-placeholder")
+    monkeypatch.setenv("METERLESS_CRITIC_MODEL", "sample/open-source-placeholder")
     smoke.rows.clear()
     diagnose()
-    assert len(smoke.rows) == 4 and smoke.rows[1][2] == "FAIL"
+    assert len(smoke.rows) == 3 and smoke.rows[1][2] == "FAIL"
     assert all(row[2] == "SKIP" for row in smoke.rows[2:])  # unknown charge stops further paid calls
 
 
@@ -231,7 +262,7 @@ def test_report_exit_tracks_all_required_checks_and_resets_previous_rows(tmp_pat
     monkeypatch.setattr(smoke, "check_hmem", lambda: smoke.record("H-MEM", "bridge self-test", status, "synthetic fixture only"))
     assert smoke.main(["--no-dotenv", "--output-dir", str(tmp_path)]) == exit_code
     evidence = json.loads(next(tmp_path.glob("smoke-*.json")).read_text())
-    assert evidence["readiness"]["status"] == expected and len(evidence["readiness"]["checks"]) == 7
+    assert evidence["readiness"]["status"] == expected and len(evidence["readiness"]["checks"]) == 6
     assert "End-to-end sponsor readiness remains unverified" in capsys.readouterr().out
 
 
@@ -314,16 +345,17 @@ def test_funded_diagnostics_share_dispatch_accounting_and_refuse_duplicate_run(m
             return {"text": "OK", "requested_model": kwargs["model"], "resolved_model": kwargs["model"],
                     "route_id": "provider-fixture", "usage": {"prompt_tokens": 12, "completion_tokens": 2}}
     monkeypatch.setattr(module, "NightshiftInference", FakeNightshift)
-    monkeypatch.delenv("METERLESS_OPEN_MODEL", raising=False)
+    monkeypatch.setenv("METERLESS_MODEL", "sample/frontier-placeholder")
+    monkeypatch.setenv("METERLESS_CRITIC_MODEL", "openrouter/google/gemma-4-31b-it:free")
     ledger = Checkpoints(":memory:")
     smoke.rows.clear()
     smoke.check_nightshift(models,allowance=Decimal("1"),checkpoints=ledger,run_id="diagnostic-fixture")
-    assert len(calls) == 3 and all(row[2] == "PASS" for row in smoke.rows)
+    assert len(calls) == 2 and all(row[2] == "PASS" for row in smoke.rows)
     operations = ledger.operations("diagnostic-fixture")
-    assert len(operations) == 3 and all(record.role == "Diagnostic" and record.actual_usd > 0 for record in operations)
+    assert len(operations) == 2 and all(record.role == "Diagnostic" and record.actual_usd > 0 for record in operations)
     smoke.rows.clear()
     smoke.check_nightshift(models,allowance=Decimal("1"),checkpoints=ledger,run_id="diagnostic-fixture")
-    assert len(calls) == 3 and all(row[2] == "SKIP" for row in smoke.rows[1:])
+    assert len(calls) == 2 and all(row[2] == "SKIP" for row in smoke.rows[1:])
 
 
 @pytest.mark.parametrize("allowance", ["-1", "2", "NaN"])

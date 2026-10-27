@@ -226,6 +226,11 @@ class MarketReference(BaseModel):
     list_price_input_usd_per_m: Optional[NonNegativeDecimal] = None
     list_price_output_usd_per_m: Optional[NonNegativeDecimal] = None
     usage_rank: Optional[PositiveInt] = None          # 1 == most used in the catalog snapshot
+    # Catalog reference only. None == the snapshot did not carry the field, which stays unknown, not "text only".
+    input_modalities: Optional[list[str]] = Field(default=None, exclude_if=lambda value: value is None)
+    output_modalities: Optional[list[str]] = Field(default=None, exclude_if=lambda value: value is None)
+    # True when the catalog lists a Hugging Face ID. A signal that weights are published, not a licence finding.
+    open_weights_signal: Optional[bool] = Field(default=None, exclude_if=lambda value: value is None)
     status: EvidenceStatus = EvidenceStatus.unverified
 
     @computed_field
@@ -270,6 +275,7 @@ class ShortlistEntry(BaseModel):
     price_per_intelligence_point_usd: Optional[Decimal] = None
     price_per_intelligence_point_label: Optional[str] = None
     selected: bool = False
+    selected_for: list[str] = Field(default_factory=list, exclude_if=lambda value: not value)   # feature IDs it was chosen for
     reason: str
 
 
@@ -347,7 +353,8 @@ class FeatureProfile(AssumptionInput):
     description: NonBlank
     example_input: NonBlank
     mode: Literal["interactive", "background"]
-    modality: list[Literal["text", "audio_in", "audio_out"]] = Field(default_factory=lambda: ["text"], min_length=1)
+    modality: list[Literal["text", "audio_in", "audio_out", "image_in", "image_out"]] = Field(
+        default_factory=lambda: ["text"], min_length=1)
     audio_seconds_per_use: Optional[NonNegativeDecimal] = None   # applied to each audio direction in modality
     revenue_per_use: Optional[NonNegativeDecimal] = None          # present -> AI cost per use as a share of revenue per use
     uses_per_user_month: Optional[NonNegativeDecimal] = None
@@ -390,6 +397,7 @@ class TokenUsage(BaseModel):
     audio_output_tokens: Optional[NonNegativeDecimal] = None
     basis: Literal["measured", "estimated"]
     method: str
+    truncated: bool = False   # measured output stopped at max_tokens, so output_tokens is a lower bound
 
     @model_validator(mode="after")
     def _reasoning_within_output(self):
@@ -424,6 +432,8 @@ class FeatureSample(BaseModel):
     provider: Optional[str] = None
     provider_kind: Optional[str] = None
     max_tokens: Optional[int] = None
+    finish_reason: Optional[str] = None
+    truncated: bool = False                  # the answer was cut at max_tokens; its text is incomplete
 
 
 class FeatureRun(BaseModel):
@@ -663,6 +673,27 @@ class ModelStackEntry(BaseModel):
     reason: str
 
 
+class StageTotal(BaseModel):
+    """R9: the monthly AI cost of all features together at one growth stage, for one way of choosing models.
+    AI-only: non-AI operating costs are outside the model, and one-time build costs stay in the build ledger.
+    Unknown feature costs are never counted as zero; the total then covers the known features only."""
+    scenario: Literal["recommended", "cheapest_per_feature", "single_model"]
+    pricing_scope: Literal["actual_route", "openrouter_listed_token_scenario"]
+    model_id: Optional[str] = None                        # single_model only
+    stage: str
+    active_users: NonNegativeInt
+    feature_models: dict[str, Optional[str]] = Field(default_factory=dict)
+    feature_costs: dict[str, Optional[Decimal]] = Field(default_factory=dict)   # None == unknown
+    monthly_usd: Optional[Decimal] = None                 # sum of the known feature costs; None when none is known
+    complete: bool = False                                # every feature has a known cost
+    lower_bound: bool = True                              # incomplete, or a summed row leaves out an unknown component
+    revenue_usd: Optional[Decimal] = None                 # active users x paying fraction x subscription price
+    ai_contribution_usd: Optional[Decimal] = None         # revenue - AI cost; at most this when the cost is a lower bound
+    ai_contribution_margin: Optional[Decimal] = None      # contribution / revenue, only when revenue > 0
+    budget_fit: Literal["within", "over", "unknown", "no_budget"] = "no_budget"
+    note: str = ""
+
+
 class BuildPanel(BaseModel):
     """Secondary panel (07 §5.2): build approaches. Missing build inputs add questions; they never stop the run."""
     ranked_approach_ids: list[str] = Field(default_factory=list)   # empty when eligibility depends on a missing input
@@ -697,6 +728,9 @@ class RunRequest(PublicInput):
     human_reviews: list[HumanReview] = Field(default_factory=list)
     sampling_profile: Literal["production", "validation"] = "production"
     candidate_tiers: list[Literal["frontier", "mid_tier", "open_source"]] | None = None
+    # Optional founder choice of 1-3 candidate routes for every feature, replacing the automatic choice. The controller
+    # still validates each (offered, priced, modality, one per tier) and executes only routes with a verified profile.
+    candidate_models: Optional[list[NonBlank]] = Field(default=None, exclude_if=lambda value: value is None)
 
     @model_validator(mode="before")
     @classmethod
@@ -715,6 +749,11 @@ class RunRequest(PublicInput):
                 raise ValueError("candidate_tiers is available only for validation sampling")
             if not 2 <= len(self.candidate_tiers) <= 3 or len(set(self.candidate_tiers)) != len(self.candidate_tiers):
                 raise ValueError("candidate_tiers requires two or three unique candidate tiers")
+        if self.candidate_models is not None:
+            if not 1 <= len(self.candidate_models) <= 3 or len(set(self.candidate_models)) != len(self.candidate_models):
+                raise ValueError("candidate_models requires one to three unique route IDs")
+            if self.candidate_tiers is not None:
+                raise ValueError("candidate_models and candidate_tiers cannot be combined")
         return self
 
 
@@ -756,10 +795,14 @@ class ReadinessCheck(BaseModel):
 class ReadinessResult(BaseModel):
     scope: Literal["sponsor_integration", "live_diagnostic"] = "sponsor_integration"
     checks: list[ReadinessCheck] = Field(default_factory=list)
+    # Orthogonal integration facts. These describe what is known about a route
+    # without promoting it to sponsor readiness or paid-dispatch eligibility.
+    dimensions: list[ReadinessCheck] = Field(default_factory=list)
 
     @model_validator(mode="after")
     def _unique_checks(self):
         require_unique([check.name for check in self.checks], "readiness check names")
+        require_unique([check.name for check in self.dimensions], "readiness dimension names")
         return self
 
     @computed_field
@@ -820,6 +863,7 @@ class DecisionPack(BaseModel):
     model_stack: list[ModelStackEntry] = Field(default_factory=list)
     stage_tables: list[StageCostTable] = Field(default_factory=list)
     openrouter_projection_tables: list[OpenRouterProjectionTable] = Field(default_factory=list)
+    stage_totals: list[StageTotal] = Field(default_factory=list)
     feature_runs: list[FeatureRun] = Field(default_factory=list)
     build_panel: BuildPanel = Field(default_factory=BuildPanel)
     build_ledgers: list[BuildLedger] = Field(default_factory=list)
@@ -865,3 +909,20 @@ class RunError(BaseModel):
 FounderBrief.model_rebuild()
 StageCostTable.model_rebuild()
 RunRequest.model_rebuild()
+
+
+# ------------------------------------------------- modality capability (catalog reference)
+
+# Feature modality -> (catalog direction, catalog modality name a model must list).
+MODALITY_CAPABILITY = {"text": ("input", "text"), "audio_in": ("input", "audio"), "image_in": ("input", "image"),
+                       "audio_out": ("output", "audio"), "image_out": ("output", "image")}
+
+
+def covers_modalities(market: Optional[MarketReference], modalities) -> Optional[bool]:
+    """True/False when the catalog reference says whether a model covers every feature modality; None when it
+    does not carry the field (unknown, never assumed text-only). A text feature always needs text output too."""
+    if market is None or market.input_modalities is None or market.output_modalities is None:
+        return None
+    have = {"input": set(market.input_modalities), "output": set(market.output_modalities)}
+    needed = {MODALITY_CAPABILITY[m] for m in modalities} | {("output", "text")}
+    return all(name in have[direction] for direction, name in needed)
