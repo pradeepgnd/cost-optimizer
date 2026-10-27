@@ -310,8 +310,8 @@ def sidebar() -> tuple[str, bool, str]:
             if sample
             else "Live needs Zetaris, Nightshift and `.env`. Spend is capped by the approved limit below."
         )
-        example = st.selectbox("Start from example", svc.list_examples(), key="example")
-        st.caption("Examples are the starting point; every number is an editable assumption.")
+        example = st.selectbox("Start from example", svc.list_examples(), format_func=svc.example_label, key="example")
+        st.caption("Every number is an editable assumption.")
         bindings = ""
         if not sample:
             with st.expander("Override price data file"):

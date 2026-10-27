@@ -5,7 +5,7 @@
  "brief": {
   "brief_id": "brief-idea-a-speech-building",
   "brief_version": "1",
-  "product_concept": "A voice app that helps autistic children with speech delays form simple sentences and build on them step by step, reinforcing comprehension as sentences grow. Source: docs/founder_ideas_examples.md, Idea A. Example inputs are text only; no real child audio or personal data.",
+  "product_concept": "A voice app that helps kids with speech delays build sentences, step by step, reinforcing comprehension as sentences grow. Source: docs/founder_ideas_examples.md, Idea A. Example inputs are text only; no real child audio or personal data.",
   "target_user": "Parents, with speech-language therapists as secondary users",
   "features_v1": [],
   "constraints": {"status": "unknown"},

@@ -23,6 +23,15 @@ def form_args(template, **over):
     return args
 
 
+def test_sidebar_names_example_1_as_idea_a_and_example_2_as_idea_b():
+    assert svc.example_label("example_1") == "Idea A · Speech"
+    assert svc.example_label("example_2") == "Idea B · Payments"
+    assert svc.example_label("example_3") == "Idea 3 · Writing"
+    concept = svc.load_template("example_1")["brief"]["product_concept"]
+    assert "helps kids with speech delays build sentences" in concept
+    assert "autistic" not in concept.lower()
+
+
 @pytest.mark.parametrize("name", svc.list_examples())
 def test_unchanged_form_round_trips_to_a_valid_request(name):
     template = svc.load_template(name)

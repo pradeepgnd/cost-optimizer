@@ -4,9 +4,9 @@ Owner: Narin · Drafted Oct 25, 2026 from two one-line ideas. Every number below
 
 ---
 
-## Idea A — Speech-building voice app for autistic children with speech delays
+## Idea A — Voice app that helps kids with speech delays build sentences
 
-**Idea:** A voice app that helps autistic children with speech delays form simple sentences and build on them step by step, reinforcing comprehension as sentences grow.
+**Idea:** A voice app that helps kids with speech delays build sentences, step by step, reinforcing comprehension as sentences grow.
 **Target user:** Parents, with speech-language therapists as secondary users.
 **Quality bar (rubric):** target sentences at or below the child's current length (level 1: ≤ 3 words; level 2: ≤ 5); concrete, familiar nouns; feedback always positive and specific; no diagnostic or clinical claims; output in plain language a parent can read.
 

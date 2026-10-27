@@ -42,8 +42,10 @@ def test_second_run_fills_empty_inputs_from_first_run(tmp_path, monkeypatch):
     first = run(tmp_path, monkeypatch, "run-1", budget="40", price="15", fraction="0.08")
     assert first.status.value == "complete" and not recalled_notes(first)
     assert all(row.revenue_usd is not None for row in first.stage_totals)
+    assert len(first.memory_ids) == 2   # accepted stack and founder inputs, the two kinds a later run recalls
 
     second = run(tmp_path, monkeypatch, "run-2")
+    assert set(first.memory_ids) <= set(second.memory_ids)
     assert second.monthly_ai_budget_usd == first.monthly_ai_budget_usd
     assert [row.revenue_usd for row in second.stage_totals] == [row.revenue_usd for row in first.stage_totals]
     [note] = recalled_notes(second)

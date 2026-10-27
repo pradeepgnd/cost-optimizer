@@ -35,6 +35,10 @@ from app.dispatch import (Budget, Checkpoints, Dispatcher, DuplicateRun, StopRun
                           MAX_DISPATCHES, measured_usage, request_bound)
 
 MAX_CANDIDATE_GENERATIONS = MAX_DISPATCHES  # compatibility name; the cap now includes every role and retry
+# A later run recalls every kind this run saves. Recalling only one of them drops the other.
+HMEM_DECISION_KIND = "accepted_finding"
+HMEM_INPUT_KIND = "founder_input"
+HMEM_RECALL_KINDS = (HMEM_INPUT_KIND, HMEM_DECISION_KIND)
 SAMPLES_PER_PAIR = 2                      # 07 §7 call budget; 1 when 2 would not fit under the cap
 CANDIDATE_TIERS = ("frontier", "mid_tier", "open_source")
 AUTO_ROUTE = "meterless/auto"             # a router alias, never a candidate or a Critic route
@@ -164,13 +168,22 @@ class Controller:
         runs: dict[tuple[str, str], FeatureRun] = {}
         repairs: list[FeatureRun] = []
         try:
-            # 0. Recall founder inputs from earlier completed runs (H-MEM). Visible failure if the engine is not wired.
+            # 0. Recall founder inputs and the accepted stack from earlier completed runs (H-MEM).
+            # Visible failure if the engine is not wired. Both saved kinds are queried; only founder_input
+            # records fill blank fields.
             try:
-                recalled = self.mem.recall(req.project_id, {"kind": "founder_input"})
-                self.memory_ids = recalled.get("memory_ids", [])
+                recalled_ids: list[str] = []
+                recalled_context: list[dict] = []
+                revision = None
+                for kind in HMEM_RECALL_KINDS:
+                    recalled = self.mem.recall(req.project_id, {"kind": kind})
+                    recalled_ids.extend(recalled.get("memory_ids", []))
+                    recalled_context.extend(recalled.get("context") or [])
+                    revision = recalled.get("engine_revision") or revision
+                self.memory_ids = list(dict.fromkeys(recalled_ids))
                 self.trace.event("Analyst", "hmem_recall", memory_ids=self.memory_ids,
-                                 output_summary=f"{len(self.memory_ids)} memories", extra={"engine_revision": recalled.get("engine_revision")})
-                brief = self._apply_recalled_inputs(brief, recalled.get("context", []))
+                                 output_summary=f"{len(self.memory_ids)} memories", extra={"engine_revision": revision})
+                brief = self._apply_recalled_inputs(brief, recalled_context)
                 pack.monthly_ai_budget_usd = brief.monthly_ai_budget_usd
             except SetupIncomplete as e:
                 self.trace.event("Analyst", "hmem_recall", status="error", output_summary=str(e))
@@ -343,12 +356,12 @@ class Controller:
                 self._transition(RunState.partial)
         if pack.status == RunState.complete:
             try:
-                saved = self.mem.remember_confirmed(req.project_id, {"kind": "accepted_finding", "run_id": req.run_id,
+                saved = self.mem.remember_confirmed(req.project_id, {"kind": HMEM_DECISION_KIND, "run_id": req.run_id,
                                                                      "model_stack": [e.model_dump(mode="json") for e in pack.model_stack]})
                 self.memory_ids += saved.get("memory_ids", [])
                 inputs = self._founder_inputs(req.brief)
                 if inputs:   # only what this run's own brief stated; recalled values keep their original memory
-                    saved = self.mem.remember_confirmed(req.project_id, {"kind": "founder_input", "run_id": req.run_id,
+                    saved = self.mem.remember_confirmed(req.project_id, {"kind": HMEM_INPUT_KIND, "run_id": req.run_id,
                                                                          "inputs": inputs})
                     self.memory_ids += saved.get("memory_ids", [])
             except SetupIncomplete as e:
