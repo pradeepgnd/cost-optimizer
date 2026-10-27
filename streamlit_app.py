@@ -74,7 +74,7 @@ def hero():
 <p>Turn an AI SaaS idea into a costed model stack by feature and growth stage, using measured tokens where a model
 was run and dated market prices. Estimates, not advice.</p>
 <div class="ca-pills"><span>Measured vs estimated tokens</span><span>Cost by growth stage</span>
-<span>Deterministic quality checks</span><span>Full trace</span></div></div>""", unsafe_allow_html=True)
+<span>Frontier and open-source fit</span><span>Full trace</span></div></div>""", unsafe_allow_html=True)
 
 
 def step(number: int, title: str, hint: str = ""):
@@ -230,6 +230,34 @@ def totals_view(pack: dict):
     st.divider()
 
 
+def recommendation_view(pack: dict):
+    """One frontier model and one open-source model, after the run has costed them."""
+    picks = svc.tier_recommendations(pack)
+    if not picks:
+        return
+    st.markdown("**Recommendation**")
+    st.caption("One frontier model and one open-source model from the models compared in this run. "
+               "Each is the cheapest of its tier that still fits your monthly AI budget at the furthest growth stage. "
+               "With no budget, each is the cheapest at your largest stage. "
+               "If a model is not priced for every feature, the card names the features left out. "
+               "This is a cost fit for the requirements you entered. "
+               "A model is quality-qualified only when every critical check, including human review, passes.")
+    titles = {"frontier": "Frontier", "open_source": "Open source"}
+    fit_label = {"within": "within budget", "over": "over budget", "unknown": "budget fit unknown",
+                 "no_budget": "no budget set"}
+    cols = st.columns(2)
+    for col, pick in zip(cols, picks):
+        with col:
+            with st.container(border=True):
+                st.markdown(f"**{titles[pick['tier']]}**")
+                if pick["model_id"]:
+                    st.markdown(f"`{pick['model_id'].removeprefix('openrouter/')}`")
+                    st.metric("Monthly AI cost (USD)", pick["monthly_usd"])
+                    st.caption(f"{pick['stage']} · {pick['active_users']} users · {pick['token_basis']} tokens · "
+                               f"{fit_label.get(pick['budget_fit'], pick['budget_fit'])}")
+                st.markdown(pick["reason"])
+
+
 def results(pack: dict):
     status = pack["status"]
     step(4, "Results", f"Run {pack['run_id']}")
@@ -250,6 +278,7 @@ def results(pack: dict):
     for item in pack.get("questions", []):
         st.write("- " + item)
 
+    recommendation_view(pack)
     tabs = st.tabs(["Cost by stage", "Measured vs estimated", "Quality checks", "Risks and gaps", "Trace and export"])
     runs = [r for r in pack["feature_runs"] if not r.get("is_repair")]
     rows, label = cost_rows(pack)
@@ -266,7 +295,8 @@ def results(pack: dict):
             st.dataframe(subset.drop(columns="feature"), width="stretch", hide_index=True)
             st.caption(f"Priced at the {label}. 'measured' rows use token counts from real model runs; 'estimated' rows "
                        "are projected only (the model was not run). Lower bound: some lines, such as reasoning, are not "
-                       "priced. This is not your Nightshift bill and not a recommendation.")
+                       "priced. These rows are the per-feature prices behind the recommendation above. "
+                       "This is not your Nightshift bill.")
     with tabs[1]:
         st.markdown("**Why measuring matters: the 4/3 word rule against the API's own token counts**")
         st.dataframe(pd.DataFrame([{
