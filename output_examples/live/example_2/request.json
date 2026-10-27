@@ -1,0 +1,193 @@
+{
+  "schema_version": "1.1",
+  "project_id": "proj-idea-b-agent-micropayments",
+  "run_id": "live-ex2-20261027T023748Z",
+  "brief": {
+    "brief_id": "brief-idea-b-agent-micropayments",
+    "brief_version": "1",
+    "product_concept": "A payment system that lets AI agents pay other AI agents for services in microtransactions, settled in cryptocurrency. Source: docs/founder_ideas_examples.md, Idea B.",
+    "target_user": "Developers of AI agents that buy or sell services (data lookups, model calls, tool use)",
+    "features_v1": [],
+    "constraints": {
+      "status": "unknown"
+    },
+    "quality_needs": [
+      "Parsed quotes match the request exactly (service, quantity, max price)",
+      "No invented terms",
+      "Anomaly explanations cite the triggering signals",
+      "Summaries never state facts not in the transaction record"
+    ],
+    "alternatives_considered": [],
+    "usage": {
+      "active_users": null,
+      "status": "unknown"
+    },
+    "ai_features": [
+      {
+        "feature_id": "B1_parse_request_to_quote",
+        "description": "Parse an agent's service request into a structured quote (text to JSON), once per transaction. Revenue per use = $0.02 average transaction value x 1% gateway take rate, both assumed.",
+        "example_input": "Need 200 geocoding lookups, pay \u2264 $0.40 total",
+        "mode": "interactive",
+        "modality": [
+          "text"
+        ],
+        "uses_per_user_month": "10000",
+        "calls_per_use": "1",
+        "expected_output_words": 30,
+        "revenue_per_use": "0.0002",
+        "rubric_checks": [
+          {
+            "check_id": "quote_fields_present",
+            "description": "quote is a JSON object with service, quantity and max_price_usd",
+            "kind": "required_json_fields",
+            "params": {
+              "fields": [
+                "service",
+                "quantity",
+                "max_price_usd"
+              ]
+            },
+            "critical": true
+          },
+          {
+            "check_id": "quote_service_matches",
+            "description": "parsed service matches the request (geocoding)",
+            "kind": "regex",
+            "params": {
+              "pattern": "geocod",
+              "ignore_case": true,
+              "json_field": "service"
+            },
+            "critical": true
+          },
+          {
+            "check_id": "quote_quantity_matches",
+            "description": "parsed quantity matches the request exactly (200)",
+            "kind": "regex",
+            "params": {
+              "pattern": "^\\s*200\\s*$",
+              "json_field": "quantity"
+            },
+            "critical": true
+          },
+          {
+            "check_id": "quote_max_price_matches",
+            "description": "parsed max price matches the request exactly ($0.40 total)",
+            "kind": "regex",
+            "params": {
+              "pattern": "^\\s*\\$?0?\\.40?\\s*$",
+              "json_field": "max_price_usd"
+            },
+            "critical": true
+          },
+          {
+            "check_id": "no_invented_terms",
+            "description": "no invented terms",
+            "kind": "human_review",
+            "critical": true
+          }
+        ],
+        "field_status": {
+          "uses_per_user_month": "assumed",
+          "calls_per_use": "assumed",
+          "expected_output_words": "assumed",
+          "revenue_per_use": "assumed",
+          "static_prefix_tokens": "unknown"
+        }
+      },
+      {
+        "feature_id": "B2_explain_flagged_transaction",
+        "description": "Explain a flagged transaction (1% of transactions)",
+        "example_input": "SYNTHETIC transaction record for testing. Fictional agents, IDs and amounts.\ntx_id: tx_SYN_7f3a91\ntimestamp_utc: 2026-10-24T03:14:07Z\npayer_agent: agt_SYN_buyer_0412 (registered 2026-08-02; 30-day median payment $0.021; 30-day volume 9,840 transactions)\npayee_agent: agt_SYN_seller_9c77 (registered 2026-10-24T01:05:00Z)\nservice: geocoding lookup; quantity 15; quoted unit price $0.020\namount: $0.300 USDC on a layer-2 network; gateway fee $0.003\nsettlement: confirmed in 4 s\nanomaly_signals:\n1. amount_vs_median: $0.300 is 14.3x the payer's 30-day median payment ($0.021).\n2. new_payee: the payee registered 2 h 9 min before this transaction and has no prior transactions with any payer.\n3. velocity: 37 payments from this payer to this payee in the 90 s before this transaction; the payer's usual peak is 6 payments per minute across all payees.\nrisk_score: 0.87 (hold threshold 0.75); status: held for review",
+        "mode": "background",
+        "modality": [
+          "text"
+        ],
+        "uses_per_user_month": "100",
+        "calls_per_use": "1",
+        "expected_output_words": 120,
+        "rubric_checks": [
+          {
+            "check_id": "cites_triggering_signals",
+            "description": "explanation cites the triggering signals",
+            "kind": "human_review",
+            "critical": true
+          },
+          {
+            "check_id": "no_invented_terms",
+            "description": "no invented terms",
+            "kind": "human_review",
+            "critical": true
+          }
+        ],
+        "field_status": {
+          "uses_per_user_month": "assumed",
+          "calls_per_use": "assumed",
+          "expected_output_words": "assumed",
+          "static_prefix_tokens": "unknown"
+        }
+      },
+      {
+        "feature_id": "B3_dispute_or_receipt_summary",
+        "description": "Dispute or receipt summary, on demand (0.1% of transactions)",
+        "example_input": "SYNTHETIC dispute thread for testing. Fictional agents, IDs and amounts.\ntx_id: tx_SYN_52c0de; buyer paid $0.40 USDC for 200 geocoding lookups (quote: max $0.40 total, $0.002 per lookup).\n[2026-10-24T09:12:03Z] agt_SYN_buyer_0412: 23 of 200 lookups returned error GEO_404. Requesting a refund for 23 lookups ($0.046).\n[09:12:41Z] agt_SYN_seller_9c77: 15 of the 23 had malformed input (missing postcode), which our terms exclude. 8 failed on our side; we can refund those 8 ($0.016).\n[09:13:20Z] agt_SYN_buyer_0412: All inputs were validated against your published schema v2, where postcode is optional.\n[09:14:02Z] agt_SYN_seller_9c77: Confirmed, schema v2 marks postcode optional. We will refund all 23 lookups.\n[09:14:30Z] agt_SYN_buyer_0412: Accepted. Please reference tx_SYN_52c0de.\n[09:15:11Z] gateway: refund of $0.046 USDC issued, ref rf_SYN_0019; dispute closed.",
+        "mode": "interactive",
+        "modality": [
+          "text"
+        ],
+        "uses_per_user_month": "10",
+        "calls_per_use": "1",
+        "expected_output_words": 80,
+        "rubric_checks": [
+          {
+            "check_id": "facts_only_from_record",
+            "description": "never states facts not in the transaction record",
+            "kind": "human_review",
+            "critical": true
+          }
+        ],
+        "field_status": {
+          "uses_per_user_month": "assumed",
+          "calls_per_use": "assumed",
+          "expected_output_words": "assumed",
+          "static_prefix_tokens": "unknown"
+        }
+      }
+    ],
+    "monthly_ai_budget_usd": null,
+    "switch_threshold_usd": "100",
+    "growth_stages": [
+      {
+        "name": "Prototype",
+        "active_users": 50,
+        "status": "assumed"
+      },
+      {
+        "name": "Launch",
+        "active_users": 500,
+        "status": "assumed"
+      },
+      {
+        "name": "Traction",
+        "active_users": 5000,
+        "status": "assumed"
+      },
+      {
+        "name": "Scale",
+        "active_users": 50000,
+        "status": "assumed"
+      }
+    ],
+    "field_status": {
+      "product_concept": "assumed",
+      "features_v1": "unknown",
+      "constraints": "unknown",
+      "ai_features": "assumed",
+      "growth_stages": "assumed",
+      "alternatives_considered": "unknown"
+    }
+  },
+  "evaluation_approved": true,
+  "max_spend_usd": "0.50",
+  "sample_mode": false
+}

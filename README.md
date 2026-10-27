@@ -22,6 +22,8 @@ python -m pytest -q
 
 Sample mode runs the same controller, contracts and cost engine on bundled data. It makes zero network calls and executes no model: tokens are estimated with the 4/3 rule and labeled estimated, no outputs are produced, and rubric checks don't run. It never replays saved model answers and labels every output `SAMPLE/OFFLINE`. It is reproducibility for judges, not sponsor proof.
 
+**Live proof:** [`output_examples/live/`](output_examples/live/README.md) holds four real live runs (all three examples plus an H-MEM recall run) with their requests, DecisionPacks and full traces: Nemotron Planner and Critic identities with provider request IDs, measured tokens, Critic flags, Zetaris evidence write-back and \$0 spend.
+
 For a repeatable check of all three examples, run `python scripts/check_sample_examples.py`. The checker forces sample mode in copied requests, disables private dotenv loading, blocks Python sockets and Node network calls, and uses fresh databases and logs. It retains packs, traces and a `manifest.json` in a new temporary directory and prints its location. To retain them in a chosen location, pass `--output-dir <new-directory>`; existing directories are refused. A passing check establishes the offline baseline and local H-MEM delegation; live sponsor readiness needs later checks. See the [implementation plan](docs/08-v4-Implementation-Plan.md), [revised steps](docs/17-v4-Revised-Implementation-Steps.md) and [evidence ledger](docs/v4-release-checklist.md).
 
 ## Streamlit UI
