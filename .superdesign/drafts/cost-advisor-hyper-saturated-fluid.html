@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cost.Advisor</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #0A0A0A;
+      color: #FFFFFF;
+      margin: 0;
+      -webkit-font-smoothing: antialiased;
+    }
+    .hero-liquid { border-bottom-right-radius: clamp(80px, 11vw, 144px); border-bottom-left-radius: clamp(32px, 4vw, 56px); overflow: hidden; }
+    /* Glass Panel Utility */
+    .glass-panel {
+      background: rgba(255, 255, 255, 0.03);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 32px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    }
+    .glass-input {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 16px;
+      color: white;
+      transition: all 0.2s ease;
+    }
+    .glass-input:focus {
+      outline: none;
+      border-color: #FDE047;
+      background: rgba(255, 255, 255, 0.08);
+    }
+    .btn-pill {
+      border-radius: 9999px;
+      transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .btn-pill:active {
+      transform: scale(0.95);
+    }
+    /* Custom Scrollbar for tables */
+    .custom-scrollbar::-webkit-scrollbar {
+      height: 8px;
+      width: 8px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: rgba(255, 255, 255, 0.02);
+      border-radius: 4px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 4px;
+    }
+    .tab-active {
+      background: #FDE047;
+      color: #0A0A0A;
+      font-weight: 600;
+    }
+    .tab-inactive {
+      color: #A3A3A3;
+    }
+    .tab-inactive:hover {
+      color: #FFFFFF;
+      background: rgba(255, 255, 255, 0.05);
+    }
+  </style>
+</head>
+<body>
+  <div id="page-root">
+  <!-- Hero Section (Cyber Yellow) -->
+  <div class="bg-[#FDE047] text-[#0A0A0A] relative pb-40 pt-6 px-6 sm:px-12 hero-liquid" data-sd-id="1">
+    <!-- Top Control Rail -->
+    <header class="max-w-[1280px] mx-auto flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-16" data-sd-id="2">
+      <div class="font-[900] text-2xl tracking-tight" data-sd-id="3">Cost.Advisor</div>
+      <div class="flex flex-col sm:flex-row items-center gap-4 bg-[#0A0A0A] p-2 rounded-full text-white shadow-xl" data-sd-id="4">
+        <div class="flex items-center gap-1 bg-[#171717] rounded-full p-1" data-sd-id="5">
+          <button class="px-4 py-2 rounded-full text-sm font-semibold bg-[#FDE047] text-[#0A0A0A] transition-colors" data-sd-id="6">Sample (offline)</button>
+          <button class="px-4 py-2 rounded-full text-sm font-semibold text-gray-400 hover:text-white transition-colors" data-sd-id="7">Live</button>
+        </div>
+        <div class="h-6 w-px bg-white/20 hidden sm:block" data-sd-id="8"></div>
+        <select class="bg-transparent text-sm font-medium focus:outline-none pr-4 pl-2 text-gray-300 appearance-none cursor-pointer" data-sd-id="9">
+          <option class="text-[#0A0A0A]" data-sd-id="10">Example: Email Triage</option>
+          <option class="text-[#0A0A0A]" data-sd-id="11">Example: Support Bot</option>
+        </select>
+        <iconify-icon icon="lucide:chevron-down" class="text-gray-400 mr-3 -ml-2" data-sd-id="12"></iconify-icon>
+      </div>
+    </header>
+
+    <!-- Hero Content -->
+    <main class="max-w-[1280px] mx-auto relative z-10" data-sd-id="13">
+      <h1 class="text-[clamp(3rem,8vw,6rem)] font-[900] tracking-tighter leading-[0.9] mb-8 max-w-4xl" data-sd-id="14">
+        Know what your AI features cost as you grow.
+      </h1>
+      <p class="text-xl md:text-2xl font-medium max-w-2xl leading-relaxed opacity-90" data-sd-id="15">
+        Measured where a model ran, labeled estimated otherwise. No invented savings, just transparent operating costs.
+      </p>
+    </main>
+
+    <!-- Liquid Transition Curve - Exaggerated -->
+    <svg class="absolute bottom-0 left-0 w-full h-32 md:h-48 text-[#0A0A0A] fill-current translate-y-[1px]" preserveAspectRatio="none" viewBox="0 0 1440 120" data-sd-id="16">
+      <path d="M0,120 C320,0 720,150 1440,40 L1440,120 L0,120 Z" data-sd-id="17"></path>
+    </svg>
+  </div>
+
+  <!-- Main Content (Deep Onyx) -->
+  <div class="bg-[#0A0A0A] text-white min-h-screen pb-32" data-sd-id="18">
+    <div class="max-w-[1280px] mx-auto px-6 sm:px-12 relative z-10 space-y-8 -mt-4" data-sd-id="19">
+
+      <!-- Sample Banner -->
+      <div class="glass-panel p-6 flex items-start sm:items-center gap-4 border-[#FDE047]/30" data-sd-id="20">
+        <div class="bg-[#FDE047] text-[#0A0A0A] w-10 h-10 rounded-full flex items-center justify-center shrink-0" data-sd-id="21">
+          <iconify-icon icon="lucide:info" class="text-xl" data-sd-id="22"></iconify-icon>
+        </div>
+        <div data-sd-id="23">
+          <h3 class="text-[#FDE047] font-bold text-sm tracking-widest uppercase mb-1" data-sd-id="24">SAMPLE/OFFLINE</h3>
+          <p class="text-gray-300 text-sm" data-sd-id="25">No network calls, no model executed. Tokens are estimated and nothing here is measured.</p>
+        </div>
+      </div>
+
+      <!-- Brief Form -->
+      <section class="glass-panel p-8 md:p-10" data-sd-id="26">
+        <header class="mb-8" data-sd-id="27">
+          <h2 class="text-2xl font-bold mb-2 flex items-center gap-3" data-sd-id="28">
+            <span class="bg-white/10 text-white w-8 h-8 rounded-full flex items-center justify-center text-sm" data-sd-id="29">1</span> 
+            Brief
+          </h2>
+          <p class="text-gray-400 text-sm" data-sd-id="30">Idea, features, and growth assumptions</p>
+        </header>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8" data-sd-id="31">
+          <div data-sd-id="32">
+            <label class="block text-xs font-bold tracking-widest uppercase text-gray-400 mb-2" data-sd-id="33">Product Idea</label>
+            <textarea class="glass-input w-full p-4 h-32 text-sm" data-sd-id="34">An AI assistant that sorts incoming emails...</textarea>
+          </div>
+          <div data-sd-id="35">
+            <label class="block text-xs font-bold tracking-widest uppercase text-gray-400 mb-2" data-sd-id="36">Target User</label>
+            <input type="text" class="glass-input w-full p-4 text-sm" value="Busy professionals" data-sd-id="37">
+          </div>
+        </div>
+
+        <div class="mb-8" data-sd-id="38">
+          <label class="block text-xs font-bold tracking-widest uppercase text-gray-400 mb-2" data-sd-id="39">AI Features (2-5)</label>
+          <p class="text-gray-500 text-xs mb-4" data-sd-id="40">Modality: text, image, audio. Audio and image are priced, not executed.</p>
+          <div class="overflow-x-auto custom-scrollbar" data-sd-id="41">
+            <table class="w-full text-left text-sm whitespace-nowrap" data-sd-id="42">
+              <thead class="border-b border-white/10" data-sd-id="43">
+                <tr class="text-gray-400" data-sd-id="44">
+                  <th class="p-3 font-semibold" data-sd-id="45">Feature ID</th>
+                  <th class="p-3 font-semibold" data-sd-id="46">Mode</th>
+                  <th class="p-3 font-semibold" data-sd-id="47">Modality</th>
+                  <th class="p-3 font-semibold" data-sd-id="48">Uses/User/Mo</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-white/5" data-sd-id="49">
+                <tr class="hover:bg-white/5 transition-colors" data-sd-id="50">
+                  <td class="p-3" data-sd-id="51"><input type="text" class="bg-transparent w-full focus:outline-none" value="triage" data-sd-id="52"></td>
+                  <td class="p-3" data-sd-id="53">
+                    <select class="bg-transparent w-full focus:outline-none appearance-none text-white" data-sd-id="54">
+                      <option class="text-black" selected="" data-sd-id="55">background</option>
+                      <option class="text-black" data-sd-id="56">interactive</option>
+                    </select>
+                  </td>
+                  <td class="p-3" data-sd-id="57"><input type="text" class="bg-transparent w-full focus:outline-none" value="text" data-sd-id="58"></td>
+                  <td class="p-3" data-sd-id="59"><input type="text" class="bg-transparent w-full focus:outline-none" value="150" data-sd-id="60"></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Growth Stages -->
+        <div class="mb-8" id="growth-stages-container">
+          <label class="block text-xs font-bold tracking-widest uppercase text-gray-400 mb-2">Growth Stages (Assumed)</label>
+          <div class="overflow-x-auto custom-scrollbar">
+            <table class="w-full text-left text-sm whitespace-nowrap">
+              <thead class="border-b border-white/10">
+                <tr class="text-gray-400">
+                  <th class="p-3 font-semibold w-1/2">Stage Name</th>
+                  <th class="p-3 font-semibold w-1/2">Active Users</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-white/5">
+                <tr class="hover:bg-white/5 transition-colors">
+                  <td class="p-3"><input type="text" class="bg-transparent w-full focus:outline-none" value="MVP"></td>
+                  <td class="p-3"><input type="text" class="bg-transparent w-full focus:outline-none" value="100"></td>
+                </tr>
+                <tr class="hover:bg-white/5 transition-colors">
+                  <td class="p-3"><input type="text" class="bg-transparent w-full focus:outline-none" value="Growth"></td>
+                  <td class="p-3"><input type="text" class="bg-transparent w-full focus:outline-none" value="1000"></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Collapsible Assumptions -->
+        <details class="group mb-2" data-sd-id="61">
+          <summary class="cursor-pointer flex items-center justify-between p-4 glass-input select-none" data-sd-id="62">
+            <span class="text-sm font-semibold" data-sd-id="63">Assumptions (Budget, Revenue, Switch Threshold)</span>
+            <iconify-icon icon="lucide:plus" class="text-xl group-open:hidden text-gray-400" data-sd-id="64"></iconify-icon>
+            <iconify-icon icon="lucide:minus" class="text-xl hidden group-open:block text-gray-400" data-sd-id="65"></iconify-icon>
+          </summary>
+          <div class="p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-2" data-sd-id="66">
+            <div data-sd-id="67">
+              <label class="block text-[10px] font-bold tracking-widest uppercase text-gray-500 mb-1" data-sd-id="68">Switch Threshold ($)</label>
+              <input type="text" class="glass-input w-full p-3 text-sm" value="100" data-sd-id="69">
+            </div>
+            <div data-sd-id="70">
+              <label class="block text-[10px] font-bold tracking-widest uppercase text-gray-500 mb-1" data-sd-id="71">AI Budget Ceiling ($)</label>
+              <input type="text" class="glass-input w-full p-3 text-sm" placeholder="Optional" data-sd-id="72">
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold tracking-widest uppercase text-gray-500 mb-1">Sub Price ($)</label>
+              <input type="text" class="glass-input w-full p-3 text-sm" value="5.00">
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold tracking-widest uppercase text-gray-500 mb-1">Paying Fraction</label>
+              <input type="text" class="glass-input w-full p-3 text-sm" value="1.0">
+            </div>
+          </div>
+        </details>
+        
+        <details class="group" data-sd-id="73">
+          <summary class="cursor-pointer flex items-center justify-between p-4 glass-input select-none" data-sd-id="74">
+            <span class="text-sm font-semibold" data-sd-id="75">Advanced: Candidate Models (Optional)</span>
+            <iconify-icon icon="lucide:plus" class="text-xl group-open:hidden text-gray-400" data-sd-id="76"></iconify-icon>
+            <iconify-icon icon="lucide:minus" class="text-xl hidden group-open:block text-gray-400" data-sd-id="77"></iconify-icon>
+          </summary>
+          <div class="p-4 mt-2" data-sd-id="78">
+            <p class="text-xs text-gray-500 mb-3" data-sd-id="79">Leave empty to let the app choose per feature.</p>
+            <div class="glass-input p-3 text-sm text-gray-400 cursor-text" data-sd-id="80">Select up to 3 models...</div>
+          </div>
+        </details>
+      </section>
+
+      <!-- Eval Spend & Run Action -->
+      <section class="glass-panel p-8 md:p-10 flex flex-col lg:flex-row gap-8 items-start lg:items-center justify-between" data-sd-id="81">
+        <div class="flex-1" data-sd-id="82">
+          <h2 class="text-xl font-bold mb-2 flex items-center gap-3" data-sd-id="83">
+            <span class="bg-white/10 text-white w-8 h-8 rounded-full flex items-center justify-center text-sm" data-sd-id="84">2</span> 
+            Evaluation Spend
+          </h2>
+          <p class="text-gray-400 text-sm mb-6" data-sd-id="85">Sample mode runs nothing measurable.</p>
+          
+          <label class="flex items-start gap-3 mb-4 cursor-pointer group" data-sd-id="86">
+            <div class="relative flex items-center justify-center w-5 h-5 mt-0.5" data-sd-id="87">
+              <input type="checkbox" class="peer appearance-none w-5 h-5 border border-white/30 rounded bg-white/5 checked:bg-[#FDE047] checked:border-[#FDE047] transition-all" data-sd-id="88">
+              <iconify-icon icon="lucide:check" class="absolute text-[#0A0A0A] text-xs opacity-0 peer-checked:opacity-100 pointer-events-none" data-sd-id="89"></iconify-icon>
+            </div>
+            <span class="text-sm text-gray-300 group-hover:text-white transition-colors" data-sd-id="90">I approve measured evaluation runs (live mode only; sample mode runs nothing)</span>
+          </label>
+          
+          <div class="max-w-xs" data-sd-id="91">
+            <label class="block text-xs font-bold tracking-widest uppercase text-gray-400 mb-2" data-sd-id="92">Maximum evaluation spend (USD)</label>
+            <input type="text" class="glass-input w-full p-3 text-sm" value="0.50" data-sd-id="93">
+          </div>
+        </div>
+
+        <div class="w-full lg:w-auto flex flex-col items-center lg:items-end gap-4 border-t border-white/10 lg:border-t-0 lg:border-l pt-6 lg:pt-0 lg:pl-8" data-sd-id="94">
+          <p class="text-xs text-gray-500 font-mono tracking-wide" data-sd-id="95">RUN_ID: run_12345</p>
+          <div class="flex items-center gap-4 w-full sm:w-auto" data-sd-id="96">
+            <button class="btn-pill flex-1 sm:flex-none px-8 py-4 bg-[#FDE047] text-[#0A0A0A] font-bold text-lg shadow-[0_0_20px_rgba(253,224,71,0.3)] hover:shadow-[0_0_30px_rgba(253,224,71,0.5)] flex items-center justify-center gap-2" data-sd-id="97">
+              <iconify-icon icon="lucide:play-circle" class="text-xl" data-sd-id="98"></iconify-icon> Run
+            </button>
+            <button class="btn-pill flex-1 sm:flex-none px-6 py-4 bg-white/10 text-white font-semibold text-sm hover:bg-white/20" data-sd-id="99">
+              New Run
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Results Section -->
+      <section class="mt-16" data-sd-id="100">
+        <header class="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4" data-sd-id="101">
+          <div data-sd-id="102">
+            <h2 class="text-3xl font-bold mb-2 flex items-center gap-3" data-sd-id="103">
+              <span class="bg-white/10 text-white w-10 h-10 rounded-full flex items-center justify-center text-lg" data-sd-id="104">3</span> 
+              DecisionPack Results
+            </h2>
+            <p class="text-gray-400" data-sd-id="105">Run <span class="font-mono text-gray-300" data-sd-id="106">run_12345</span></p>
+          </div>
+          
+          <!-- Trust Details Badge -->
+          <div class="flex flex-wrap items-center gap-2 text-xs font-mono uppercase tracking-wider bg-[#171717] p-2 rounded-2xl border border-white/5" data-sd-id="107">
+            <span class="px-3 py-1 bg-green-500/20 text-green-400 rounded-full" data-sd-id="108">Status: Complete</span>
+            <span class="px-3 py-1 bg-white/5 text-gray-300 rounded-full" data-sd-id="109">Mode: Sample</span>
+            <span class="px-3 py-1 bg-white/5 text-gray-300 rounded-full" data-sd-id="110">Spend: $0.00</span>
+            <span class="px-3 py-1 bg-white/5 text-gray-300 rounded-full" data-sd-id="111">Reqs: 0</span>
+          </div>
+        </header>
+
+        <!-- Progress Pipeline -->
+        <div class="glass-panel p-2 mb-8 flex flex-col md:flex-row gap-2" data-sd-id="112">
+          <div class="flex-1 bg-[#FDE047]/10 border border-[#FDE047]/20 rounded-2xl p-4 flex items-start gap-4" data-sd-id="113">
+            <div class="bg-[#FDE047] text-[#0A0A0A] p-2 rounded-full mt-0.5" data-sd-id="114">
+              <iconify-icon icon="lucide:check" data-sd-id="115"></iconify-icon>
+            </div>
+            <div data-sd-id="116">
+              <h4 class="font-bold text-sm text-[#FDE047]" data-sd-id="117">Planner</h4>
+              <p class="text-xs text-gray-400 mt-1" data-sd-id="118">Design tests</p>
+            </div>
+          </div>
+          <div class="flex-1 bg-[#FDE047]/10 border border-[#FDE047]/20 rounded-2xl p-4 flex items-start gap-4 opacity-70">
+            <div class="bg-[#FDE047] text-[#0A0A0A] p-2 rounded-full mt-0.5">
+              <iconify-icon icon="lucide:check"></iconify-icon>
+            </div>
+            <div>
+              <h4 class="font-bold text-sm text-[#FDE047]">Analyst</h4>
+              <p class="text-xs text-gray-400 mt-1">Run models</p>
+            </div>
+          </div>
+          <div class="flex-1 bg-[#FDE047]/10 border border-[#FDE047]/20 rounded-2xl p-4 flex items-start gap-4 opacity-70">
+            <div class="bg-[#FDE047] text-[#0A0A0A] p-2 rounded-full mt-0.5">
+              <iconify-icon icon="lucide:check"></iconify-icon>
+            </div>
+            <div>
+              <h4 class="font-bold text-sm text-[#FDE047]">Critic</h4>
+              <p class="text-xs text-gray-400 mt-1">Review outputs</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Result Tabs -->
+        <div class="glass-panel overflow-hidden flex flex-col" data-sd-id="131">
+          <div class="flex overflow-x-auto custom-scrollbar border-b border-white/10 p-2 gap-2" data-sd-id="132">
+            <button class="px-6 py-3 rounded-xl text-sm transition-all whitespace-nowrap tab-active" data-sd-id="133">Cost by stage</button>
+            <button class="px-6 py-3 rounded-xl text-sm transition-all whitespace-nowrap tab-inactive" data-sd-id="134">Will it pass checks?</button>
+            <button class="px-6 py-3 rounded-xl text-sm transition-all whitespace-nowrap tab-inactive" data-sd-id="135">What we still don't know</button>
+            <button class="px-6 py-3 rounded-xl text-sm transition-all whitespace-nowrap tab-inactive" data-sd-id="136">Show your work</button>
+          </div>
+
+          <!-- Tab 1: Cost by Stage -->
+          <div class="p-6 md:p-8 block" id="tab-1">
+            <div class="flex flex-col lg:flex-row justify-between items-start gap-8 mb-8">
+              <div>
+                <h3 class="text-xl font-bold mb-2">Monthly AI cost, all features together</h3>
+                <p class="text-sm text-gray-400 max-w-xl">Priced at sample placeholder prices (not real). Lower bound: some cost is unknown. Build costs are separate.</p>
+              </div>
+              <div class="bg-[#171717] p-4 rounded-2xl border border-white/5 min-w-[200px]">
+                <label class="block text-[10px] font-bold tracking-widest uppercase text-gray-500 mb-2">How models are chosen</label>
+                <select class="glass-input w-full p-2 text-sm">
+                  <option class="text-black">Recommended Stack</option>
+                  <option class="text-black">Cheapest per feature</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Data Table -->
+            <div class="overflow-x-auto custom-scrollbar rounded-2xl border border-white/10 mb-8">
+              <table class="w-full text-left text-sm whitespace-nowrap">
+                <thead class="bg-white/5 text-gray-300 text-xs uppercase tracking-wider">
+                  <tr>
+                    <th class="p-4 font-semibold">Stage</th>
+                    <th class="p-4 font-semibold">Users</th>
+                    <th class="p-4 font-semibold text-right">AI Cost (USD)</th>
+                    <th class="p-4 font-semibold text-right">Revenue (USD)</th>
+                    <th class="p-4 font-semibold text-right">Margin</th>
+                    <th class="p-4 font-semibold text-center">Budget Fit</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-white/5">
+                  <tr class="hover:bg-white/5 transition-colors">
+                    <td class="p-4 font-medium">MVP</td>
+                    <td class="p-4 text-gray-400">100</td>
+                    <td class="p-4 text-right font-mono text-[#FDE047]">$12.50</td>
+                    <td class="p-4 text-right font-mono text-gray-300">$500.00</td>
+                    <td class="p-4 text-right font-mono text-gray-300">97.5%</td>
+                    <td class="p-4 text-center">
+                      <span class="inline-flex px-2 py-1 rounded text-xs font-semibold bg-green-500/20 text-green-400">Under</span>
+                    </td>
+                  </tr>
+                  <tr class="hover:bg-white/5 transition-colors">
+                    <td class="p-4 font-medium">Growth</td>
+                    <td class="p-4 text-gray-400">1,000</td>
+                    <td class="p-4 text-right font-mono text-[#FDE047]">$125.00</td>
+                    <td class="p-4 text-right font-mono text-gray-300">$5,000.00</td>
+                    <td class="p-4 text-right font-mono text-gray-300">97.5%</td>
+                    <td class="p-4 text-center">
+                      <span class="inline-flex px-2 py-1 rounded text-xs font-semibold bg-red-500/20 text-red-400">Over</span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Sub-section: Measured vs Estimated -->
+            <h4 class="text-lg font-bold mb-4 border-t border-white/10 pt-8">Measured versus estimated tokens</h4>
+            <div class="overflow-x-auto custom-scrollbar rounded-2xl border border-white/10">
+              <table class="w-full text-left text-sm whitespace-nowrap">
+                <thead class="bg-white/5 text-gray-300 text-xs uppercase tracking-wider">
+                  <tr>
+                    <th class="p-4 font-semibold">Feature</th>
+                    <th class="p-4 font-semibold">State</th>
+                    <th class="p-4 font-semibold text-right">Est. Output</th>
+                    <th class="p-4 font-semibold text-right">Meas. Output</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-white/5">
+                  <tr class="hover:bg-white/5 transition-colors">
+                    <td class="p-4 font-medium">triage</td>
+                    <td class="p-4"><span class="inline-flex px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider bg-[#262626] text-gray-300">Projected Only</span></td>
+                    <td class="p-4 text-right font-mono text-gray-300">250</td>
+                    <td class="p-4 text-right font-mono text-gray-500">—</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Tab 2: Will it pass checks? -->
+          <div class="p-6 md:p-8 block border-t border-white/10" id="tab-2">
+            <h3 class="text-xl font-bold mb-4">Deterministic checks decide quality. The Critic only flags.</h3>
+            <div class="bg-[#FDE047]/10 border border-[#FDE047]/30 text-[#FDE047] px-4 py-3 rounded-xl text-sm font-medium mb-6">
+              <iconify-icon icon="lucide:lock" class="inline mr-2"></iconify-icon>
+              Recommendations locked until human review. No model stack is recommended until every critical check passes.
+            </div>
+            <div class="overflow-x-auto custom-scrollbar rounded-2xl border border-white/10 mb-8">
+              <table class="w-full text-left text-sm whitespace-nowrap">
+                <thead class="bg-white/5 text-gray-300 text-xs uppercase tracking-wider">
+                  <tr>
+                    <th class="p-4 font-semibold">Feature</th>
+                    <th class="p-4 font-semibold">Model</th>
+                    <th class="p-4 font-semibold">Check</th>
+                    <th class="p-4 font-semibold text-center">Result</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-white/5">
+                  <tr class="hover:bg-white/5 transition-colors">
+                    <td class="p-4">triage</td>
+                    <td class="p-4 font-mono text-gray-400">gpt-4o-mini</td>
+                    <td class="p-4">json_format</td>
+                    <td class="p-4 text-center"><span class="inline-flex px-2 py-1 rounded text-xs font-semibold bg-green-500/20 text-green-400">Pass</span></td>
+                  </tr>
+                  <tr class="hover:bg-white/5 transition-colors">
+                    <td class="p-4">triage</td>
+                    <td class="p-4 font-mono text-gray-400">gpt-4o-mini</td>
+                    <td class="p-4">tone_human_review</td>
+                    <td class="p-4 text-center"><span class="inline-flex px-2 py-1 rounded text-xs font-semibold bg-blue-500/20 text-blue-400">Pending human review</span></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <h4 class="text-lg font-bold mb-4">Critic flags (1)</h4>
+            <div class="overflow-x-auto custom-scrollbar rounded-2xl border border-white/10">
+              <table class="w-full text-left text-sm whitespace-nowrap">
+                <thead class="bg-white/5 text-gray-300 text-xs uppercase tracking-wider">
+                  <tr>
+                    <th class="p-4 font-semibold">Kind</th>
+                    <th class="p-4 font-semibold">Severity</th>
+                    <th class="p-4 font-semibold">Feature ID</th>
+                    <th class="p-4 font-semibold">Claim</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-white/5">
+                  <tr class="hover:bg-white/5 transition-colors">
+                    <td class="p-4">context_length</td>
+                    <td class="p-4"><span class="text-red-400 font-semibold">high</span></td>
+                    <td class="p-4">triage</td>
+                    <td class="p-4 text-gray-300">Input exceeds typical 8k limit for chosen tier</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Tab 3: What we still don't know -->
+          <div class="p-6 md:p-8 block border-t border-white/10" id="tab-3">
+             <h3 class="text-xl font-bold mb-4">Risks and Limitations</h3>
+             <ul class="list-disc list-inside text-sm text-gray-300 mb-8 space-y-2">
+               <li>Assumes 100% caching hit rate for system prompts which may not be realistic in MVP.</li>
+               <li>Token projection relies on sample examples rather than P99 length distribution.</li>
+             </ul>
+
+             <details class="group mb-4">
+              <summary class="cursor-pointer flex items-center justify-between p-4 glass-input select-none">
+                <span class="text-sm font-semibold">Evidence gaps (2): unknown or assumed values, never filled in</span>
+                <iconify-icon icon="lucide:chevron-down" class="text-xl transition-transform group-open:rotate-180 text-gray-400"></iconify-icon>
+              </summary>
+              <div class="p-4 mt-2 overflow-x-auto">
+                 <table class="w-full text-left text-sm whitespace-nowrap rounded-xl overflow-hidden border border-white/10">
+                  <thead class="bg-white/5">
+                    <tr><th class="p-3 text-gray-400">Field</th><th class="p-3 text-gray-400">Impact</th></tr>
+                  </thead>
+                  <tbody class="divide-y divide-white/5">
+                    <tr><td class="p-3">Audio duration</td><td class="p-3">Prevents accurate pricing for feature X</td></tr>
+                    <tr><td class="p-3">Paying fraction</td><td class="p-3">Assumed 1.0; limits revenue accuracy</td></tr>
+                  </tbody>
+                 </table>
+              </div>
+            </details>
+
+            <details class="group">
+              <summary class="cursor-pointer flex items-center justify-between p-4 glass-input select-none">
+                <span class="text-sm font-semibold text-gray-400">Build panel (secondary; never added to running costs)</span>
+                <iconify-icon icon="lucide:chevron-down" class="text-xl transition-transform group-open:rotate-180 text-gray-400"></iconify-icon>
+              </summary>
+              <div class="p-4 mt-2 text-sm text-gray-400">
+                <ul class="list-disc list-inside space-y-2">
+                  <li>Needs vector database deployment for retrieval</li>
+                  <li>Requires audio transcription pipeline engineering</li>
+                </ul>
+              </div>
+            </details>
+          </div>
+
+          <!-- Tab 4: Show your work -->
+          <div class="p-6 md:p-8 block border-t border-white/10" id="tab-4">
+            <div class="flex justify-between items-center mb-6">
+              <h3 class="text-xl font-bold">Every Zetaris query, model request and memory operation, in order</h3>
+              <div class="flex gap-3">
+                <button class="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-xl text-sm font-semibold transition-colors flex items-center gap-2">
+                  <iconify-icon icon="lucide:download"></iconify-icon> Download decision pack (JSON)
+                </button>
+                <button class="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-xl text-sm font-semibold transition-colors flex items-center gap-2">
+                  <iconify-icon icon="lucide:download"></iconify-icon> Download trace (JSONL)
+                </button>
+              </div>
+            </div>
+
+            <div class="overflow-x-auto custom-scrollbar rounded-2xl border border-white/10">
+              <table class="w-full text-left text-sm whitespace-nowrap">
+                <thead class="bg-white/5 text-gray-300 text-xs uppercase tracking-wider">
+                  <tr>
+                    <th class="p-4 font-semibold">Seq</th>
+                    <th class="p-4 font-semibold">Agent</th>
+                    <th class="p-4 font-semibold">Action</th>
+                    <th class="p-4 font-semibold">Status</th>
+                    <th class="p-4 font-semibold">Model</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-white/5">
+                  <tr class="hover:bg-white/5 transition-colors">
+                    <td class="p-4 font-mono text-gray-500">001</td>
+                    <td class="p-4">Planner</td>
+                    <td class="p-4">parse_brief</td>
+                    <td class="p-4 text-green-400">ok</td>
+                    <td class="p-4 font-mono text-gray-400">-</td>
+                  </tr>
+                  <tr class="hover:bg-white/5 transition-colors">
+                    <td class="p-4 font-mono text-gray-500">002</td>
+                    <td class="p-4">Analyst</td>
+                    <td class="p-4">project_tokens</td>
+                    <td class="p-4 text-green-400">ok</td>
+                    <td class="p-4 font-mono text-gray-400">-</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+    </div>
+  </div>
+  </div>
+</body>
+</html>
+
+
