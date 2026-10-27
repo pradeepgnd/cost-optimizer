@@ -76,8 +76,9 @@ def test_live_shaped_pack_shows_market_costs_checks_and_critic_flags():
     assert 'class="ca-sample"' not in _markdown_text(at)  # live packs may mention SAMPLE in limitations text
     assert any("market reference price" in c.value for c in at.caption)
     assert "Recommendations locked until human review" in _markdown_text(at)
+    text = _markdown_text(at).lower()
+    assert "pending human review" in text
     frames = [df.value for df in at.dataframe]
-    assert any("pending human review" in frame.to_string() for frame in frames)
     assert any("token_gap" in frame.to_string() for frame in frames)
 
 
@@ -101,12 +102,10 @@ def test_sample_run_shows_monthly_totals_with_revenue():
     next(t for t in at.text_input if t.label.startswith("Paying fraction")).set_value("0.08").run()
     next(b for b in at.button if b.label == "Run").click().run()
     assert not at.exception
-    totals = next(
-        df.value
-        for df in at.dataframe
-        if list(df.value.columns)[:3] == ["stage", "users", "monthly AI cost USD"]
-    )
-    assert totals["revenue USD"].notna().all()
+    text = _markdown_text(at)
+    assert 'class="ca-html-table"' in text
+    assert "AI cost (USD)" in text and "Revenue (USD)" in text
+    assert "$60.00" in text  # 50 users × 8% paying × $15 per paying user
     assert any("sample placeholder prices" in c.value and "AI-only" in c.value for c in at.caption)
     text = " ".join(item.value for item in at.markdown)
     assert "Recommendation" in text

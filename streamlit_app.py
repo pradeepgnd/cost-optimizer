@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import json
 import os
+from html import escape
 
 import altair as alt
 import pandas as pd
@@ -279,6 +280,47 @@ div[data-testid="stTabs"] {
   backdrop-filter: blur(24px); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2); overflow: hidden;
   padding: 0.35rem 0.35rem 0.85rem;
 }
+.ca-results-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 1.25rem; margin: 0 0 2rem; }
+.ca-results-title { display: flex; align-items: center; gap: .85rem; margin: 0 0 .45rem; color: #FFFFFF; font-size: clamp(1.55rem, 2.7vw, 2rem); font-weight: 800; letter-spacing: -.045em; white-space: nowrap; }
+.ca-results-number { display: inline-grid; place-items: center; width: 2.5rem; height: 2.5rem; flex: 0 0 2.5rem; color: #FFFFFF; background: rgba(255,255,255,.1); border-radius: 50%; font-size: 1rem; letter-spacing: 0; }
+.ca-results-run { margin: 0; color: #A3A3A3 !important; font-size: .9rem; }
+.ca-results-run code { padding: 0; color: #D4D4D4; background: transparent; font: 500 .88rem ui-monospace,monospace; }
+.ca-status {
+  display: inline-flex; flex-wrap: wrap; justify-content: flex-end; gap: .45rem; margin: 0; padding: .5rem;
+  width: max-content; max-width: 100%; margin-left: auto; color: #D4D4D4;
+  background: #171717; border: 1px solid rgba(255,255,255,.08); border-radius: 18px;
+  font: 650 .68rem/1.4 Inter,sans-serif; letter-spacing: .08em; text-transform: uppercase;
+}
+.ca-status-chip { display: inline-flex; align-items: center; padding: .32rem .7rem; color: #D4D4D4; background: rgba(255,255,255,.055); border-radius: 999px; white-space: nowrap; }
+.ca-status-chip[data-status="complete"] { color: #4ADE80; background: rgba(34,197,94,.16); }
+.ca-status-chip[data-status="partial"], .ca-status-chip[data-status="needs_input"] { color: #FDE047; background: rgba(253,224,71,.12); }
+.ca-status-chip[data-status="failed"], .ca-status-chip[data-status="error"] { color: #F87171; background: rgba(239,68,68,.15); }
+.ca-table-wrap { margin: .85rem 0 1.4rem; overflow-x: auto; border: 1px solid rgba(255,255,255,.1); border-radius: 22px; }
+.ca-html-table { width: 100%; border-collapse: collapse; color: #D4D4D4; font-size: .9rem; white-space: nowrap; }
+.ca-html-table thead { color: #D4D4D4; background: rgba(255,255,255,.055); font-size: .7rem; letter-spacing: .08em; text-transform: uppercase; }
+.ca-html-table th { padding: 1rem 1.15rem; text-align: left; font-weight: 700; }
+.ca-html-table th.numeric, .ca-html-table td.numeric { text-align: right; }
+.ca-html-table th.center, .ca-html-table td.center { text-align: center; }
+.ca-html-table td { padding: 1rem 1.15rem; border-top: 1px solid rgba(255,255,255,.055); }
+.ca-html-table tbody tr:hover { background: rgba(255,255,255,.035); }
+.ca-html-table .primary-value { color: #FDE047; font: 650 .9rem ui-monospace,monospace; }
+.ca-html-table .mono-value { color: #D4D4D4; font: 500 .86rem ui-monospace,monospace; }
+.ca-html-table .sub-value { display: block; max-width: 30rem; margin-top: .22rem; color: #A3A3A3; font: 400 .7rem/1.4 Inter,sans-serif; white-space: normal; }
+.ca-section-title { margin: 0 0 .35rem; color: #FFFFFF; font-size: 1.2rem; font-weight: 800; letter-spacing: -.025em; }
+.ca-check-title { margin: 0 0 .9rem; color: #FFFFFF; font-size: 1.2rem; font-weight: 800; letter-spacing: -.025em; }
+.ca-pill { display: inline-flex; padding: .28rem .58rem; border-radius: 6px; font-size: .7rem; font-weight: 750; }
+.ca-pill[data-tone="green"] { color: #4ADE80; background: rgba(34,197,94,.16); }
+.ca-pill[data-tone="red"] { color: #F87171; background: rgba(239,68,68,.16); }
+.ca-pill[data-tone="neutral"] { color: #D4D4D4; background: #262626; }
+.ca-pill[data-tone="yellow"] { color: #FDE047; background: rgba(253,224,71,.12); }
+.ca-pill[data-tone="blue"] { color: #60A5FA; background: rgba(59,130,246,.18); }
+.st-key-ca-selector-card { height: 100%; padding: 1rem; background: rgba(255,255,255,.025); border: 1px solid rgba(255,255,255,.08); border-radius: 20px; }
+.st-key-ca-selector-card label { color: #737373 !important; font-size: .65rem !important; font-weight: 750 !important; letter-spacing: .13em !important; text-transform: uppercase; }
+@media (max-width: 900px) {
+  .ca-results-head { align-items: flex-start; flex-direction: column; }
+  .ca-status { justify-content: flex-start; width: auto; margin-left: 0; }
+  .ca-html-table th, .ca-html-table td { padding: .75rem .8rem; }
+}
 div[data-testid="stTabs"] [role="tablist"] {
   gap: 0.4rem; padding: 0.4rem; border-radius: 0;
   background: transparent; border: none; border-bottom: 1px solid rgba(255, 255, 255, 0.1);
@@ -429,7 +471,6 @@ WAVE = """<svg class="ca-wave" viewBox="0 0 1440 120" preserveAspectRatio="none"
 <path fill="#0A0A0A" d="M0,120 C320,0 720,150 1440,40 L1440,120 L0,120 Z"></path>
 </svg>"""
 
-
 def step(number: int, title: str, hint: str = ""):
     st.markdown(
         f'<div class="ca-step"><b>{number}</b><div>{title}'
@@ -440,7 +481,7 @@ def step(number: int, title: str, hint: str = ""):
 
 
 def stage_chart(frame: pd.DataFrame, series: str, value: str):
-    """Monthly cost per stage, one line per series; stages stay in growth order (a plain line chart sorts them A-Z)."""
+    """Monthly cost per stage in the Hyper-Saturated Fluid palette."""
     order = list(dict.fromkeys(frame["stage"]))
     chart = (
         alt.Chart(frame.dropna(subset=[value]))
@@ -469,7 +510,6 @@ def stage_chart(frame: pd.DataFrame, series: str, value: str):
     st.markdown('<div class="ca-chart-wrap">', unsafe_allow_html=True)
     st.altair_chart(chart, width="stretch")
     st.markdown("</div>", unsafe_allow_html=True)
-
 
 def num(value):
     try:
@@ -542,7 +582,6 @@ def price_data(sample: bool) -> str:
         return found["path"]
     st.error("Price data not found: " + found["problem"] + (f" ({found['path']})" if found["path"] else ""))
     return ""
-
 
 def form(example: str, sample: bool, bindings: str):
     template = svc.load_template(example)
@@ -679,31 +718,66 @@ def cost_rows(pack: dict) -> tuple[list[dict], str]:
     ], label
 
 
+def html_table(
+    headers: list[str], rows: list[list[str]], *, numeric: set[int] | None = None, center: set[int] | None = None
+) -> str:
+    """Compact, semantic table for the static result views; cell markup is prepared and escaped by each caller."""
+    numeric = numeric or set()
+    center = center or set()
+    head_cells = []
+    for i, label in enumerate(headers):
+        class_name = ' class="numeric"' if i in numeric else ' class="center"' if i in center else ""
+        head_cells.append(f'<th scope="col"{class_name}>{escape(label)}</th>')
+    body_rows = []
+    for row in rows:
+        cells = []
+        for i, cell in enumerate(row):
+            class_name = ' class="numeric"' if i in numeric else ' class="center"' if i in center else ""
+            cells.append(f"<td{class_name}>{cell}</td>")
+        body_rows.append("<tr>" + "".join(cells) + "</tr>")
+    head, body = "".join(head_cells), "".join(body_rows)
+    return (
+        '<div class="ca-table-wrap" role="region" aria-label="Scrollable results table" tabindex="0">'
+        '<table class="ca-html-table"><thead><tr>' + head + "</tr></thead><tbody>" + body + "</tbody></table></div>"
+    )
+
+
+def display_number(value, *, currency: bool = False) -> str:
+    amount = num(value)
+    if amount is None:
+        return "—"
+    return f"${amount:,.2f}" if currency else f"{amount:,.0f}"
+
+
 SCENARIO_LABEL = {
     "cheapest_per_feature": "Cheapest model per feature (cost only, quality not checked)",
     "recommended": "Recommended stack (quality-qualified models only)",
 }
 
 
-def pipeline_view(events: list[dict], summary: dict):
+def pipeline_view(events: list[dict], summary: dict, *, complete: bool = False):
     """Founder-facing Planner → Analyst → Critic highlight strip; raw steps stay under an expander."""
     phases = svc.pipeline_phases(events)
+    copy = {"Planner": "Design tests", "Analyst": "Run models", "Critic": "Review outputs"}
     cells = []
     for phase in phases:
-        detail = phase.get("detail") or ("in progress" if phase["state"] == "active" else "")
-        mark = "✓" if phase["state"] in ("active", "done") else "·"
+        state = "done" if complete else phase["state"]
+        detail = "" if complete else (phase.get("detail") or ("in progress" if state == "active" else ""))
+        mark = "✓" if state in ("active", "done") else "·"
+        name = str(phase.get("name", ""))
         cells.append(
-            f'<div class="ca-phase" data-state="{phase["state"]}">'
+            f'<div class="ca-phase" data-state="{escape(state)}">'
             f'<span class="ca-phase-mark" aria-hidden="true">{mark}</span>'
-            f'<div><strong>{phase["name"]}</strong><span>{phase["copy"]}</span>'
-            + (f"<em>{detail}</em>" if detail else "")
+            f'<div><strong>{escape(name)}</strong><span>{escape(copy.get(name, str(phase.get("copy", ""))))}</span>'
+            + (f"<em>{escape(str(detail))}</em>" if detail else "")
             + "</div></div>"
         )
     st.markdown('<div class="ca-pipeline">' + "".join(cells) + "</div>", unsafe_allow_html=True)
-    st.caption(
-        f"{summary['latest']} · {summary['steps']} trace steps · {summary['model_requests']} model requests"
-        + (f" · {summary['errors']} errors" if summary["errors"] else "")
-    )
+    if not complete:
+        st.caption(
+            f"{summary['latest']} · {summary['steps']} trace steps · {summary['model_requests']} model requests"
+            + (f" · {summary['errors']} errors" if summary["errors"] else "")
+        )
 
 
 def totals_view(pack: dict):
@@ -717,10 +791,33 @@ def totals_view(pack: dict):
         else "actual_route"
     )
     scoped = [t for t in totals if t["pricing_scope"] == scope]
-    st.markdown("**Monthly AI cost, all features together**")
-    label = lambda o: SCENARIO_LABEL.get(o[0]) or f"Same model for every feature: {o[1].removeprefix('openrouter/')}"
+    heading, picker = st.columns([3.4, 1.2], vertical_alignment="center")
+    with heading:
+        st.markdown('<h3 class="ca-section-title">Monthly AI cost, all features together</h3>', unsafe_allow_html=True)
+        st.caption("Priced by stage · lower bound when costs are unknown · build costs are separate")
+    label = lambda o: (
+        "Cheapest · cost only"
+        if o[0] == "cheapest_per_feature"
+        else SCENARIO_LABEL.get(o[0]) or f"Same model for every feature: {o[1].removeprefix('openrouter/')}"
+    )
     options = {label(key): key for key in dict.fromkeys((t["scenario"], t["model_id"]) for t in scoped)}
-    choice = options[st.selectbox("How models are chosen", list(options), key="total_scenario")]
+    option_labels = list(options)
+    default_key = next(
+        (
+            key
+            for key in options.values()
+            if any(
+                (t["scenario"], t["model_id"]) == key and num(t.get("monthly_usd")) is not None
+                for t in scoped
+            )
+        ),
+        next(iter(options.values())),
+    )
+    default_index = next(i for i, option in enumerate(option_labels) if options[option] == default_key)
+    with picker:
+        with st.container(key="ca-selector-card"):
+            selected = st.selectbox("How models are chosen", option_labels, index=default_index, key="total_scenario")
+    choice = options[selected]
     rows = [t for t in scoped if (t["scenario"], t["model_id"]) == choice]
     frame = pd.DataFrame(
         [
@@ -740,7 +837,32 @@ def totals_view(pack: dict):
             for t in rows
         ]
     )
-    st.dataframe(frame, width="stretch", hide_index=True)
+    summary_rows = []
+    for row in frame.to_dict("records"):
+        budget = str(row["budget"] or "unknown")
+        budget_key = budget.lower().replace(" ", "_")
+        tone = "green" if budget_key == "under" else "red" if budget_key == "over" else "yellow" if budget_key == "unknown" else "neutral"
+        cost = display_number(row["monthly AI cost USD"], currency=True)
+        lead = "≥ " if bool(row["lower bound"]) and cost != "—" else ""
+        summary_rows.append(
+            [
+                escape(str(row["stage"])),
+                display_number(row["users"]),
+                f'<span class="primary-value" title="Lower bound" >{lead}{cost}</span>',
+                f'<span class="mono-value">{display_number(row["revenue USD"], currency=True)}</span>',
+                f'<span class="mono-value">{escape(str(row["AI margin"] or "—"))}</span>',
+                f'<span class="ca-pill" data-tone="{tone}">{escape(budget.title())}</span>',
+            ]
+        )
+    st.markdown(
+        html_table(
+            ["Stage", "Users", "AI cost (USD)", "Revenue (USD)", "Margin", "Budget fit"],
+            summary_rows,
+            numeric={2, 3, 4},
+            center={5},
+        ),
+        unsafe_allow_html=True,
+    )
     over = next((t for t in rows if t["budget_fit"] == "over"), None)
     if over:
         st.warning(
@@ -768,23 +890,21 @@ def totals_view(pack: dict):
         ]
     )
     if not compare.empty:
-        stage_chart(compare, "choice", "USD")
+        with st.expander("Compare cost scenarios", expanded=False):
+            stage_chart(compare, "choice", "USD")
     st.divider()
 
 
-def status_line(pack: dict):
-    ok = pack["status"] == "complete"
-    status_cls = "ca-pill ca-pill-ok" if ok else "ca-pill"
-    spend = pack["spend_usd"]
-    spend_txt = f"${spend}" if not str(spend).startswith("$") else str(spend)
-    st.markdown(
-        '<div class="ca-status" role="status">'
-        f'<span class="{status_cls}">Status: <b>{pack["status"]}</b></span>'
-        f'<span class="ca-pill">Mode: <span class="ca-mono">{pack["execution_mode"]}</span></span>'
-        f'<span class="ca-pill">Spend: <span class="ca-mono">{spend_txt}</span></span>'
-        f'<span class="ca-pill">Reqs: <span class="ca-mono">{pack["dispatch_count"]}</span></span>'
-        "</div>",
-        unsafe_allow_html=True,
+def status_line(pack: dict) -> str:
+    status = str(pack["status"])
+    mode = str(pack["execution_mode"])
+    return (
+        '<div class="ca-status" aria-label="Run status">'
+        f'<span class="ca-status-chip" data-status="{escape(status.lower())}">Status: {escape(status)}</span>'
+        f'<span class="ca-status-chip">Mode: {escape(mode)}</span>'
+        f'<span class="ca-status-chip">Spend: {display_number(pack["spend_usd"], currency=True)}</span>'
+        f'<span class="ca-status-chip">Reqs: {escape(str(pack["dispatch_count"]))}</span>'
+        '</div>'
     )
 
 
@@ -817,9 +937,18 @@ def recommendation_view(pack: dict):
 
 
 def results(pack: dict):
-    step(3, "DecisionPack Results", f"Run {pack['run_id']}")
-    status_line(pack)
+    st.markdown(
+        '<header class="ca-results-head"><div><h2 class="ca-results-title">'
+        '<span class="ca-results-number">3</span>DecisionPack Results</h2>'
+        f'<p class="ca-results-run">Run <code>{escape(str(pack["run_id"]))}</code></p></div>'
+        + status_line(pack)
+        + '</header>',
+        unsafe_allow_html=True,
+    )
     status = pack["status"]
+    events = [json.loads(line) for line in svc.trace_text(pack).splitlines() if line.strip()]
+    summary, _ = svc.progress_rows(events)
+    pipeline_view(events, summary, complete=status == "complete")
     if status != "complete":
         st.info("This result is " + status + ". Missing or unknown evidence is listed below, not filled in.")
         if svc.outbox_hint(pack):
@@ -829,14 +958,6 @@ def results(pack: dict):
             st.error("Why it stopped: " + why)
             if svc.setup_hint(why):
                 st.warning(svc.setup_hint(why))
-    for item in pack.get("questions", []):
-        st.write("- " + item)
-
-    events = [json.loads(line) for line in svc.trace_text(pack).splitlines() if line.strip()]
-    if events:
-        summary, _ = svc.progress_rows(events)
-        pipeline_view(events, summary)
-
     recommendation_view(pack)
     tabs = st.tabs(
         [
@@ -851,6 +972,28 @@ def results(pack: dict):
 
     with tabs[0]:
         totals_view(pack)
+        st.markdown("**Measured versus estimated tokens**")
+        token_rows = []
+        for run in runs:
+            executed = bool(run.get("executed"))
+            state_label = "Measured" if executed else "Projected only"
+            detail = str(run.get("model_id") or "")
+            reason = str(run.get("not_executed_reason") or "")
+            if reason:
+                detail += (" · " if detail else "") + reason
+            token_rows.append(
+                [
+                    escape(str(run["feature_id"]))
+                    + (f'<span class="sub-value">{escape(detail)}</span>' if detail else ""),
+                    f'<span class="ca-pill" data-tone="{"green" if executed else "neutral"}">{state_label}</span>',
+                    f'<span class="mono-value">{display_number(run["estimated"].get("output_tokens"))}</span>',
+                    f'<span class="mono-value">{display_number((run.get("measured_mean") or {}).get("output_tokens"))}</span>',
+                ]
+            )
+        st.markdown(
+            html_table(["Feature", "State", "Est. output", "Meas. output"], token_rows, numeric={2, 3}),
+            unsafe_allow_html=True,
+        )
         st.markdown("**What each feature would cost per month as you grow**")
         if not rows:
             st.write("No cost rows in this pack.")
@@ -865,28 +1008,9 @@ def results(pack: dict):
                 "are projected only (the model was not run). Lower bound: some lines, such as reasoning, are not "
                 "priced. This is not your Nightshift bill and not a recommendation."
             )
-        st.markdown("**Measured versus estimated tokens**")
-        st.dataframe(
-            pd.DataFrame(
-                [
-                    {
-                        "feature": r["feature_id"],
-                        "model": r["model_id"],
-                        "state": "measured" if r["executed"] else "projected only",
-                        "estimated output tokens": r["estimated"]["output_tokens"],
-                        "measured output tokens": (r.get("measured_mean") or {}).get("output_tokens"),
-                        "measured / estimated": r.get("output_gap_ratio"),
-                        "why not run": r.get("not_executed_reason") or "",
-                    }
-                    for r in runs
-                ]
-            ),
-            width="stretch",
-            hide_index=True,
-        )
 
     with tabs[1]:
-        st.markdown("**Deterministic checks decide quality. The Critic only flags.**")
+        st.markdown('<h3 class="ca-check-title">Deterministic checks decide quality. The Critic only flags.</h3>', unsafe_allow_html=True)
         checks = [
             {"feature": r["feature_id"], "model": r["model_id"], "check": name, "result": "pass" if ok else "fail"}
             for r in runs
@@ -905,7 +1029,22 @@ def results(pack: dict):
             for name in r["rubric"].get("pending", [])
         ]
         if checks:
-            st.dataframe(pd.DataFrame(checks), width="stretch", hide_index=True)
+            check_rows = []
+            for check in checks:
+                result = str(check["result"])
+                tone = "green" if result == "pass" else "red" if result == "fail" else "blue"
+                check_rows.append(
+                    [
+                        escape(str(check["feature"])),
+                        escape(str(check["model"])),
+                        escape(str(check["check"])),
+                        f'<span class="ca-pill" data-tone="{tone}">{escape(result.title())}</span>',
+                    ]
+                )
+            st.markdown(
+                html_table(["Feature", "Model", "Check", "Result"], check_rows, center={3}),
+                unsafe_allow_html=True,
+            )
         else:
             st.write("No outputs were checked (no model was run).")
         st.markdown(
@@ -925,6 +1064,10 @@ def results(pack: dict):
             )
 
     with tabs[2]:
+        if pack.get("questions"):
+            st.markdown("**Questions to resolve**")
+            for item in pack["questions"]:
+                st.write("- " + item)
         if pack["risks"]:
             st.dataframe(
                 pd.DataFrame([{k: r.get(k) for k in ("severity", "description", "origin")} for r in pack["risks"]]),
