@@ -8,7 +8,9 @@
   Open PowerShell (not as admin unless Docker prompts for it) and run:
     Set-ExecutionPolicy -Scope Process Bypass
     .\preflight_windows.ps1
-  Optional, once runtimes are running and you have credentials:
+  Once the runtimes are running and the project's .env is filled in, the connectivity checks read
+  ZETARIS_REST_URL, ZETARIS_ORG_ID, ZETARIS_API_KEY, METERLESS_BASE_URL and METERLESS_RUNTIME_TOKEN from it.
+  A value passed on the command line wins; -NoDotenv ignores .env:
     .\preflight_windows.ps1 -ZetarisUrl http://localhost:8888/api/v1.0 -ZetarisOrgId 1 -ZetarisApiKey $env:ZETARIS_API_KEY `
                             -NightshiftUrl http://127.0.0.1:8088/v1 -NightshiftToken $env:METERLESS_RUNTIME_TOKEN
 
@@ -24,12 +26,34 @@ param(
   [string]$NightshiftUrl = "",
   [string]$NightshiftToken = "",
   [string]$ReportPath = ".\preflight_report.md",
-  [string]$PythonExecutable = "python"
+  [string]$PythonExecutable = "python",
+  [switch]$NoDotenv
 )
 
 $ErrorActionPreference = "Continue"
 $results = New-Object System.Collections.Generic.List[object]
 $projectRoot = Split-Path $PSScriptRoot -Parent
+
+# Fill settings not passed on the command line from the project's .env, as the Python scripts do.
+# Only the names taken from .env are reported; values stay in this process.
+$fromDotenv = @()
+$dotenvPath = Join-Path $projectRoot ".env"
+if (-not $NoDotenv -and (Test-Path $dotenvPath)) {
+  $dotenv = @{}
+  foreach ($line in Get-Content $dotenvPath) {
+    if ($line -match '^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*?)\s*$') {
+      $value = $Matches[2].Trim('"').Trim("'")
+      if ($value -and -not ($value.StartsWith("<") -or $value.StartsWith("your-"))) { $dotenv[$Matches[1]] = $value }
+    }
+  }
+  foreach ($pair in @(@("ZetarisUrl", "ZETARIS_REST_URL"), @("ZetarisOrgId", "ZETARIS_ORG_ID"), @("ZetarisApiKey", "ZETARIS_API_KEY"),
+                      @("NightshiftUrl", "METERLESS_BASE_URL"), @("NightshiftToken", "METERLESS_RUNTIME_TOKEN"))) {
+    if (-not (Get-Variable -Name $pair[0] -ValueOnly) -and $dotenv.ContainsKey($pair[1])) {
+      Set-Variable -Name $pair[0] -Value $dotenv[$pair[1]]
+      $fromDotenv += $pair[1]
+    }
+  }
+}
 
 function Add-Check {
   param([string]$Area, [string]$Check, [string]$Status, [string]$Detail)
@@ -47,6 +71,8 @@ function Test-SelectOneBody {
   $Body | & $PythonExecutable -c $validator $projectRoot 2>$null | Out-Null
   return ($LASTEXITCODE -eq 0)
 }
+
+if ($fromDotenv.Count) { Add-Check "Settings" "Read from .env" "INFO" ($fromDotenv -join ", ") }
 
 # Thresholds from the Participant Setup Guide / Technical Execution Guide
 $MinHostRamGB   = 16

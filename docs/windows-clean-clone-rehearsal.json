@@ -1,0 +1,277 @@
+{
+  "kind": "windows_clean_clone_rehearsal",
+  "date": "2026-10-27",
+  "summary": "README-only setup from a fresh clone of pradeepgnd/cost-optimizer main on Windows 11, with prices registered on real AWS S3 and read through local Zetaris, then two live runs from the Streamlit UI. $0 spend.",
+  "host": {
+    "os": "Windows 11 Pro 10.0.26200",
+    "wsl": "WSL2 (Ubuntu)",
+    "docker": "Docker Desktop, server 29.8.0, 8 CPUs, 15.6 GB",
+    "python": "3.13.14 in .venv (README names 3.12; 3.12 is not installed on this host)",
+    "node": "v24.15.0",
+    "nightshift": "local, NVIDIA Developer Program key (free) and OpenRouter key in Providers"
+  },
+  "repository": {
+    "source": "https://github.com/pradeepgnd/cost-optimizer",
+    "commit": "5cd41e4",
+    "fresh_clone": true,
+    "followed": "README Quick start, Level 1, Test live from start steps 1-8, Level 2"
+  },
+  "offline": {
+    "pytest": "621 passed, 8 skipped (shelved retrospective); the real H-MEM test ran",
+    "check_sample_examples": "3 of 3 PASS",
+    "sample_run_example_1": "complete, 0 dispatches"
+  },
+  "sources": {
+    "catalog": {
+      "snapshot_id": "8223969977fb8e8037cfac8d",
+      "records": 457,
+      "rejected": 7,
+      "upstream": 464,
+      "acquisition": "https_api"
+    },
+    "discovery": {
+      "routes": 128,
+      "by_provider": {
+        "meterless": 18,
+        "openrouter": 42,
+        "nvidia": 13,
+        "local-runtime": 55
+      },
+      "completion_requests": 0,
+      "note": "Before the OpenRouter key was added in Nightshift: 86 routes and only 2 priced models."
+    },
+    "bundle": {
+      "snapshot_id": "cd08406389b3f3d4dc555621",
+      "counts": {
+        "briefs": 1,
+        "catalog": 457,
+        "models": 44
+      }
+    }
+  },
+  "aws_registration": {
+    "status": "pass",
+    "storage": "aws",
+    "bucket": "cost-optimizer-oah-k7m2q",
+    "region": "us-east-1",
+    "prefix": "cost-optimizer/v4/bundles/cd08406389b3f3d4dc555621/",
+    "objects_published": 9,
+    "tables": [
+      {
+        "kind": "briefs",
+        "table": "briefs_cd08406389b3f3d4dc555621",
+        "state": "created",
+        "rows": 1
+      },
+      {
+        "kind": "catalog",
+        "table": "catalog_cd08406389b3f3d4dc555621",
+        "state": "created",
+        "rows": 457
+      },
+      {
+        "kind": "models",
+        "table": "models_cd08406389b3f3d4dc555621",
+        "state": "created",
+        "rows": 44
+      }
+    ],
+    "current_pointer_updated": false,
+    "credentials": "Publisher wrote with short-lived aws login credentials. Zetaris reads with the read-only zetaris-s3-reader key, typed into masked prompts for that terminal only; never in .env or any report."
+  },
+  "zetaris_check": {
+    "run_id": "win-clean-002",
+    "status": "pass",
+    "model_completions": 0,
+    "checks": [
+      {
+        "check": "SELECT 1",
+        "status": "pass"
+      },
+      {
+        "check": "typed pinned model read",
+        "status": "pass"
+      },
+      {
+        "check": "typed founder brief read",
+        "status": "pass"
+      },
+      {
+        "check": "queried catalog reference arithmetic",
+        "status": "pass"
+      },
+      {
+        "check": "fixture write/readback, append, restart and duplicate write",
+        "status": "pass"
+      }
+    ]
+  },
+  "m08_gate": {
+    "status": "incomplete",
+    "routes": [
+      {
+        "role": "frontier",
+        "route_id": "nvidia/nemotron-3-ultra-550b-a55b",
+        "discovered": true,
+        "registered": true,
+        "billing_gate": "pass"
+      },
+      {
+        "role": "mid_tier",
+        "route_id": "nvidia/nemotron-3.5-lightning-30b-a3b",
+        "discovered": true,
+        "registered": true,
+        "billing_gate": "pass"
+      }
+    ],
+    "why_incomplete": "routes.selected.json ships with mapping_status 'planned'; the gate requires an observed mapping. Every route check passed."
+  },
+  "smoke_live": {
+    "result": "4 pass, 0 fail, 2 skip (paid completions disabled by default)",
+    "rows": [
+      {
+        "component": "Zetaris",
+        "check": "SELECT 1",
+        "result": "PASS",
+        "detail": "Validated exactly one cell with value 1"
+      },
+      {
+        "component": "Zetaris",
+        "check": "read_models",
+        "result": "PASS",
+        "detail": "44 model rows"
+      },
+      {
+        "component": "Nightshift",
+        "check": "GET /v1/models",
+        "result": "PASS",
+        "detail": "128 routes offered"
+      },
+      {
+        "component": "Nightshift",
+        "check": "completion: Planner",
+        "result": "SKIP",
+        "detail": "paid diagnostic execution disabled; set a positive --max-spend-usd allowance with verified billing evidence"
+      },
+      {
+        "component": "Nightshift",
+        "check": "completion: Critic",
+        "result": "SKIP",
+        "detail": "paid diagnostic execution disabled; set a positive --max-spend-usd allowance with verified billing evidence"
+      },
+      {
+        "component": "H-MEM",
+        "check": "bridge self-test",
+        "result": "PASS",
+        "detail": "pinned revision 1742dec56a66e58eef9dda2d2b865823758ca8cd; JSON status, persistence, isolation and audit ok"
+      }
+    ]
+  },
+  "preflight": "From the clean clone (main): machine checks PASS, but the connectivity checks SKIP because main's preflight takes the key and token only as parameters, so the README command gives INCOMPLETE. With the fix that reads them from .env: PREFLIGHT CHECKS PASS (SELECT 1 validated, 128 routes), no secret in the report. The full credentialed preflight also passed on this host on 2026-10-26 (aws-registration-check.json).",
+  "live_ui_runs": [
+    {
+      "run_id": "ui-20261027-014226",
+      "idea": "Idea C · Writing (example_3)",
+      "features": 2,
+      "evaluation_approved": true,
+      "max_spend_usd": "0.50",
+      "status": "complete",
+      "execution_mode": "live",
+      "dispatch_count": 10,
+      "spend_usd": "0",
+      "operations_by_role": {
+        "Planner": 1,
+        "Analyst": 8,
+        "Critic": 1
+      },
+      "all_operations_completed": true,
+      "requested_equals_resolved": true,
+      "nemotron_roles": {
+        "Planner": {
+          "requested": "nvidia/nemotron-3.5-lightning-30b-a3b",
+          "resolved": "nvidia/nemotron-3.5-lightning-30b-a3b",
+          "provider_request_id": "chatcmpl-62680673-71d8-48f3-ae1f-f79fede10408",
+          "state": "completed"
+        },
+        "Critic": {
+          "requested": "nvidia/nemotron-3-ultra-550b-a55b",
+          "resolved": "nvidia/nemotron-3-ultra-550b-a55b",
+          "provider_request_id": "chatcmpl-0c738d7a-fa15-41f5-899c-355ec9df4e41",
+          "state": "completed"
+        }
+      },
+      "evidence_refs_by_source_set": {
+        "pricing_snapshots": 44,
+        "catalog": 3,
+        "evaluation_evidence": 9
+      },
+      "evidence_written_back_and_read_back": 9,
+      "unpublished_evidence_ids": []
+    },
+    {
+      "run_id": "ui-20261027-015024",
+      "idea": "Idea A · Speech (example_1)",
+      "features": 4,
+      "evaluation_approved": true,
+      "max_spend_usd": "0.50",
+      "status": "complete",
+      "execution_mode": "live",
+      "dispatch_count": 10,
+      "spend_usd": "0",
+      "operations_by_role": {
+        "Planner": 1,
+        "Analyst": 8,
+        "Critic": 1
+      },
+      "all_operations_completed": true,
+      "requested_equals_resolved": true,
+      "nemotron_roles": {
+        "Planner": {
+          "requested": "nvidia/nemotron-3.5-lightning-30b-a3b",
+          "resolved": "nvidia/nemotron-3.5-lightning-30b-a3b",
+          "provider_request_id": "chatcmpl-2f35b124-7adb-4c83-8892-1f38ccfa1172",
+          "state": "completed"
+        },
+        "Critic": {
+          "requested": "nvidia/nemotron-3-ultra-550b-a55b",
+          "resolved": "nvidia/nemotron-3-ultra-550b-a55b",
+          "provider_request_id": "chatcmpl-b882c422-e56b-47d3-8b1b-1fe0d70d2369",
+          "state": "completed"
+        }
+      },
+      "evidence_refs_by_source_set": {
+        "pricing_snapshots": 44,
+        "catalog": 5,
+        "evaluation_evidence": 9
+      },
+      "evidence_written_back_and_read_back": 9,
+      "unpublished_evidence_ids": []
+    }
+  ],
+  "findings": [
+    {
+      "finding": "register_sources.py read the ZETARIS_BINDINGS_FILE named in .env, which it is meant to create; bare FileNotFoundError on a clean clone",
+      "fix": "registration ignores that setting and names the missing setting or file (commit cf209eb)"
+    },
+    {
+      "finding": "Switching the idea after a run kept the old run ID and result; the second idea showed the first idea's result",
+      "fix": "mode or idea change starts a new run; a run ID that ran a different request is refused (commit c6e9d35)"
+    },
+    {
+      "finding": "Idea picker read Idea A, Idea B, Idea 3",
+      "fix": "renamed to Idea C (commit 9cff702)"
+    },
+    {
+      "finding": "preflight_windows.ps1 took the Zetaris key and Nightshift token only as parameters, so a README run reported INCOMPLETE",
+      "fix": "missing settings are read from .env; command-line values win; -NoDotenv ignores .env"
+    },
+    {
+      "finding": ".env.example lacked SOURCE_INGEST_URL, which the README requires",
+      "fix": "added"
+    },
+    {
+      "finding": "check_m08_gate.py reports incomplete on a clean clone because the committed route map is 'planned'",
+      "fix": "open; README now says what to expect"
+    }
+  ]
+}

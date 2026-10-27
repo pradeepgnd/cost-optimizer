@@ -2,13 +2,16 @@
 from pathlib import Path
 import argparse
 import json
+import os
 import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
+from app.adapters.base import SetupIncomplete
 from app.adapters.live_zetaris import ZetarisDataLayer
 from app.source_contracts import StorageConfig
 from app.source_registry import bundle_plan, register_bundle
+from app.trace import _mask
 
 
 def main():
@@ -28,6 +31,8 @@ def main():
             if not args.no_dotenv:
                 from dotenv import load_dotenv
                 load_dotenv(ROOT / ".env")
+            # This script writes the bindings file; on a clean clone the one named in .env does not exist yet.
+            os.environ.pop("ZETARIS_BINDINGS_FILE", None)
             layer = ZetarisDataLayer()
             report = register_bundle(layer, args.bundle, config)
             if args.bindings_output:
@@ -44,8 +49,14 @@ def main():
         print(json.dumps(summary, indent=2))
         return 0
     except Exception as error:
-        print(json.dumps({"status": "fail", "error_type": type(error).__name__,
-            "message": "Publication/registration not accepted. Existing sources were not dropped or replaced."}), file=sys.stderr)
+        failure = {"status": "fail", "error_type": type(error).__name__,
+                   "message": "Publication/registration not accepted. Existing sources were not dropped or replaced."}
+        if isinstance(error, SetupIncomplete):
+            # Setup messages name missing settings, never their values; masking is a second guard.
+            failure["setup_issue"] = str(_mask(str(error)))[:300]
+        elif isinstance(error, FileNotFoundError) and error.filename:
+            failure["missing_file"] = str(error.filename)
+        print(json.dumps(failure), file=sys.stderr)
         return 1
     finally:
         if layer:
