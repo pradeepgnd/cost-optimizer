@@ -569,6 +569,34 @@ def status_line(pack: dict):
     )
 
 
+def recommendation_view(pack: dict):
+    """One frontier model and one open-source model, after the run has costed them."""
+    picks = svc.tier_recommendations(pack)
+    if not picks:
+        return
+    st.markdown("**Recommendation**")
+    st.caption("One frontier model and one open-source model from the models compared in this run. "
+               "Each is the cheapest of its tier that still fits your monthly AI budget at the furthest growth stage. "
+               "With no budget, each is the cheapest at your largest stage. "
+               "If a model is not priced for every feature, the card names the features left out. "
+               "This is a cost fit for the requirements you entered. "
+               "A model is quality-qualified only when every critical check, including human review, passes.")
+    titles = {"frontier": "Frontier", "open_source": "Open source"}
+    fit_label = {"within": "within budget", "over": "over budget", "unknown": "budget fit unknown",
+                 "no_budget": "no budget set"}
+    cols = st.columns(2)
+    for col, pick in zip(cols, picks):
+        with col:
+            with st.container(border=True):
+                st.markdown(f"**{titles[pick['tier']]}**")
+                if pick["model_id"]:
+                    st.markdown(f"`{pick['model_id'].removeprefix('openrouter/')}`")
+                    st.metric("Monthly AI cost (USD)", pick["monthly_usd"])
+                    st.caption(f"{pick['stage']} · {pick['active_users']} users · {pick['token_basis']} tokens · "
+                               f"{fit_label.get(pick['budget_fit'], pick['budget_fit'])}")
+                st.markdown(pick["reason"])
+
+
 def results(pack: dict):
     step(3, "Results", f"DecisionPack for run {pack['run_id']}")
     status_line(pack)
@@ -585,6 +613,7 @@ def results(pack: dict):
     for item in pack.get("questions", []):
         st.write("- " + item)
 
+    recommendation_view(pack)
     tabs = st.tabs(
         [
             "Cost by stage",
