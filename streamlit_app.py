@@ -606,6 +606,11 @@ def banner(pack: dict | None, sample: bool):
         )
 
 
+def start_new_run():
+    """A different mode or idea is a different run: give it a fresh run ID and drop the previous result."""
+    st.session_state["run_id"], st.session_state["outcome"] = svc.new_run_id(), None
+
+
 def controls() -> tuple[str, bool]:
     """Yellow liquid hero: Cost.Advisor wordmark, controls, headline, and calculator art."""
     with st.container(key="hero"):
@@ -618,6 +623,7 @@ def controls() -> tuple[str, bool]:
                         ["Sample (offline)", "Live"],
                         key="mode",
                         horizontal=True,
+                        on_change=start_new_run,
                         label_visibility="collapsed",
                     )
                     example = st.selectbox(
@@ -625,6 +631,7 @@ def controls() -> tuple[str, bool]:
                         svc.list_examples(),
                         format_func=svc.example_label,
                         key="example",
+                        on_change=start_new_run,
                         label_visibility="collapsed",
                     )
         with st.container(key="hero-copy-row"):

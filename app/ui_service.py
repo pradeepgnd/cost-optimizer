@@ -173,10 +173,17 @@ def read_events(path: Path, start: int = 0) -> tuple[list[dict], int]:
 def submit_run(request: dict, *, sample: bool, env_extra: dict | None = None, timeout_s: int = 900,
                on_progress=None, poll_s: float = 0.5) -> dict:
     """Run once per run ID. A second call returns the stored result and never invokes `run.py` again.
+    A second call with a different request is refused, so a changed brief never shows an earlier run's result.
     While the run is going, `on_progress(events)` receives the trace events written so far (read-only)."""
     run_id = request["run_id"]
     existing = load_result(run_id)
     if existing is not None:
+        stored = UI_DIR / f"{run_id}.request.json"
+        if stored.exists() and json.loads(stored.read_text(encoding="utf-8")) != json.loads(json.dumps(request)):
+            return {"result": {"code": "run_id_reused",
+                               "message": f"Run ID {run_id} already ran with a different brief or settings, so nothing "
+                                          "was run. Press New run, then Run."},
+                    "reused": False, "exit_code": None}
         return {"result": existing, "reused": True, "exit_code": None}
     UI_DIR.mkdir(parents=True, exist_ok=True)
     input_path, output_path = UI_DIR / f"{run_id}.request.json", result_path(run_id)

@@ -9,9 +9,9 @@ Updated 2026-10-26. The step-by-step plan and findings table are in [08-v4-Imple
 | M00 Baseline and recovery inventory | PASS, scoped | below |
 | M01 Input contracts and founder controls | PASS, scoped | below |
 | M02 Composed cost levers | PASS, scoped | below |
-| M03 Trace evidence and truthful readiness | PASS, scoped (Windows unverified) | below |
+| M03 Trace evidence and truthful readiness | PASS, scoped; Windows preflight PASS (2026-10-26) | below |
 | M04 Bounded dispatch, spend and restart safety | PASS, scoped | below |
-| M05–M06 Source pipeline and Zetaris evidence round trip | PASS for components; usage-rights review and real AWS/IAM unverified | below |
+| M05–M06 Source pipeline and Zetaris evidence round trip | PASS for components on LocalStack and on real AWS S3 from a Windows host (2026-10-26, 2026-10-27); usage-rights review unverified | below |
 | M07 Real H-MEM, offline delegation | PASS, local reference scope | below |
 | M08 Nightshift identity and first live pack | Superseded by R1 and R5, both PASS | below |
 | R0 Requirement split | Decided and written into `07` v4.3 and `CLAUDE.md`; Narin sign-off and the official rule quote still open | `07` §4, `docs/17` §2 |
@@ -28,7 +28,7 @@ Updated 2026-10-26. The step-by-step plan and findings table are in [08-v4-Imple
 | R9 Stage totals, revenue, budget fit (was M12) | PASS, offline arithmetic and UI; recommended-stack totals stay unknown until R7 | R9 entry below |
 | R10 Streamlit workflow (was M13) | Trimmed version: live runs from the UI PASS, founder candidate picks, revenue inputs, totals and a live progress panel; no human-review controls (R7); layout not reviewed in a browser | R10 entries below |
 | Live proof runs (published) | PASS: examples 1–3 and an H-MEM recall run, all `complete`, $0, evidence written back (2026-10-27) | `output_examples/live/`, entry below |
-| R11 Release rehearsal (was M14) | In progress: clean-clone rehearsal on a second machine PASS in sample mode; live re-registration on a clean clone, video and deck pending | R11 entry below |
+| R11 Release rehearsal (was M14) | In progress: sample-mode clean clone on a second machine PASS; live clean clone on Windows with real AWS S3 PASS after two fixes (2026-10-27); video and deck pending | R11 entries below |
 
 ## Open items and caveats before submission
 
@@ -38,14 +38,14 @@ Updated 2026-10-26. The step-by-step plan and findings table are in [08-v4-Imple
 - **Estimates versus measurements:** estimates include the brief's assumed production system prompt, which evaluation calls do not send; measured rows may understate an app that sends one (open modelling decision).
 - **Audio:** no audio-output route exists, and audio-input candidates have no audio conversion rate, so their cost is unknown.
 - **Sponsor readiness:** `scripts/smoke_live.py` passed on 2026-10-26 (R11a below) at diagnostic scope. Pack `readiness` still reads `not_verified`: billing and in-run evidence readback are separate dimensions, and this is not end-to-end sponsor proof. Re-run it on the final setup before submission.
-- **Local-only data:** the registered bundles, bindings, catalog copies and R5 artifacts are gitignored. A clean clone must re-collect and re-register sources (`collect_sources.py`, `prepare_source_bundle.py --include-discovered`, `register_sources.py`); a sample-mode clean clone was rehearsed on a second machine (R11 entry below); this live re-collect and re-register path was not.
+- **Local-only data:** the registered bundles, bindings, catalog copies and R5 artifacts are gitignored. A clean clone must re-collect and re-register sources (`collect_sources.py`, `prepare_source_bundle.py --include-discovered`, `register_sources.py`); a sample-mode clean clone was rehearsed on a second machine, and the live re-collect and re-register path on a Windows clean clone against real AWS S3 (R11 entries below).
 - **Free key:** the NVIDIA key is a free Developer Program key (prototyping only); its rate limits are unknown, and only Ultra and Lightning have verified profiles, so only they are measured; other candidates are projected only. Market-price totals are lower bounds.
 - **Quality:** one sample per pair and pending human-review checks mean no candidate qualifies yet and no quality claim is made.
 - **Required live settings:** thinking off for the Planner and Critic and for both Nemotron routes, a 150 s timeout, and a running evidence publisher (README settings table). Ultra still used 1,015 of 1,024 output tokens on one sample.
 
 ## Final handoff checklist
 
-- [x] F01 Typed Zetaris reads and evidence round trip (local; second-machine run pending)
+- [x] F01 Typed Zetaris reads and evidence round trip (local, and on a Windows clean clone with real AWS S3)
 - [x] F02 Real H-MEM works and passes restart and isolation tests (local reference)
 - [x] F03 Candidate and role identities match their records; Nemotron proof attributable (R1, R5)
 - [x] F04 Dated, cited source snapshots and repeatable registration
@@ -59,8 +59,8 @@ Updated 2026-10-26. The step-by-step plan and findings table are in [08-v4-Imple
 - [x] F12 Stage totals, revenue, AI contribution and margin (R9; recommended-stack totals need R7)
 - [ ] F13 Critic grounding and honest lab independence
 - [ ] F14 Human reviews bound to immutable outputs
-- [x] F15 Traces keep usage; required SKIPs cannot report readiness (Windows unverified)
-- [ ] F16 Documentation, clean-clone rehearsal, founder observations, release artifacts (clean clone PASS in sample mode on a second machine; live clean clone, founder observations and release artifacts open)
+- [x] F15 Traces keep usage; required SKIPs cannot report readiness (Windows preflight PASS)
+- [ ] F16 Documentation, clean-clone rehearsal, founder observations, release artifacts (clean clone PASS in sample mode on a second machine and live on Windows with real AWS S3; founder observations and release artifacts open)
 - [x] F17 No candidate or tier hard-coded (optional curated tier hints and an optional override remain)
 
 ## M00 — Baseline and recovery inventory
@@ -189,7 +189,7 @@ Implemented behavior:
 | Smoke CLI with placeholder settings, `--no-dotenv`, isolated output and Python socket guard | No configured sponsor prerequisites | Seven required SKIPs; incomplete; exit 1 | 0 PASS / 0 FAIL / 7 SKIP; `incomplete`; exit 1 | PASS, negative-path assertion |
 | Regenerate three repository example outputs through the real CLI | Temporary databases, original IDs, Python socket guard | Complete packs; final-result readiness matches pack; portable trace paths | Three outputs regenerated and asserted | PASS |
 | Portable HTTP fixture traces | Synthetic model/usage/SQL payloads | Usage remains numeric; timeout and wrong SQL cell retain correlated error events | Three scenarios asserted in JSON artifact | PASS |
-| Revised PowerShell preflight | Windows required; unavailable here | Execute on Windows with configured Python and fixture/live endpoints | Not run on this macOS host | UNVERIFIED |
+| Revised PowerShell preflight | Windows 11, PowerShell 7, venv Python, live Zetaris and Nightshift (2026-10-26) | Execute on Windows with configured Python and fixture/live endpoints | PREFLIGHT CHECKS PASS, 0 FAIL/WARN/SKIP/UNKNOWN ([aws-registration-check.json](aws-registration-check.json)) | PASS |
 
 Final sample-check manifest:
 
@@ -253,7 +253,22 @@ m04-dispatch-regressions.json preserves synthetic billing inputs, durable receip
 - Current registered bundle: `87f8564d36ffd17330015ad3` (460 catalog rows, 37 model rows with modalities, two curated role profiles), bindings `data/localstack/openrouter/bindings-wide2.json`, built from the migrated catalog copy `data/localstack/openrouter/catalog-modalities/a6cff78717992be3b332c65d`. Earlier bundles are retained locally and are superseded.
 - Nightshift discovery on 2026-10-26: 111 routes (51 `local-runtime`, 37 `openrouter/`, 18 `meterless/`, 5 `nvidia/`); 35 of the 37 OpenRouter routes match a catalog ID.
 
-Catalog prices are market references, not execution tariffs; only the two role routes carry verified execution profiles (free key, 0/0). **Unverified:** source usage-rights review, real AWS/IAM, Windows. The route map no longer pins a candidate: the dead `openrouter/nvidia/nemotron-3-super-120b-a12b:free` pin (upstream 404) was removed, and Gemma was replaced earlier the same day.
+Catalog prices are market references, not execution tariffs; only the two role routes carry verified execution profiles (free key, 0/0). **Unverified:** source usage-rights review. Real AWS S3 and Windows pass (next section, and the R11 Windows entry). The route map no longer pins a candidate: the dead `openrouter/nvidia/nemotron-3-super-120b-a12b:free` pin (upstream 404) was removed, and Gemma was replaced earlier the same day.
+
+### Real AWS S3 on a Windows host (2026-10-26, PASS)
+
+Windows 11 + WSL2, Docker Desktop 4.91.0 (8 CPUs, 15.6 GiB), Python 3.13.14, local Zetaris (`verify.sh` 9/9). Full record: [aws-registration-check.json](aws-registration-check.json). Zero model completions.
+
+| Command/check | Environment | Expected | Actual | Status |
+|---|---|---|---|---|
+| `scripts\preflight_windows.ps1` with Zetaris and Nightshift | PowerShell 7, venv Python | Machine/connectivity checks pass | PREFLIGHT CHECKS PASS, 0 FAIL/WARN/SKIP/UNKNOWN | PASS |
+| `register_sources.py --storage data\source_examples\aws.oah.json --apply` | Bucket `cost-optimizer-oah-k7m2q`; read-only key in the publishing terminal | Publish, register, exact row checks | 9 objects published with S3 versions; 3 tables created (1 brief, 460 catalog, 3 models); no current pointer change | PASS |
+| Same command repeated | Same | Everything reused | 9/9 objects and 3/3 tables reused | PASS |
+| `check_zetaris_sources.py` typed reads | Zetaris API key only | SELECT 1, typed reads, catalog arithmetic | 4/4 pass; `nvidia/nemotron-3.5-lightning` 0.07 / 0.20 per 1M, `execution_tariff: false` | PASS |
+| Same with `--round-trip --storage aws.oah.json` | Read-only key in terminal | Write/readback, append, restart, duplicate | 5/5 pass; 1 S3 evidence object, 2 fixture rows in Zetaris; first attempt without the key failed before any write | PASS |
+| Per-bucket `fs.s3a` credentials in Zetaris `spark-defaults.conf` | Driver restarted | Table creation without a key | Ignored; driver fell through to the EC2 metadata endpoint. Reverted | FAIL, by design not used |
+
+The Zetaris reader is a dedicated IAM user with an inline policy only: `GetBucketLocation`, `ListBucket` on prefix `cost-optimizer/v4/` and `GetObject` on `cost-optimizer/v4/*`; the IAM policy simulator denied everything else checked. Zetaris reads S3 file stores only with a key in the table `OPTIONS`, so the publisher adds it from `ZETARIS_S3_*` in its own process; Zetaris's metadata API returns that secret masked. This bundle used the earlier catalog-only route map; the live clean clone on 2026-10-27 (R11 below) registered the current one.
 
 ## M07 — Pinned real H-MEM and offline sample delegation
 
@@ -512,9 +527,28 @@ The team cloned the repository on a second machine and followed only the README'
 
 Not rehearsed on the second machine: live mode (re-collecting and re-registering sources, Zetaris, Nightshift and the evidence publisher) and Windows. Video and deck are still open.
 
+### R11: live clean clone on Windows with real AWS S3 (2026-10-27, PASS after two fixes)
+
+A fresh clone of `main` at `5cd41e4` on Windows 11 (WSL2, Docker Desktop, Python 3.13.14 because 3.12 is not installed, Node 24), set up from the README only: Quick start, Level 1, "Test live from start" and Level 2. Prices were registered on the real AWS bucket instead of LocalStack, and the UI ran live. Full record: [windows-clean-clone-rehearsal.json](windows-clean-clone-rehearsal.json).
+
+| Step | Expected | Actual | Status |
+|---|---|---|---|
+| `pip install`, `npm ci`, `pytest -q -rs`, `check_sample_examples.py` | Suite passes; three examples PASS | 621 passed, 8 skipped (shelved retrospective; the real H-MEM test ran); 3 of 3 PASS | PASS |
+| `collect_sources.py` | Catalog collected | 457 accepted, 7 quarantined of 464 | PASS |
+| `discover_source_routes.py` | Routes listed, no completion | 128 routes (42 `openrouter/`, 13 `nvidia/`, 55 `local-runtime`, 18 `meterless/`); 86 before the OpenRouter key was added | PASS |
+| `prepare_source_bundle.py --include-discovered` | Bundle with every priced route | `cd08406389b3f3d4dc555621`: 1 brief, 457 catalog rows, 44 models | PASS |
+| `register_sources.py ... aws.oah.json --apply` | Publish and register | First attempt: bare `FileNotFoundError` before any upload, because `.env` named the bindings file this step creates (fixed in `cf209eb`). Then 9 objects published, 3 tables created, no pointer change | PASS after fix |
+| `check_zetaris_sources.py --round-trip` on AWS | 5 checks | 5/5 pass, 0 completions | PASS |
+| `check_m08_gate.py` | README says `ready_for_bounded_dispatch` | `incomplete`: the committed route map is `planned`. Both routes discovered, registered and `billing_gate: pass`. Cause: the README writes bindings to `data/localstack/` and the bundle to `data/localstack/openrouter/bundles/`, so the gate found no manifest and fell back to the committed map. Fix: the README passes `--bundle <BUNDLE_DIR>` and the report names `route_map_source`. Verified on macOS with LocalStack in the README layout (read-only, no completions): `incomplete` without `--bundle`, `ready_for_bounded_dispatch` with it. Windows/AWS rerun not done | FIXED (Windows/AWS not rerun) |
+| `smoke_live.py` | Zetaris, Nightshift, H-MEM pass | 4 pass, 2 paid checks skipped by default (44 model rows, 128 routes) | PASS |
+| `preflight_windows.ps1` | Machine and connectivity checks pass | Machine checks PASS; connectivity SKIP and verdict `INCOMPLETE`, because the key and token were taken only as parameters. With `.env` read for missing settings (`fdcb023`): PREFLIGHT CHECKS PASS, no secret in the report | PASS after fix |
+| Streamlit live, Idea C · Writing, then Idea A · Speech | Complete, $0, evidence written back | Both `complete`: 10 requests each, $0, 9 evidence records written back and read back each, empty outbox, Planner Lightning and Critic Ultra resolved as requested. The second idea's result was hidden behind the first one's (fixed in `c6e9d35`) | PASS after fix |
+
+The publisher wrote with short-lived `aws login` credentials; Zetaris read with the read-only `zetaris-s3-reader` key, typed into masked prompts for that terminal only. Streamlit and the publisher listened on `127.0.0.1` only. The idea label "Idea 3" was renamed "Idea C" (`9cff702`), and `.env.example` now lists `SOURCE_INGEST_URL` (`c8d24a0`).
+
 ## Live proof runs, published (2026-10-27, PASS)
 
 Four live runs on application code identical to `main` at `1bdc9c7`, 02:37–02:41 UTC, via `run.py` with the evidence publisher running: `live-ex1-`, `live-ex2-`, `live-ex3-` and `live-ex3-recall-20261027T023748Z`. All ended `complete` with $0 spend and an empty outbox (10, 14, 10 and 10 model requests; 9, 13, 9 and 9 evidence records written to Zetaris and read back). Every Planner request resolved to `nvidia/nemotron-3.5-lightning-30b-a3b` and every Critic request to `nvidia/nemotron-3-ultra-550b-a55b`, with provider request IDs. Only the two Nemotron routes were executed; other-lab candidates were projected only. The Critic raised `token_gap` flags on Examples 1 and 2 and `unsupported_claim` flags on Example 3. The recall run left budget, price and paying fraction blank and recalled them from the `live-ex3-` run (`hmem_apply`), so its stage totals carry revenue, margin and budget fit. Requests, packs and traces are in `output_examples/live/` with a summary README; the only edit is the trace path inside each pack. `smoke_live.py` passed for Zetaris, discovery (111 routes) and the H-MEM self-test just before.
 
-Not shown: quality qualification (human review pending), measured candidates from other labs, a second machine or Windows.
+Not shown: quality qualification (human review pending) and measured candidates from other labs. A second machine and Windows are covered by the R11 Windows entry above.
 
