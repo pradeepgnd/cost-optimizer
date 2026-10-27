@@ -24,9 +24,9 @@ def form_args(template, **over):
 
 
 def test_sidebar_names_example_1_as_idea_a_and_example_2_as_idea_b():
-    assert svc.example_label("example_1") == "Idea A · Speech"
-    assert svc.example_label("example_2") == "Idea B · Payments"
-    assert svc.example_label("example_3") == "Idea 3 · Writing"
+    assert svc.example_label("example_1") == "Idea: Speech triage"
+    assert svc.example_label("example_2") == "Idea: Payments assist"
+    assert svc.example_label("example_3") == "Idea: Writing coach"
     concept = svc.load_template("example_1")["brief"]["product_concept"]
     assert "helps kids with speech delays build sentences" in concept
     assert "autistic" not in concept.lower()
