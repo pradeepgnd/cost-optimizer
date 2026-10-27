@@ -541,9 +541,10 @@ A fresh clone of `main` at `5cd41e4` on Windows 11 (WSL2, Docker Desktop, Python
 | `check_zetaris_sources.py --round-trip` on AWS | 5 checks | 5/5 pass, 0 completions | PASS |
 | `check_m08_gate.py` | README says `ready_for_bounded_dispatch` | `incomplete`: the committed route map is `planned`. Both routes discovered, registered and `billing_gate: pass` | OPEN |
 | `smoke_live.py` | Zetaris, Nightshift, H-MEM pass | 4 pass, 2 paid checks skipped by default (44 model rows, 128 routes) | PASS |
+| `preflight_windows.ps1` | Machine and connectivity checks pass | Machine checks PASS; connectivity SKIP and verdict `INCOMPLETE`, because the key and token were taken only as parameters. With `.env` read for missing settings (`fdcb023`): PREFLIGHT CHECKS PASS, no secret in the report | PASS after fix |
 | Streamlit live, Idea C · Writing, then Idea A · Speech | Complete, $0, evidence written back | Both `complete`: 10 requests each, $0, 9 evidence records written back and read back each, empty outbox, Planner Lightning and Critic Ultra resolved as requested. The second idea's result was hidden behind the first one's (fixed in `c6e9d35`) | PASS after fix |
 
-The publisher wrote with short-lived `aws login` credentials; Zetaris read with the read-only `zetaris-s3-reader` key, typed into masked prompts for that terminal only. Streamlit and the publisher listened on `127.0.0.1` only. The idea label "Idea 3" was renamed "Idea C" (`9cff702`).
+The publisher wrote with short-lived `aws login` credentials; Zetaris read with the read-only `zetaris-s3-reader` key, typed into masked prompts for that terminal only. Streamlit and the publisher listened on `127.0.0.1` only. The idea label "Idea 3" was renamed "Idea C" (`9cff702`), and `.env.example` now lists `SOURCE_INGEST_URL` (`c8d24a0`).
 
 ## Live proof runs, published (2026-10-27, PASS)
 
