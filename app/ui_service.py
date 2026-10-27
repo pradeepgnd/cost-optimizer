@@ -245,6 +245,66 @@ def progress_rows(events: list[dict], limit: int = 12) -> tuple[dict, list[dict]
                      for e in shown[-limit:]]
 
 
+# Founder-facing Run timeline (docs/design.md). Presentation only — maps trace actions to three phases.
+_PLANNER_ACTIONS = frozenset({"domain_risk_review"})
+_CRITIC_ACTIONS = frozenset({"critique", "critic_shares_candidate_route", "repair"})
+_SKIP_PHASE_ACTIONS = frozenset({"complete", "stop", "state_transition", "start"})
+
+
+def _phase_for(event: dict) -> str | None:
+    action = event.get("action") or ""
+    if action in _SKIP_PHASE_ACTIONS or _bookkeeping(event):
+        return None
+    agent = (event.get("agent_name") or "").lower()
+    if action in _PLANNER_ACTIONS or agent == "planner":
+        return "Planner"
+    if action in _CRITIC_ACTIONS or agent == "critic":
+        return "Critic"
+    return "Analyst"
+
+
+def pipeline_phases(events: list[dict]) -> list[dict]:
+    """Planner → Analyst → Critic states for the Run progress strip. No scoring or economics."""
+    blueprint = (
+        ("Planner", "Domain risks for this idea"),
+        ("Analyst", "Prices, candidates, and feature samples"),
+        ("Critic", "Flags only — not grades"),
+    )
+    seen: dict[str, dict] = {}
+    order: list[str] = []
+    for event in events:
+        phase = _phase_for(event)
+        if phase is None:
+            continue
+        if phase not in seen:
+            order.append(phase)
+            seen[phase] = event
+        else:
+            seen[phase] = event
+    active = order[-1] if order else None
+    finished = bool(events) and any(
+        (e.get("action") == "complete" and e.get("status") in ("success", "complete", None))
+        or e.get("action") == "stop"
+        for e in events
+    )
+    rows = []
+    for name, copy in blueprint:
+        if name not in seen:
+            state = "pending"
+            detail = ""
+        elif finished or (active is not None and order.index(name) < order.index(active)):
+            state = "done"
+            detail = STEP_LABELS.get(seen[name].get("action"), seen[name].get("action") or "")
+        elif name == active:
+            state = "active"
+            detail = STEP_LABELS.get(seen[name].get("action"), seen[name].get("action") or "")
+        else:
+            state = "done"
+            detail = STEP_LABELS.get(seen[name].get("action"), seen[name].get("action") or "")
+        rows.append({"name": name, "copy": copy, "state": state, "detail": detail})
+    return rows
+
+
 def stop_reason(result: dict) -> str:
     """Why a run stopped, read from its trace: the first error or stop event, with the failing step."""
     reasons = []

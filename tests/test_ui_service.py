@@ -170,6 +170,25 @@ def test_progress_rows_summarise_and_hide_bookkeeping():
     assert waiting["latest"] == "Model request (waiting)"
 
 
+def test_pipeline_phases_map_trace_to_planner_analyst_critic():
+    empty = svc.pipeline_phases([])
+    assert [p["name"] for p in empty] == ["Planner", "Analyst", "Critic"]
+    assert {p["state"] for p in empty} == {"pending"}
+    mid = svc.pipeline_phases([
+        {"action": "domain_risk_review", "agent_name": "Planner", "status": "success"},
+        {"action": "select_candidates", "agent_name": "Controller", "status": "success"},
+        {"action": "nightshift_request", "agent_name": "Analyst", "status": "success"},
+    ])
+    assert mid[0]["state"] == "done" and mid[1]["state"] == "active" and mid[2]["state"] == "pending"
+    done = svc.pipeline_phases(mid and [
+        {"action": "domain_risk_review", "agent_name": "Planner", "status": "success"},
+        {"action": "run_feature", "agent_name": "Analyst", "status": "success"},
+        {"action": "critique", "agent_name": "Critic", "status": "success"},
+        {"action": "complete", "agent_name": "Controller", "status": "success"},
+    ])
+    assert [p["state"] for p in done] == ["done", "done", "done"]
+
+
 def test_progress_callback_receives_trace_events_while_running():
     template = svc.load_template("example_3")
     seen = []

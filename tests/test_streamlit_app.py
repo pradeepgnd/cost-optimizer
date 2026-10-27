@@ -22,17 +22,27 @@ def app():
     return AppTest.from_file(str(ROOT / "streamlit_app.py"), default_timeout=120).run()
 
 
+def _markdown_text(at) -> str:
+    return "\n".join(str(getattr(block, "value", block)) for block in at.markdown)
+
+
 def test_sample_form_runs_once_and_shows_the_offline_label():
     at = app()
     assert not at.exception
-    assert any("SAMPLE/OFFLINE" in w.value for w in at.warning)
+    assert "SAMPLE/OFFLINE" in _markdown_text(at)
+    assert 'Cost<span>.</span>Advisor' in _markdown_text(at)
     run = next(b for b in at.button if b.label == "Run")
     run.click().run()
     assert not at.exception
-    assert any(m.label == "Status" and m.value == "complete" for m in at.metric)
-    assert any(m.label == "Evaluation spend (USD)" and m.value == "0" for m in at.metric)
+    text = _markdown_text(at)
+    assert "SAMPLE/OFFLINE" in text
+    assert "Status" in text and "complete" in text
+    assert "Evaluation spend (USD)" in text
     run_id = at.session_state["run_id"]
-    assert svc.load_result(run_id)["execution_mode"] == "sample"
+    pack = svc.load_result(run_id)
+    assert pack["execution_mode"] == "sample" and pack["status"] == "complete"
+    assert str(pack["spend_usd"]) in ("0", "0.0", "0.00")
+    assert str(pack["spend_usd"]) in text
     # A rerender loads the stored result and starts nothing new.
     before = sorted(p.name for p in svc.UI_DIR.iterdir())
     at.run()
@@ -61,8 +71,9 @@ def test_live_shaped_pack_shows_market_costs_checks_and_critic_flags():
     at.session_state["run_id"] = "ui-live-shape"
     at.run()
     assert not at.exception
-    assert not any("SAMPLE/OFFLINE" in w.value for w in at.warning)
+    assert 'class="ca-sample"' not in _markdown_text(at)  # live packs may mention SAMPLE in limitations text
     assert any("market reference price" in c.value for c in at.caption)
+    assert "Recommendations locked until human review" in _markdown_text(at)
     frames = [df.value for df in at.dataframe]
     assert any("pending human review" in frame.to_string() for frame in frames)
     assert any("token_gap" in frame.to_string() for frame in frames)
@@ -88,6 +99,10 @@ def test_sample_run_shows_monthly_totals_with_revenue():
     next(t for t in at.text_input if t.label.startswith("Paying fraction")).set_value("0.08").run()
     next(b for b in at.button if b.label == "Run").click().run()
     assert not at.exception
-    totals = at.dataframe[2].value
-    assert list(totals.columns)[:3] == ["stage", "users", "monthly AI cost USD"] and totals["revenue USD"].notna().all()
+    totals = next(
+        df.value
+        for df in at.dataframe
+        if list(df.value.columns)[:3] == ["stage", "users", "monthly AI cost USD"]
+    )
+    assert totals["revenue USD"].notna().all()
     assert any("sample placeholder prices" in c.value and "AI-only" in c.value for c in at.caption)

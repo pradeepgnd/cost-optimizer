@@ -1,25 +1,28 @@
-# Dark theme with a lime accent: near-black surfaces, Manrope type, large radii.
+# Cool ledger light: paper/ink atmosphere, teal accent, Sora + Source Sans 3.
+# Tokens match docs/design.md. Figures (USD, tokens) use IBM Plex Mono via CSS in streamlit_app.py.
 [theme]
-base = "dark"
-primaryColor = "#8cff2e"
-backgroundColor = "#050505"
-secondaryBackgroundColor = "#171717"
-textColor = "#f5f5f2"
-linkColor = "#8cff2e"
-font = "Manrope:https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap"
-headingFont = "Manrope:https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap"
-headingFontWeights = [800, 700, 700, 600, 600, 600]
-baseRadius = "14px"
-buttonRadius = "full"
-borderColor = "#262626"
-dataframeBorderColor = "#262626"
-dataframeHeaderBackgroundColor = "#0d0d0d"
+base = "light"
+primaryColor = "#0F6B5C"
+backgroundColor = "#EEF1F5"
+secondaryBackgroundColor = "#F8FAFC"
+textColor = "#12151A"
+linkColor = "#0F6B5C"
+font = "Source Sans 3:https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600;700&display=swap"
+headingFont = "Sora:https://fonts.googleapis.com/css2?family=Sora:wght@600;700&display=swap"
+headingFontWeights = [700, 700, 600, 600, 600, 600]
+baseRadius = "10px"
+buttonRadius = "10px"
+borderColor = "#C9D1DB"
+dataframeBorderColor = "#C9D1DB"
+dataframeHeaderBackgroundColor = "#F8FAFC"
 showWidgetBorder = true
-greenColor = "#8cff2e"
-blueColor = "#0099ff"
-chartCategoricalColors = ["#8cff2e", "#0099ff", "#c8c8c0", "#ffb020", "#ff5c8a", "#7a5cff"]
+greenColor = "#0F6B5C"
+blueColor = "#1F4E79"
+redColor = "#9B1C1C"
+orangeColor = "#8A5A00"
+chartCategoricalColors = ["#0F6B5C", "#1F4E79", "#6B5B3E", "#5A6570", "#0F6B5C", "#1F4E79"]
 
 [theme.sidebar]
-backgroundColor = "#0d0d0d"
-secondaryBackgroundColor = "#171717"
-borderColor = "#1f1f1f"
+backgroundColor = "#F8FAFC"
+secondaryBackgroundColor = "#EEF1F5"
+borderColor = "#C9D1DB"
