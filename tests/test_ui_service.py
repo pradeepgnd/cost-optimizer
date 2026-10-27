@@ -198,6 +198,107 @@ def test_progress_callback_receives_trace_events_while_running():
     assert any(e["action"] == "calculate_cost" for e in svc.read_events(svc.ROOT / "logs" / "trace-ui-progress-1.jsonl")[0])
 
 
+def _single(model, stage, users, monthly, fit, *, complete=True):
+    return {"scenario": "single_model", "pricing_scope": "actual_route", "model_id": model, "stage": stage,
+            "active_users": users, "monthly_usd": monthly, "complete": complete, "budget_fit": fit}
+
+
+def test_tier_recommendations_pick_one_frontier_and_one_open_source_that_fit_the_budget():
+    pack = {
+        "monthly_ai_budget_usd": "100",
+        "feature_runs": [{"model_id": mid, "tier": tier, "is_repair": False} for mid, tier in (
+            ("big", "frontier"), ("small-f", "frontier"), ("oss", "open_source"), ("oss-costly", "open_source"))],
+        "stage_tables": [{"rows": [
+            {"model_id": "big", "token_basis": "measured"},
+            {"model_id": "small-f", "token_basis": "estimated"},
+            {"model_id": "oss", "token_basis": "measured"},
+            {"model_id": "oss-costly", "token_basis": "measured"}]}],
+        "model_stack": [{"feature_id": "notes", "stage": "Scale", "status": "no_candidate_passes", "model_id": None}],
+        "stage_totals": [
+            _single("big", "Prototype", 50, "40", "within"), _single("big", "Scale", 5000, "400", "over"),
+            _single("small-f", "Prototype", 50, "20", "within"), _single("small-f", "Scale", 5000, "80", "within"),
+            _single("oss", "Prototype", 50, "5", "within"), _single("oss", "Scale", 5000, "50", "within"),
+            _single("oss-costly", "Prototype", 50, "9", "within"), _single("oss-costly", "Scale", 5000, "90", "within"),
+            _single("mid", "Scale", 5000, "1", "within"),
+        ],
+    }
+    picks = {item["tier"]: item for item in svc.tier_recommendations(pack)}
+    assert set(picks) == {"frontier", "open_source"}
+    assert picks["frontier"]["model_id"] == "small-f" and picks["frontier"]["stage"] == "Scale"
+    assert picks["frontier"]["budget_fit"] == "within" and picks["frontier"]["token_basis"] == "estimated"
+    assert "$100/month" in picks["frontier"]["reason"] and "Not quality-qualified yet" in picks["frontier"]["reason"]
+    assert picks["open_source"]["model_id"] == "oss" and picks["open_source"]["monthly_usd"] == "50"
+
+
+def test_tier_recommendations_without_a_budget_use_the_cheapest_at_the_largest_stage():
+    pack = {
+        "monthly_ai_budget_usd": None,
+        "feature_runs": [{"model_id": "costly", "tier": "frontier"}, {"model_id": "cheap", "tier": "frontier"}],
+        "stage_tables": [{"rows": [{"model_id": "cheap", "token_basis": "estimated"},
+                                   {"model_id": "costly", "token_basis": "estimated"}]}],
+        "model_stack": [{"status": "requires_live_run", "model_id": None, "feature_id": "notes", "stage": "Scale"}],
+        "stage_totals": [
+            _single("costly", "Prototype", 50, "10", "no_budget"), _single("costly", "Scale", 5000, "30", "no_budget"),
+            _single("cheap", "Prototype", 50, "40", "no_budget"), _single("cheap", "Scale", 5000, "20", "no_budget"),
+        ],
+    }
+    picks = svc.tier_recommendations(pack)
+    assert picks[0]["model_id"] == "cheap" and picks[0]["stage"] == "Scale" and "No monthly AI budget" in picks[0]["reason"]
+    assert picks[0]["reason"].startswith("cheap ")
+    assert "live run is required" in picks[0]["reason"]
+    assert picks[1]["model_id"] is None and "No open-source model was compared" in picks[1]["reason"]
+
+
+def test_tier_recommendations_skip_a_model_that_is_not_priced_for_every_feature():
+    pack = {
+        "monthly_ai_budget_usd": "100",
+        "feature_runs": [{"model_id": "partial", "tier": "open_source"}, {"model_id": "full", "tier": "open_source"}],
+        "model_stack": [{"status": "recommended", "model_id": "full", "feature_id": "notes", "stage": "Prototype"}],
+        "stage_totals": [
+            _single("partial", "Prototype", 50, "1", "within", complete=False),
+            _single("full", "Prototype", 50, "10", "within"),
+        ],
+    }
+    pick = svc.tier_recommendations(pack)[1]
+    assert pick["tier"] == "open_source" and pick["model_id"] == "full"
+    assert "Quality-qualified for notes" in pick["reason"]
+    assert svc.tier_recommendations({"stage_totals": []}) == []
+
+
+def test_tier_recommendations_still_name_a_model_when_some_features_are_unpriced():
+    pack = {
+        "monthly_ai_budget_usd": None,
+        "feature_runs": [{"model_id": "oss", "tier": "open_source"}],
+        "stage_tables": [{"rows": [{"model_id": "oss", "token_basis": "estimated"}]}],
+        "model_stack": [{"status": "requires_live_run", "model_id": None, "feature_id": "audio", "stage": "Scale"}],
+        "stage_totals": [{
+            **_single("oss", "Scale", 5000, "12", "unknown", complete=False),
+            "feature_costs": {"text": "12", "audio": None},
+            "note": "cost unknown for audio, so the total covers known features only",
+        }],
+    }
+    pick = svc.tier_recommendations(pack)[1]
+    assert pick["model_id"] == "oss" and "Cost unknown for audio" in pick["reason"]
+
+
+def test_tier_recommendations_use_the_market_price_scope_and_the_furthest_stage_that_fits():
+    pack = {
+        "monthly_ai_budget_usd": "10",
+        "openrouter_projection_tables": [{"rows": [
+            {"model_id": "openrouter/oss", "tier": "open_source", "token_basis": "measured"}]}],
+        "model_stack": [{"status": "no_candidate_passes", "model_id": None, "feature_id": "notes", "stage": "Scale"}],
+        "stage_totals": [
+            {**_single("openrouter/oss", "Prototype", 50, "4", "within"), "pricing_scope": "openrouter_listed_token_scenario"},
+            {**_single("openrouter/oss", "Scale", 5000, "40", "over"), "pricing_scope": "openrouter_listed_token_scenario"},
+            _single("ignored-actual", "Scale", 5000, "1", "within"),
+        ],
+    }
+    picks = {item["tier"]: item for item in svc.tier_recommendations(pack)}
+    assert picks["frontier"]["model_id"] is None
+    assert picks["open_source"]["model_id"] == "openrouter/oss" and picks["open_source"]["stage"] == "Prototype"
+    assert picks["open_source"]["budget_fit"] == "within" and picks["open_source"]["token_basis"] == "measured"
+
+
 def test_outbox_hint_explains_a_partial_run_with_unpublished_evidence():
     assert svc.outbox_hint({"unpublished_evidence_ids": []}) == ""
     hint = svc.outbox_hint({"run_id": "ui-x", "unpublished_evidence_ids": ["a", "b"]})

@@ -26,10 +26,10 @@
         "detail": "Requires identified, usage-bearing candidate executions (M08)."
       },
       {
-        "name": "nemotron_feature",
+        "name": "nemotron_roles",
         "status": "not_verified",
         "required": true,
-        "detail": "Requires a working feature with corroborated Nemotron identity (M08)."
+        "detail": "Requires the Planner and Critic to run on Nemotron through Nightshift, with the resolved model identity logged per request (M08)."
       }
     ],
     "dimensions": [],
@@ -5821,7 +5821,7 @@
     }
   ],
   "memory_ids": [
-    "1e958c312c98fbffdc01316bada4761acb0468183b4151dd49d0b7456be2f1ea:mem-230"
+    "1e958c312c98fbffdc01316bada4761acb0468183b4151dd49d0b7456be2f1ea:mem-1"
   ],
   "evidence_gaps": [
     {

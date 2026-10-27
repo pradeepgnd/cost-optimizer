@@ -106,3 +106,6 @@ def test_sample_run_shows_monthly_totals_with_revenue():
     )
     assert totals["revenue USD"].notna().all()
     assert any("sample placeholder prices" in c.value and "AI-only" in c.value for c in at.caption)
+    text = " ".join(item.value for item in at.markdown)
+    assert "Recommendation" in text
+    assert "sample/frontier-placeholder" in text and "sample/open-source-placeholder" in text

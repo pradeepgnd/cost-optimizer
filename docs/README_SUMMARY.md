@@ -17,7 +17,7 @@
 - pass/fail quality checks, flagged risks, and a full trace of every step.
 
 **How it works.**
-1. Recalls what earlier runs learned about this idea.
+1. Recalls your earlier inputs for this idea (budget, price, paying fraction) and fills any you left blank, labelled as recalled.
 2. Reads dated model prices from a data layer.
 3. Picks a frontier, a mid-tier and an open-source candidate model for each feature.
 4. With your approval and under a spend cap you set, runs your example inputs on the models it can measure.
@@ -35,7 +35,17 @@ Anything it couldn't measure is labelled "estimated", "projected only" or "unkno
 **Try it offline (sample mode, no accounts or network).**
 ```bash
 git clone https://github.com/pradeepgnd/cost-optimizer && cd cost-optimizer
-python -m venv .venv && . .venv/bin/activate && pip install -r requirements.txt && cp .env.example .env
+python -m venv .venv && . .venv/bin/activate && pip install -r requirements.txt
 SAMPLE_MODE=true python run.py --input input_examples/example_1.json --output result.json
 ```
+Sample mode needs no `.env`. For H-MEM memory in sample mode, also install the engine once with `(cd app/engines/hmem/reference && npm ci)` (Node 20+). Without it the run still completes, and the trace records the memory step as an error.
+
 Open the UI with `python -m streamlit run streamlit_app.py`. Live mode setup is below.
+
+**Limitations and disclaimer.**
+- The cost figures are planning estimates, not financial, legal or investment advice. Check them against your provider's current prices and your own usage before you commit money.
+- Prices come from a dated catalog snapshot and may have changed since.
+- Only models with a verified rate profile are measured; the others are projected from reference prices and labelled "projected only".
+- Token counts are measured on a few example inputs. Real traffic, prompt length and user behaviour will differ.
+- Quality checks are deterministic rules plus human review. They do not prove a model is good enough for your product.
+- Sample mode outputs are labelled `SAMPLE/OFFLINE` and use no real model calls.
