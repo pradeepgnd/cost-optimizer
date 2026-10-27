@@ -167,7 +167,7 @@
       }
     ]
   },
-  "preflight": "Machine checks PASS from the clean clone (WSL2, Docker 15.6 GB / 8 CPUs, compose, ports, toolchain); credentialed SELECT 1 and discovery were not passed credentials and are covered by smoke_live. The full credentialed preflight passed on this host on 2026-10-26 (aws-registration-check.json).",
+  "preflight": "From the clean clone (main): machine checks PASS, but the connectivity checks SKIP because main's preflight takes the key and token only as parameters, so the README command gives INCOMPLETE. With the fix that reads them from .env: PREFLIGHT CHECKS PASS (SELECT 1 validated, 128 routes), no secret in the report. The full credentialed preflight also passed on this host on 2026-10-26 (aws-registration-check.json).",
   "live_ui_runs": [
     {
       "run_id": "ui-20261027-014226",
@@ -260,6 +260,14 @@
     {
       "finding": "Idea picker read Idea A, Idea B, Idea 3",
       "fix": "renamed to Idea C (commit 9cff702)"
+    },
+    {
+      "finding": "preflight_windows.ps1 took the Zetaris key and Nightshift token only as parameters, so a README run reported INCOMPLETE",
+      "fix": "missing settings are read from .env; command-line values win; -NoDotenv ignores .env"
+    },
+    {
+      "finding": ".env.example lacked SOURCE_INGEST_URL, which the README requires",
+      "fix": "added"
     },
     {
       "finding": "check_m08_gate.py reports incomplete on a clean clone because the committed route map is 'planned'",
